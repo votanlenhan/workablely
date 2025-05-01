@@ -20,6 +20,11 @@ import { EquipmentAssignmentsModule } from './modules/equipment-assignments/equi
 import { PaymentsModule } from './modules/payments/payments.module';
 import { RevenueAllocationsModule } from './modules/revenue-allocations/revenue-allocations.module';
 import { MemberEvaluationsModule } from './modules/member-evaluations/member-evaluations.module';
+import { AuthModule } from './auth.module';
+import { AuthService } from './auth.service';
+import { AuthController } from './auth.controller';
+import { UsersService } from './modules/users.service';
+import { UsersController } from './modules/users.controller';
 
 @Module({
   imports: [
@@ -60,8 +65,9 @@ import { MemberEvaluationsModule } from './modules/member-evaluations/member-eva
     PaymentsModule,
     RevenueAllocationsModule,
     MemberEvaluationsModule,
+    AuthModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  controllers: [AppController, AuthController, UsersController],
+  providers: [AppService, AuthService, UsersService],
 })
 export class AppModule {}
