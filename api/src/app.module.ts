@@ -3,34 +3,18 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-// Import modules later as they are created
-import { UsersModule } from './modules/users/users.module';
-import { RolesModule } from './modules/roles/roles.module';
-import { PermissionsModule } from './modules/permissions/permissions.module';
-import { ClientsModule } from './modules/clients/clients.module';
-import { ShowRolesModule } from './modules/show-roles/show-roles.module';
-import { EquipmentModule } from './modules/equipment/equipment.module';
-import { ConfigurationsModule } from './modules/configurations/configurations.module';
-import { ExternalIncomesModule } from './modules/external-incomes/external-incomes.module';
-import { ExpensesModule } from './modules/expenses/expenses.module';
-import { AuditLogsModule } from './modules/audit-logs/audit-logs.module';
-import { ShowsModule } from './modules/shows/shows.module';
-import { ShowAssignmentsModule } from './modules/show-assignments/show-assignments.module';
-import { EquipmentAssignmentsModule } from './modules/equipment-assignments/equipment-assignments.module';
-import { PaymentsModule } from './modules/payments/payments.module';
-import { RevenueAllocationsModule } from './modules/revenue-allocations/revenue-allocations.module';
-import { MemberEvaluationsModule } from './modules/member-evaluations/member-evaluations.module';
 import { AuthModule } from './auth.module';
-import { AuthService } from './auth.service';
-import { AuthController } from './auth.controller';
-import { UsersService } from './modules/users.service';
-import { UsersController } from './modules/users.controller';
+import { UsersModule } from './modules/users.module';
+// Import other modules as they are created
+// import { RolesModule } from './modules/roles/roles.module';
+// import { PermissionsModule } from './modules/permissions/permissions.module';
+// ... other future modules
 
 @Module({
   imports: [
     ConfigModule.forRoot({
-      isGlobal: true, // Make ConfigModule available globally
-      envFilePath: '.env', // Specify the .env file path
+      isGlobal: true,
+      envFilePath: '.env',
     }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
@@ -42,32 +26,32 @@ import { UsersController } from './modules/users.controller';
         username: configService.get<string>('DB_USERNAME'),
         password: configService.get<string>('DB_PASSWORD'),
         database: configService.get<string>('DB_DATABASE'),
-        entities: [__dirname + '/../**/*.entity{.ts,.js}'], // Auto-detect entities
-        synchronize: false, // IMPORTANT: Disable synchronize in production/staging, use migrations instead
-        autoLoadEntities: true, // Recommended by NestJS TypeORM docs
-        logging: configService.get('NODE_ENV') === 'development', // Log SQL in dev
+        entities: [__dirname + '/../**/*.entity{.ts,.js}'],
+        synchronize: false, // Use migrations
+        autoLoadEntities: true,
+        logging: configService.get<string>('NODE_ENV') === 'development',
       }),
     }),
-    // Add feature modules here later
-    UsersModule,
-    RolesModule,
-    PermissionsModule,
-    ClientsModule,
-    ShowRolesModule,
-    EquipmentModule,
-    ConfigurationsModule,
-    ExternalIncomesModule,
-    ExpensesModule,
-    AuditLogsModule,
-    ShowsModule,
-    ShowAssignmentsModule,
-    EquipmentAssignmentsModule,
-    PaymentsModule,
-    RevenueAllocationsModule,
-    MemberEvaluationsModule,
+    // Feature Modules
     AuthModule,
+    UsersModule,
+    // RolesModule, // Add later
+    // PermissionsModule, // Add later
+    // ClientsModule, // Add later
+    // ShowRolesModule, // Add later
+    // EquipmentModule, // Add later
+    // ConfigurationsModule, // Add later
+    // ExternalIncomesModule, // Add later
+    // ExpensesModule, // Add later
+    // AuditLogsModule, // Add later
+    // ShowsModule, // Add later
+    // ShowAssignmentsModule, // Add later
+    // EquipmentAssignmentsModule, // Add later
+    // PaymentsModule, // Add later
+    // RevenueAllocationsModule, // Add later
+    // MemberEvaluationsModule, // Add later
   ],
-  controllers: [AppController, AuthController, UsersController],
-  providers: [AppService, AuthService, UsersService],
+  controllers: [AppController], // Only AppController belongs here
+  providers: [AppService], // Only AppService belongs here
 })
 export class AppModule {}
