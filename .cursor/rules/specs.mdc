@@ -1,0 +1,8 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+## Documentation Rules
+- **Update Requirement:** This specification document (`specs.md`) MUST be updated whenever there are significant changes to functional requirements or system workflows discussed or implemented. Ensure the document reflects the latest agreed-upon state.
+- **Update Context:** The `docs/project_progress.md` document MUST be updated to reflect the latest project context and status when significant changes occur.

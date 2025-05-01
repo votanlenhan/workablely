@@ -20,13 +20,22 @@ export class AuthService {
    */
   async validateUser(email: string, pass: string): Promise<Omit<User, 'password_hash'> | null> {
     const user = await this.usersService.findOneByEmail(email);
-    if (user && await bcrypt.compare(pass, user.password_hash)) {
+
+    // --- DEBUG LOG --- 
+    console.log('Validating user:', email);
+    console.log('User found in DB (AuthService):', user); // Log the whole user object
+    if (user) {
+        console.log('Password hash from user object:', user.password_hash); // Log the specific hash
+    }
+    // --- END DEBUG LOG ---
+
+    if (user && user.password_hash && await bcrypt.compare(pass, user.password_hash)) { // Added check for user.password_hash existence
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password_hash, ...userData } = user;
-      // Explicitly cast the result to bypass strict type checking issues with entity methods
       const result = userData as Omit<User, 'password_hash'>;
       return result;
     }
+    console.error('Validation failed: User not found or password mismatch.', { email, userExists: !!user });
     return null;
   }
 

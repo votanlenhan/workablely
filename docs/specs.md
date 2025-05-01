@@ -1,5 +1,10 @@
 # Thông số kỹ thuật Hệ thống Quản lý Nhiếp ảnh gia
 
+## Quy tắc Tài liệu
+
+- **Cập nhật Yêu cầu:** Tài liệu này (`docs/specs.md`) PHẢI được cập nhật mỗi khi có thay đổi quan trọng về yêu cầu chức năng hoặc luồng hoạt động của hệ thống.
+- **Cập nhật Ngữ cảnh:** Tài liệu `docs/project_context.md` PHẢI được cập nhật để phản ánh bối cảnh và trạng thái mới nhất của dự án khi có thay đổi đáng kể.
+
 ## Tên dự án: Photographer Management System
 
 ## Mô tả chung

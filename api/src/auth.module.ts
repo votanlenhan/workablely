@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -10,7 +10,7 @@ import { JwtStrategy } from './auth/strategies/jwt.strategy'; // Correct path
 
 @Module({
   imports: [
-    UsersModule, // Import UsersModule to use UsersService
+    forwardRef(() => UsersModule), // Use forwardRef for UsersModule
     PassportModule, // Import PassportModule
     ConfigModule, // Import ConfigModule to access environment variables
     JwtModule.registerAsync({
