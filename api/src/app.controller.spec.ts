@@ -14,7 +14,9 @@ describe('AppController', () => {
           provide: AppService,
           useValue: {
             getHello: jest.fn().mockReturnValue('Hello World!'),
-            getHelloApiMessage: jest.fn().mockReturnValue('Hello World from API!'),
+            getHelloApiMessage: jest
+              .fn()
+              .mockReturnValue('Hello World from API!'),
           },
         },
       ],

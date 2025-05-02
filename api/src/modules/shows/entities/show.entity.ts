@@ -21,7 +21,10 @@ export class Show extends BaseEntity {
   @Column({ type: 'uuid', nullable: false })
   client_id: string;
 
-  @ManyToOne(() => Client, (client) => client.shows, { nullable: false, onDelete: 'RESTRICT' })
+  @ManyToOne(() => Client, (client) => client.shows, {
+    nullable: false,
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'client_id' })
   @Index()
   client: Client;
@@ -133,4 +136,4 @@ export class Show extends BaseEntity {
 
   // @OneToMany(() => MemberEvaluation, (evaluation) => evaluation.show)
   // memberEvaluations: MemberEvaluation[];
-} 
+}

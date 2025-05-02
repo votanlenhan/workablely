@@ -26,4 +26,4 @@ export class ShowRole extends BaseEntity {
   // Define O2M relationship with ShowAssignment (Commented out temporarily)
   // @OneToMany(() => ShowAssignment, (assignment) => assignment.showRole)
   // assignments: ShowAssignment[];
-} 
+}

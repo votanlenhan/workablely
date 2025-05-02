@@ -5,4 +5,4 @@ import { Equipment } from './entities/equipment.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Equipment])],
 })
-export class EquipmentModule {} 
+export class EquipmentModule {}

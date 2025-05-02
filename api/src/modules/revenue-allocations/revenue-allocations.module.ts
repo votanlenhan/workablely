@@ -5,4 +5,4 @@ import { RevenueAllocation } from './entities/revenue-allocation.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([RevenueAllocation])],
 })
-export class RevenueAllocationsModule {} 
+export class RevenueAllocationsModule {}

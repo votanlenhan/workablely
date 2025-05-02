@@ -14,7 +14,7 @@ export class User extends BaseEntity {
   @Index() // Add index for faster lookups
   email: string;
 
-  @Column({ type: 'varchar', nullable: false /*, select: false */ })
+  @Column({ type: 'varchar', nullable: false, select: false })
   password_hash: string;
 
   @Column({ type: 'varchar', nullable: false })
@@ -40,20 +40,24 @@ export class User extends BaseEntity {
   @Column({ type: 'timestamp with time zone', nullable: true })
   last_login_at?: Date | null; // Made optional and nullable consistent with schema
 
-  // Roles relationship (keep decorators commented for now if Role entity/migration not ready)
-  // @ManyToMany(() => Role, (role) => role.users, { cascade: ['insert', 'update'] })
-  // @JoinTable({
-  //   name: 'user_roles',
-  //   joinColumn: { name: 'user_id', referencedColumnName: 'id' },
-  //   inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
-  // })
-  roles: Role[]; // Uncomment the property
+  // Roles relationship (owning side of the Many-to-Many)
+  @ManyToMany(() => Role, (role) => role.users, {
+    cascade: ['insert', 'update'], // Or adjust cascade options as needed
+    // eager: true, // Uncomment if you often need roles when fetching users
+  })
+  @JoinTable({
+    name: 'user_roles', // Matches the migration/schema
+    joinColumn: { name: 'user_id', referencedColumnName: 'id' },
+    inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
+  })
+  roles: Role[];
 
   @BeforeInsert()
   async hashPasswordBeforeInsert() {
     // Hash password only if it's provided and not already hashed
     // This handles cases where we might create users with pre-hashed passwords
-    if (this.password_hash && !this.password_hash.startsWith('$2b$')) { // Basic check if likely hashed
+    if (this.password_hash && !this.password_hash.startsWith('$2b$')) {
+      // Basic check if likely hashed
       const saltRounds = 10; // Consider moving to config
       this.password_hash = await bcrypt.hash(this.password_hash, saltRounds);
     }
@@ -61,8 +65,8 @@ export class User extends BaseEntity {
 
   // Method to manually hash a password (e.g., when updating)
   async hashPassword(password: string): Promise<string> {
-     const saltRounds = 10; // Consider moving to config
-     return bcrypt.hash(password, saltRounds);
+    const saltRounds = 10; // Consider moving to config
+    return bcrypt.hash(password, saltRounds);
   }
 
   // Helper method (not a DB column) to compare password
@@ -77,4 +81,14 @@ export class User extends BaseEntity {
   }
 
   // Constructor removed as TypeORM handles object creation
-} 
+}
+
+// Define and export a type for plain user data excluding sensitive info and methods
+export type PlainUser = Omit<
+  User,
+  | 'password_hash'
+  | 'hashPasswordBeforeInsert'
+  | 'hashPassword'
+  | 'validatePassword'
+  | 'full_name'
+>;

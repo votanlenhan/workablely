@@ -18,7 +18,10 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
    * @returns The validated user object (without password hash).
    * @throws UnauthorizedException if validation fails.
    */
-  async validate(email: string, password: string): Promise<Omit<User, 'password_hash'>> {
+  async validate(
+    email: string,
+    password: string,
+  ): Promise<Omit<User, 'password_hash'>> {
     const user = await this.authService.validateUser(email, password);
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');

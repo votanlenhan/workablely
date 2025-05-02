@@ -7,4 +7,4 @@ import { AuditLog } from './entities/audit-log.entity';
   // providers: [AuditLogService], // Service to create logs
   // exports: [AuditLogService],
 })
-export class AuditLogsModule {} 
+export class AuditLogsModule {}

@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  Index,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../core/database/base.entity';
 import { Equipment } from '../../equipment/entities/equipment.entity';
 import { Show } from '../../shows/entities/show.entity';
@@ -44,7 +38,11 @@ export class EquipmentAssignment extends BaseEntity {
   @Index()
   assigned_by?: User;
 
-  @Column({ type: 'timestamp with time zone', nullable: false, default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: false,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   assigned_at: Date;
 
   @Column({ type: 'timestamp with time zone', nullable: true })
@@ -59,4 +57,4 @@ export class EquipmentAssignment extends BaseEntity {
 
   @Column({ type: 'text', nullable: true })
   return_notes?: string;
-} 
+}

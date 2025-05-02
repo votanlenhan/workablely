@@ -1,4 +1,13 @@
-import { IsEmail, IsNotEmpty, IsString, MinLength, IsOptional } from 'class-validator';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsString,
+  MinLength,
+  IsOptional,
+  IsArray,
+  IsUUID,
+} from 'class-validator';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CreateUserDto {
   @IsEmail()
@@ -22,6 +31,19 @@ export class CreateUserDto {
   @IsOptional()
   readonly phone_number?: string;
 
+  @IsOptional()
+  readonly is_active?: boolean = true; // Usually true by default
+
+  @ApiPropertyOptional({
+    description: 'Array of role IDs to assign to the new user.',
+    type: [String],
+    format: 'uuid',
+    example: ['d290f1ee-6c54-4b01-90e6-d701748f0851'],
+  })
+  @IsArray()
+  @IsUUID('all', { each: true })
+  @IsOptional()
+  readonly roleIds?: string[];
+
   // avatar_url will likely be handled separately (e.g., after upload)
-  // is_active defaults to true in the entity
-} 
+}

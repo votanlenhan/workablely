@@ -5,4 +5,4 @@ import { ExternalIncome } from './entities/external-income.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([ExternalIncome])],
 })
-export class ExternalIncomesModule {} 
+export class ExternalIncomesModule {}

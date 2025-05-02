@@ -6,4 +6,4 @@ import { Configuration } from './entities/configuration.entity';
   imports: [TypeOrmModule.forFeature([Configuration])],
   // exports: [], // Export service if needed globally
 })
-export class ConfigurationsModule {} 
+export class ConfigurationsModule {}

@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  Index,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../core/database/base.entity';
 import { Show } from '../../shows/entities/show.entity';
 import { User } from '../../users/entities/user.entity';
@@ -27,7 +21,11 @@ export class Payment extends BaseEntity {
   })
   amount: number;
 
-  @Column({ type: 'timestamp with time zone', nullable: false, default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: false,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   @Index()
   payment_date: Date;
 
@@ -50,4 +48,4 @@ export class Payment extends BaseEntity {
   @JoinColumn({ name: 'recorded_by_user_id' })
   @Index()
   recorded_by?: User;
-} 
+}

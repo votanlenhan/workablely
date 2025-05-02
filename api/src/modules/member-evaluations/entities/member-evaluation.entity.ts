@@ -14,7 +14,8 @@ import { User } from '../../users/entities/user.entity';
 @Entity({ name: 'member_evaluations' })
 @Unique(['show_id', 'evaluated_user_id']) // Now refers to explicit columns
 @Check(`"rating" >= 1 AND "rating" <= 10`) // Check constraint for rating
-export class MemberEvaluation extends BaseEntity { // Added export
+export class MemberEvaluation extends BaseEntity {
+  // Added export
   @Column({ type: 'uuid', nullable: false })
   show_id: string; // Explicit column for FK and constraints
 
@@ -31,5 +32,5 @@ export class MemberEvaluation extends BaseEntity { // Added export
   @Index()
   evaluated_user: User;
 
-// ... rest of entity ...
-} 
+  // ... rest of entity ...
+}

@@ -5,4 +5,4 @@ import { Payment } from './entities/payment.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([Payment])],
 })
-export class PaymentsModule {} 
+export class PaymentsModule {}

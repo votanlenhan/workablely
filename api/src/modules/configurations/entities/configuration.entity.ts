@@ -1,4 +1,10 @@
-import { Entity, Column, PrimaryColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 // Note: No BaseEntity as PK is 'key' (string), not generated UUID
 
 @Entity({ name: 'configurations' })
@@ -33,4 +39,4 @@ export class Configuration {
     nullable: false,
   })
   updated_at: Date;
-} 
+}

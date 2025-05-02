@@ -115,8 +115,13 @@ describe('AuthService', () => {
 
       const result = await service.validateUser('test@example.com', 'password');
       expect(result).toEqual(mockUserWithoutPassword);
-      expect(usersService.findOneByEmail).toHaveBeenCalledWith('test@example.com');
-      expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashed_password');
+      expect(usersService.findOneByEmail).toHaveBeenCalledWith(
+        'test@example.com',
+      );
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'password',
+        'hashed_password',
+      );
     });
 
     it('should return null if user is not found', async () => {
@@ -124,7 +129,9 @@ describe('AuthService', () => {
 
       const result = await service.validateUser('test@example.com', 'password');
       expect(result).toBeNull();
-      expect(usersService.findOneByEmail).toHaveBeenCalledWith('test@example.com');
+      expect(usersService.findOneByEmail).toHaveBeenCalledWith(
+        'test@example.com',
+      );
       expect(bcrypt.compare).not.toHaveBeenCalled();
     });
 
@@ -132,10 +139,18 @@ describe('AuthService', () => {
       mockUsersService.findOneByEmail.mockResolvedValue(mockUser);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false); // Simulate wrong password
 
-      const result = await service.validateUser('test@example.com', 'wrong_password');
+      const result = await service.validateUser(
+        'test@example.com',
+        'wrong_password',
+      );
       expect(result).toBeNull();
-      expect(usersService.findOneByEmail).toHaveBeenCalledWith('test@example.com');
-      expect(bcrypt.compare).toHaveBeenCalledWith('wrong_password', 'hashed_password');
+      expect(usersService.findOneByEmail).toHaveBeenCalledWith(
+        'test@example.com',
+      );
+      expect(bcrypt.compare).toHaveBeenCalledWith(
+        'wrong_password',
+        'hashed_password',
+      );
     });
   });
 
@@ -143,7 +158,10 @@ describe('AuthService', () => {
   describe('login', () => {
     it('should return an access token', async () => {
       mockJwtService.sign.mockReturnValue(mockAccessToken);
-      const expectedPayload = { sub: mockUserWithoutPassword.id, email: mockUserWithoutPassword.email };
+      const expectedPayload = {
+        sub: mockUserWithoutPassword.id,
+        email: mockUserWithoutPassword.email,
+      };
 
       const result = await service.login(mockUserWithoutPassword);
 
@@ -160,13 +178,17 @@ describe('AuthService', () => {
       first_name: 'New',
       last_name: 'User',
     };
-    const createdUser = { ...mockUserWithoutPassword, id: 'new-uuid', email: 'new@example.com' };
+    const createdUser = {
+      ...mockUserWithoutPassword,
+      id: 'new-uuid',
+      email: 'new@example.com',
+    };
 
     it('should call usersService.createUser and return the new user (without password)', async () => {
-      const createdUserMock: any = { 
-        ...mockUserWithoutPassword, 
-        id: 'new-uuid', 
-        email: 'new@example.com' 
+      const createdUserMock: any = {
+        ...mockUserWithoutPassword,
+        id: 'new-uuid',
+        email: 'new@example.com',
       };
       mockUsersService.createUser.mockResolvedValue(createdUserMock);
 
@@ -177,17 +199,23 @@ describe('AuthService', () => {
     });
 
     it('should propagate ConflictException from usersService', async () => {
-       mockUsersService.createUser.mockRejectedValue(new ConflictException('Email already registered'));
+      mockUsersService.createUser.mockRejectedValue(
+        new ConflictException('Email already registered'),
+      );
 
-       await expect(service.signup(createUserDto)).rejects.toThrow(ConflictException);
-       expect(usersService.createUser).toHaveBeenCalledWith(createUserDto);
-     });
+      await expect(service.signup(createUserDto)).rejects.toThrow(
+        ConflictException,
+      );
+      expect(usersService.createUser).toHaveBeenCalledWith(createUserDto);
+    });
 
-     it('should propagate other errors from usersService', async () => {
-       mockUsersService.createUser.mockRejectedValue(new Error('Some other error'));
+    it('should propagate other errors from usersService', async () => {
+      mockUsersService.createUser.mockRejectedValue(
+        new Error('Some other error'),
+      );
 
-       await expect(service.signup(createUserDto)).rejects.toThrow(Error);
-       expect(usersService.createUser).toHaveBeenCalledWith(createUserDto);
-     });
+      await expect(service.signup(createUserDto)).rejects.toThrow(Error);
+      expect(usersService.createUser).toHaveBeenCalledWith(createUserDto);
+    });
   });
 });

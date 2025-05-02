@@ -5,4 +5,4 @@ import { ShowRole } from './entities/show-role.entity';
 @Module({
   imports: [TypeOrmModule.forFeature([ShowRole])],
 })
-export class ShowRolesModule {} 
+export class ShowRolesModule {}

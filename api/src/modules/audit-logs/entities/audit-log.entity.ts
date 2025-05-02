@@ -1,4 +1,12 @@
-import { Entity, Column, Index, ManyToOne, JoinColumn, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  Index,
+  ManyToOne,
+  JoinColumn,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity({ name: 'audit_logs' })
@@ -43,4 +51,4 @@ export class AuditLog {
   @JoinColumn({ name: 'changed_by_user_id' })
   @Index()
   changed_by?: User;
-} 
+}

@@ -1,8 +1,13 @@
-import { Injectable, UnauthorizedException, ConflictException, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { UsersService } from './modules/users/users.service'; // Correct path
-import { User } from './modules/users/entities/user.entity';
+import { User, PlainUser } from './modules/users/entities/user.entity'; // Import PlainUser
 import { CreateUserDto } from './modules/users/dto/create-user.dto'; // Correct path
 
 @Injectable()
@@ -18,33 +23,47 @@ export class AuthService {
    * @param pass The user's password.
    * @returns The validated user object without the password hash, or null if validation fails.
    */
-  async validateUser(email: string, pass: string): Promise<Omit<User, 'password_hash'> | null> {
+  async validateUser(
+    email: string,
+    pass: string,
+  ): Promise<Omit<User, 'password_hash'> | null> {
+    // Call the existing method that finds user by email
     const user = await this.usersService.findOneByEmail(email);
 
-    // --- DEBUG LOG --- 
-    console.log('Validating user:', email);
-    console.log('User found in DB (AuthService):', user); // Log the whole user object
+    // --- DEBUG LOG ---
+    console.log('[AuthService] Validating user:', email);
+    console.log('[AuthService] User found in DB:', user); // Log the whole user object
     if (user) {
-        console.log('Password hash from user object:', user.password_hash); // Log the specific hash
+      console.log(
+        '[AuthService] Password hash from user object:',
+        user.password_hash,
+      );
     }
     // --- END DEBUG LOG ---
 
-    if (user && user.password_hash && await bcrypt.compare(pass, user.password_hash)) { // Added check for user.password_hash existence
+    if (
+      user &&
+      user.password_hash &&
+      (await bcrypt.compare(pass, user.password_hash))
+    ) {
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password_hash, ...userData } = user;
       const result = userData as Omit<User, 'password_hash'>;
       return result;
     }
-    console.error('Validation failed: User not found or password mismatch.', { email, userExists: !!user });
+    console.error(
+      '[AuthService] Validation failed: User not found or password mismatch.',
+      { email, userExists: !!user },
+    );
     return null;
   }
 
   /**
    * Handles user registration.
    * @param createUserDto Data for the new user.
-   * @returns The newly created user object (without password hash).
+   * @returns The newly created plain user object (without password hash and methods).
    */
-  async signup(createUserDto: CreateUserDto): Promise<Omit<User, 'password_hash'>> {
+  async signup(createUserDto: CreateUserDto): Promise<PlainUser> {
     // The actual creation and error handling (e.g., email conflict)
     // is handled within the UsersService.createUser method.
     return this.usersService.createUser(createUserDto);
@@ -55,7 +74,9 @@ export class AuthService {
    * @param user The user object (typically after validation).
    * @returns An object containing the access token.
    */
-  async login(user: Omit<User, 'password_hash'>): Promise<{ access_token: string }> {
+  async login(
+    user: Omit<User, 'password_hash'>,
+  ): Promise<{ access_token: string }> {
     const payload = { sub: user.id, email: user.email }; // Use 'sub' for user ID as standard practice
     // We can add more claims to the payload if needed, e.g., roles
     return {

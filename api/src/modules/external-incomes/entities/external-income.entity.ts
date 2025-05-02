@@ -33,4 +33,4 @@ export class ExternalIncome extends BaseEntity {
   @JoinColumn({ name: 'recorded_by_user_id' })
   @Index()
   recorded_by?: User;
-} 
+}

@@ -9,4 +9,4 @@ export class LoginDto {
   @IsNotEmpty()
   @MinLength(6) // Add minimum password length constraint if desired
   readonly password: string;
-} 
+}

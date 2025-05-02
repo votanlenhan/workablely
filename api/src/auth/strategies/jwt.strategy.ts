@@ -43,4 +43,4 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     return payload; // Return the validated payload
   }
-} 
+}

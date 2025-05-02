@@ -35,19 +35,19 @@ describe('AuthController', () => {
 
   // Mock Guards - Allow requests to pass through for controller logic testing
   // More complex Guard testing might involve mocking the execution context
-  const mockGuard = { canActivate: jest.fn(() => true) }; 
+  const mockGuard = { canActivate: jest.fn(() => true) };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [AuthController],
-      providers: [
-        { provide: AuthService, useValue: mockAuthService },
-      ],
+      providers: [{ provide: AuthService, useValue: mockAuthService }],
     })
-    // Override guards for unit testing controller logic
-    .overrideGuard(LocalAuthGuard).useValue(mockGuard)
-    .overrideGuard(JwtAuthGuard).useValue(mockGuard)
-    .compile();
+      // Override guards for unit testing controller logic
+      .overrideGuard(LocalAuthGuard)
+      .useValue(mockGuard)
+      .overrideGuard(JwtAuthGuard)
+      .useValue(mockGuard)
+      .compile();
 
     controller = module.get<AuthController>(AuthController);
     authService = module.get<AuthService>(AuthService);
@@ -61,9 +61,12 @@ describe('AuthController', () => {
 
   // --- Test login endpoint ---
   describe('login', () => {
-    const loginDto: LoginDto = { email: 'test@example.com', password: 'password' };
+    const loginDto: LoginDto = {
+      email: 'test@example.com',
+      password: 'password',
+    };
     // Mock request object populated by LocalAuthGuard
-    const mockRequest = { user: mockUser }; 
+    const mockRequest = { user: mockUser };
 
     it('should call authService.login and return an access token', async () => {
       mockAuthService.login.mockResolvedValue(mockAccessToken);
@@ -83,10 +86,10 @@ describe('AuthController', () => {
       first_name: 'New',
       last_name: 'User',
     };
-    const createdUserMock: any = { 
-      ...mockUser, 
-      id: 'new-uuid', 
-      email: 'new@example.com' 
+    const createdUserMock: any = {
+      ...mockUser,
+      id: 'new-uuid',
+      email: 'new@example.com',
     } as Omit<User, 'password_hash'>;
 
     it('should call authService.signup and return the created user', async () => {
@@ -103,7 +106,7 @@ describe('AuthController', () => {
   describe('getProfile', () => {
     // Mock request object populated by JwtAuthGuard (contains JWT payload)
     const mockJwtPayload = { sub: 'mock-uuid', email: 'test@example.com' };
-    const mockRequest = { user: mockJwtPayload }; 
+    const mockRequest = { user: mockJwtPayload };
 
     it('should return the user payload from the request', () => {
       const result = controller.getProfile(mockRequest);

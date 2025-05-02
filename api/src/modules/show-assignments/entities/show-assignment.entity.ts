@@ -1,11 +1,4 @@
-import {
-  Entity,
-  Column,
-  Index,
-  ManyToOne,
-  JoinColumn,
-  Unique,
-} from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
 import { BaseEntity } from '../../../core/database/base.entity';
 import { Show } from '../../shows/entities/show.entity';
 import { User } from '../../users/entities/user.entity';
@@ -44,7 +37,11 @@ export class ShowAssignment extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   decline_reason?: string;
 
-  @Column({ type: 'timestamp with time zone', nullable: false, default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: false,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   assigned_at: Date;
 
   @Column({ type: 'timestamp with time zone', nullable: true })
@@ -57,4 +54,4 @@ export class ShowAssignment extends BaseEntity {
   @JoinColumn({ name: 'assigned_by_user_id' })
   @Index()
   assigned_by?: User;
-} 
+}

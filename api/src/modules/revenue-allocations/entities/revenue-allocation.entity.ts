@@ -1,10 +1,4 @@
-import {
-  Entity,
-  Column,
-  Index,
-  ManyToOne,
-  JoinColumn,
-} from 'typeorm';
+import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../core/database/base.entity';
 import { Show } from '../../shows/entities/show.entity';
 import { User } from '../../users/entities/user.entity';
@@ -50,7 +44,11 @@ export class RevenueAllocation extends BaseEntity {
   @Column({ type: 'text', nullable: true })
   calculation_notes?: string;
 
-  @Column({ type: 'timestamp with time zone', nullable: false, default: () => 'CURRENT_TIMESTAMP' })
+  @Column({
+    type: 'timestamp with time zone',
+    nullable: false,
+    default: () => 'CURRENT_TIMESTAMP',
+  })
   @Index()
   allocation_datetime: Date;
 
@@ -59,4 +57,4 @@ export class RevenueAllocation extends BaseEntity {
 
   @Column({ type: 'timestamp with time zone', nullable: true })
   paid_out_date?: Date; // Consider for Phase 2
-} 
+}

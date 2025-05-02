@@ -39,7 +39,10 @@ describe('JwtStrategy', () => {
   });
 
   describe('validate', () => {
-    const mockPayload: JwtPayload = { sub: 'user-id', email: 'test@example.com' };
+    const mockPayload: JwtPayload = {
+      sub: 'user-id',
+      email: 'test@example.com',
+    };
 
     it('should return the payload if it is valid', async () => {
       const result = await strategy.validate(mockPayload);
@@ -47,20 +50,26 @@ describe('JwtStrategy', () => {
     });
 
     it('should throw UnauthorizedException if payload is null', async () => {
-      await expect(strategy.validate(null as any)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(null as any)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException if payload is missing sub', async () => {
       const invalidPayload = { email: 'test@example.com' } as JwtPayload;
-      await expect(strategy.validate(invalidPayload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(invalidPayload)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     it('should throw UnauthorizedException if payload is missing email', async () => {
       const invalidPayload = { sub: 'user-id' } as JwtPayload;
-      await expect(strategy.validate(invalidPayload)).rejects.toThrow(UnauthorizedException);
+      await expect(strategy.validate(invalidPayload)).rejects.toThrow(
+        UnauthorizedException,
+      );
     });
 
     // Note: Token signature and expiration validation are handled by Passport itself
     // before the validate method is called, so we don't test those here.
   });
-}); 
+});

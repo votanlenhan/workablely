@@ -1,10 +1,19 @@
-import { Controller, Request, Post, UseGuards, Get, Body, HttpCode, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Request,
+  Post,
+  UseGuards,
+  Get,
+  Body,
+  HttpCode,
+  HttpStatus,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './auth/guards/local-auth.guard';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { LoginDto } from './auth/dto/login.dto'; // Correct path from src/
 import { CreateUserDto } from './modules/users/dto/create-user.dto'; // Import CreateUserDto
-import { User } from './modules/users/entities/user.entity'; // Import User entity if needed for return type
+import { User, PlainUser } from './modules/users/entities/user.entity'; // Import User and PlainUser
 
 @Controller('auth')
 export class AuthController {
@@ -20,7 +29,10 @@ export class AuthController {
    */
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Request() req, @Body() loginDto: LoginDto): Promise<{ access_token: string }> {
+  async login(
+    @Request() req,
+    @Body() loginDto: LoginDto,
+  ): Promise<{ access_token: string }> {
     // req.user is populated by the LocalStrategy after successful validation
     // We pass the validated user (without password) to the login service method
     return this.authService.login(req.user);
@@ -44,11 +56,11 @@ export class AuthController {
    * Validates input using CreateUserDto and the global ValidationPipe.
    * Calls AuthService to create the new user.
    * @param createUserDto User registration data.
-   * @returns The newly created user object (without password hash).
+   * @returns The newly created plain user object (without password hash and methods).
    */
   @Post('signup')
   @HttpCode(HttpStatus.CREATED) // Set response code to 201 Created
-  async signup(@Body() createUserDto: CreateUserDto): Promise<Omit<User, 'password_hash'>> {
+  async signup(@Body() createUserDto: CreateUserDto): Promise<PlainUser> {
     return this.authService.signup(createUserDto);
   }
 
