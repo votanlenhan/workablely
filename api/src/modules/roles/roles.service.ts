@@ -10,6 +10,11 @@ import { Role } from './entities/role.entity';
 import { Permission } from '../permissions/entities/permission.entity'; // Corrected path
 import { CreateRoleDto } from './dto/create-role.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import {
+  IPaginationOptions,
+  Pagination,
+  paginate,
+} from 'nestjs-typeorm-paginate'; // Import pagination
 
 @Injectable()
 export class RolesService {
@@ -29,7 +34,7 @@ export class RolesService {
    * @throws InternalServerErrorException on database error.
    */
   async create(createRoleDto: CreateRoleDto): Promise<Role> {
-    const { name, description, is_system_role, permissionIds } = createRoleDto;
+    const { name, description, permissionIds } = createRoleDto;
 
     // Check if role name already exists
     const existingRole = await this.roleRepository.findOne({ where: { name } });
@@ -39,16 +44,10 @@ export class RolesService {
 
     let permissions: Permission[] = [];
     if (permissionIds && permissionIds.length > 0) {
-      // Find permissions by IDs
-      permissions = await this.permissionRepository.findBy({
-        id: In(permissionIds),
-      });
-      // Validate if all requested permissions were found
+      permissions = await this.permissionRepository.findBy({ id: In(permissionIds) });
       if (permissions.length !== permissionIds.length) {
         const foundIds = permissions.map((p) => p.id);
-        const notFoundIds = permissionIds.filter(
-          (id) => !foundIds.includes(id),
-        );
+        const notFoundIds = permissionIds.filter((pid) => !foundIds.includes(pid));
         throw new NotFoundException(
           `Permissions with IDs not found: ${notFoundIds.join(', ')}`,
         );
@@ -58,8 +57,7 @@ export class RolesService {
     const newRole = this.roleRepository.create({
       name,
       description,
-      is_system_role,
-      permissions, // Assign found permissions
+      permissions,
     });
 
     try {
@@ -72,12 +70,18 @@ export class RolesService {
   }
 
   /**
-   * Finds all roles.
-   * @returns A list of all roles.
+   * Finds all roles with pagination and optionally loads permissions.
+   * @param options - Pagination options (page, limit).
+   * @returns A paginated list of roles.
    */
-  async findAll(): Promise<Role[]> {
-    // Consider adding relations: ['permissions'] if needed often
-    return this.roleRepository.find();
+  async findAll(
+    options: IPaginationOptions,
+  ): Promise<Pagination<Role>> {
+    const queryBuilder = this.roleRepository.createQueryBuilder('role');
+    queryBuilder.leftJoinAndSelect('role.permissions', 'permission') // Join and select permissions
+                .orderBy('role.name', 'ASC'); // Default order by name
+
+    return paginate<Role>(queryBuilder, options);
   }
 
   /**
@@ -119,38 +123,35 @@ export class RolesService {
    * @throws InternalServerErrorException on database error.
    */
   async update(id: string, updateRoleDto: UpdateRoleDto): Promise<Role> {
-    const { name, permissionIds, ...otherData } = updateRoleDto;
+    const { name, description, permissionIds } = updateRoleDto;
 
-    // Use preload to get the existing entity and merge changes
-    const role = await this.roleRepository.preload({
-      id: id,
-      ...otherData, // Apply other changes like description, is_system_role
-    });
+    // Fetch the role to be updated first, including current permissions
+    // This ensures we operate on the actual current state
+    const role = await this.findOne(id);
+    // findOne already throws NotFoundException if role doesn't exist
 
-    if (!role) {
-      throw new NotFoundException(`Role with ID "${id}" not found.`);
+    // Apply basic field updates (description)
+    if (description !== undefined) {
+        role.description = description;
     }
 
-    // Handle name change separately to check for conflicts
+    // Check for name conflict only if name is provided and different
     if (name && name !== role.name) {
-      const existingRoleWithName = await this.roleRepository.findOne({
-        where: { name },
-      });
-      if (existingRoleWithName && existingRoleWithName.id !== id) {
-        throw new ConflictException(`Role with name "${name}" already exists.`);
+      const existingRole = await this.findOneByName(name);
+      if (existingRole && existingRole.id !== id) {
+        throw new ConflictException(`Role name '${name}' already exists.`);
       }
-      role.name = name;
+      role.name = name; // Update name on the fetched entity
     }
 
-    // Handle permission updates if permissionIds is provided
+    // Handle permission updates only if permissionIds is explicitly provided
     if (permissionIds !== undefined) {
-      if (permissionIds.length === 0) {
-        role.permissions = []; // Remove all permissions
-      } else {
+      if (permissionIds.length > 0) {
         const permissions = await this.permissionRepository.findBy({
           id: In(permissionIds),
         });
-        if (permissions.length !== permissionIds.length) {
+        // Check if all requested permissions were found
+        if (permissions.length !== permissionIds.length) { 
           const foundIds = permissions.map((p) => p.id);
           const notFoundIds = permissionIds.filter(
             (pid) => !foundIds.includes(pid),
@@ -159,15 +160,20 @@ export class RolesService {
             `Permissions with IDs not found: ${notFoundIds.join(', ')}`,
           );
         }
-        role.permissions = permissions;
+        role.permissions = permissions; // Assign the newly found permissions
+      } else {
+        // permissionIds is an empty array, so remove all permissions
+        role.permissions = [];
       }
-    }
-    // If permissionIds is NOT in the DTO, the permissions relationship is NOT modified.
+    } 
+    // If permissionIds is undefined, role.permissions remains untouched
 
     try {
-      return await this.roleRepository.save(role);
+      // Save the updated role entity (which now has name, desc, permissions updated)
+      const updatedRole = await this.roleRepository.save(role);
+      return updatedRole;
     } catch (error) {
-      console.error('Error updating role:', error);
+      // Log error if needed
       throw new InternalServerErrorException('Could not update role.');
     }
   }

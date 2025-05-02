@@ -9,6 +9,11 @@ import { Repository } from 'typeorm';
 import { Permission } from './entities/permission.entity';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
+import {
+  IPaginationOptions,
+  Pagination,
+  paginate,
+} from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class PermissionsService {
@@ -56,12 +61,18 @@ export class PermissionsService {
   }
 
   /**
-   * Finds all permissions.
-   * @returns A list of all permissions.
+   * Finds all permissions with pagination.
+   * @param options - Pagination options (page, limit).
+   * @returns A paginated list of permissions.
    */
-  async findAll(): Promise<Permission[]> {
-    // Consider adding relations: ['roles'] if needed often
-    return this.permissionRepository.find();
+  async findAll(
+    options: IPaginationOptions,
+  ): Promise<Pagination<Permission>> {
+    const queryBuilder = this.permissionRepository.createQueryBuilder('permission');
+    queryBuilder.orderBy('permission.subject', 'ASC') // Default order
+                .addOrderBy('permission.action', 'ASC');
+
+    return paginate<Permission>(queryBuilder, options);
   }
 
   /**

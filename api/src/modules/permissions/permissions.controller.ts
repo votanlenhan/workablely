@@ -9,17 +9,22 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
 import { UpdatePermissionDto } from './dto/update-permission.dto';
 import { Permission } from './entities/permission.entity';
+import { Pagination } from 'nestjs-typeorm-paginate';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiParam,
   ApiBody,
+  ApiQuery,
 } from '@nestjs/swagger';
 
 @ApiTags('Roles & Permissions') // Group endpoints in Swagger UI with Roles
@@ -53,16 +58,21 @@ export class PermissionsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all permissions' })
+  @ApiOperation({ summary: 'Get all permissions with pagination' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number, example: 10 })
   @ApiResponse({
     status: 200,
-    description: 'List of all permissions.',
-    type: [Permission],
+    description: 'Paginated list of permissions.',
+    // TODO: Define a paginated response DTO for Swagger if needed
   })
   // TODO: Add Permissions decorator later: @RequiredPermissions({ action: 'read', subject: 'Permission' })
-  findAll(): Promise<Permission[]> {
-    return this.permissionsService.findAll();
-    // TODO: Consider adding pagination later
+  findAll(
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+  ): Promise<Pagination<Permission>> {
+    limit = limit > 100 ? 100 : limit; // Cap limit at 100
+    return this.permissionsService.findAll({ page, limit });
   }
 
   @Get(':id')
