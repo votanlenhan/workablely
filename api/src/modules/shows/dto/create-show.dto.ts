@@ -15,7 +15,7 @@ import { ShowStatus } from '../entities/show.entity';
 export class CreateShowDto {
   @IsNotEmpty()
   @IsUUID()
-  client_id: string;
+  clientId: string;
 
   @IsOptional()
   @IsString()

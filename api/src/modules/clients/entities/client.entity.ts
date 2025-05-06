@@ -40,6 +40,6 @@ export class Client {
 
   // --- Relations --- //
 
-  @OneToMany(() => Show, (show: Show) => show.client) // Uncommented
+  @OneToMany(() => Show, (show) => show.client)
   shows: Show[];
 }

@@ -43,4 +43,9 @@ export class UpdateShowDto extends PartialType(CreateShowDto) {
   // payment_status?: ShowPaymentStatus;
 
   // created_by_user_id should not be updatable directly here
+
+  // Allow updating client ID, but it must be a valid UUID if provided
+  @IsOptional()
+  @IsUUID()
+  clientId?: string;
 } 

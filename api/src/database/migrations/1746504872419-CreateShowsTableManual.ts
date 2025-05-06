@@ -155,19 +155,21 @@ export class CreateShowsTableManual1746504872419 implements MigrationInterface {
         );
 
         // Add foreign keys separately
-        await queryRunner.createForeignKey("shows", new TableForeignKey({
-            columnNames: ["client_id"],
-            referencedColumnNames: ["id"],
-            referencedTableName: "clients",
-            onDelete: "RESTRICT",
-        }));
+        // Commented out because it already exists in the database
+        // await queryRunner.createForeignKey("shows", new TableForeignKey({
+        //     columnNames: ["client_id"],
+        //     referencedColumnNames: ["id"],
+        //     referencedTableName: "clients",
+        //     onDelete: "RESTRICT",
+        // }));
 
-        await queryRunner.createForeignKey("shows", new TableForeignKey({
-            columnNames: ["created_by_user_id"],
-            referencedColumnNames: ["id"],
-            referencedTableName: "users",
-            onDelete: "SET NULL",
-        }));
+        // Commented out because it also already exists
+        // await queryRunner.createForeignKey("shows", new TableForeignKey({
+        //     columnNames: ["created_by_user_id"],
+        //     referencedColumnNames: ["id"],
+        //     referencedTableName: "users",
+        //     onDelete: "SET NULL",
+        // }));
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {

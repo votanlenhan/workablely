@@ -12,14 +12,18 @@ const options: DataSourceOptions = {
   username: process.env.DB_USERNAME,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  // Explicitly list entities. Add ALL entities referenced by migrations here.
+  // Ensure ALL entities are listed here for the CLI to work correctly
   entities: [
     'src/modules/users/entities/user.entity.ts',
     'src/modules/roles/entities/role.entity.ts',
     'src/modules/permissions/entities/permission.entity.ts',
+    'src/modules/clients/entities/client.entity.ts',
+    'src/modules/show-roles/entities/show-role.entity.ts',
+    'src/modules/shows/entities/show.entity.ts',
+    'src/modules/show-assignments/entities/show-assignment.entity.ts',
     // TODO: Add ALL other entities used by migrations below
-    // Example: 'src/modules/clients/entities/client.entity.ts',
-    // Example: 'src/modules/shows/entities/show.entity.ts',
+    // Example: 'src/modules/equipment/entities/equipment.entity.ts',
+    // Example: 'src/modules/payments/entities/payment.entity.ts',
     // ... etc
   ],
   // Keep migrations path relative to api directory root

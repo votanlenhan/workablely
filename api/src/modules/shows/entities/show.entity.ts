@@ -10,8 +10,8 @@ import {
 } from 'typeorm';
 import { Client } from '../../clients/entities/client.entity';
 import { User } from '../../users/entities/user.entity';
+import { ShowAssignment } from '../../show-assignments/entities/show-assignment.entity';
 // Import related entities later
-// import { ShowAssignment } from '../../show-assignments/entities/show-assignment.entity';
 // import { EquipmentAssignment } from '../../equipment-assignments/entities/equipment-assignment.entity';
 // import { Payment } from '../../payments/entities/payment.entity';
 // import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
@@ -42,8 +42,12 @@ export class Show {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'uuid', nullable: false })
-  client_id: string;
+  @ManyToOne(() => Client, (client) => client.shows, { nullable: false })
+  @JoinColumn({ name: 'client_id' })
+  client: Client;
+
+  @Column('uuid', { name: 'client_id' })
+  clientId: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
   title: string | null;
@@ -142,27 +146,23 @@ export class Show {
   @Column({ type: 'text', nullable: true })
   cancellation_reason: string | null;
 
-  @Column({ type: 'uuid', nullable: true })
-  created_by_user_id: string | null;
+  @ManyToOne(() => User, { nullable: true })
+  @JoinColumn({ name: 'created_by_user_id' })
+  createdBy: User | null;
+
+  @Column('uuid', { name: 'created_by_user_id', nullable: true })
+  createdByUserId: string | null;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
-  updated_at: Date;
+  updatedAt: Date;
 
   // --- Relations --- //
 
-  @ManyToOne(() => Client, (client: Client) => client.shows, { nullable: false, onDelete: 'RESTRICT' })
-  @JoinColumn({ name: 'client_id' })
-  client: Client;
-
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'created_by_user_id' })
-  created_by_user: User | null;
-
-  // @OneToMany(() => ShowAssignment, (assignment) => assignment.show) // Uncomment later
-  // showAssignments: ShowAssignment[];
+  @OneToMany(() => ShowAssignment, (assignment) => assignment.show)
+  assignments: ShowAssignment[];
 
   // @OneToMany(() => EquipmentAssignment, (assignment) => assignment.show) // Uncomment later
   // equipmentAssignments: EquipmentAssignment[];

@@ -3,6 +3,16 @@ import { BaseEntity } from '../../../core/database/base.entity';
 import { User } from '../../users/entities/user.entity';
 import { Permission } from '../../permissions/entities/permission.entity';
 
+// Define standard role names as an enum
+export enum RoleName {
+    ADMIN = 'Admin',
+    MANAGER = 'Manager',
+    ART_LEAD = 'Art Lead',
+    // Add other predefined system/management roles here
+    PHOTOGRAPHER = 'Photographer', // Example standard user role
+    DESIGNER = 'Designer', // Example standard user role
+}
+
 /**
  * Represents a user role within the system, defining a set of permissions.
  */

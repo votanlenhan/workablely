@@ -1,4 +1,3 @@
-// import { ShowAssignment } from '@/modules/show-assignments/entities/show-assignment.entity'; // Temporarily commented out
 import {
   Entity,
   PrimaryGeneratedColumn,
@@ -7,6 +6,7 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
+import { ShowAssignment } from 'src/modules/show-assignments/entities/show-assignment.entity';
 
 @Entity('show_roles')
 export class ShowRole {
@@ -38,6 +38,6 @@ export class ShowRole {
   updated_at: Date;
 
   // --- Relations --- //
-  // @OneToMany(() => ShowAssignment, (assignment) => assignment.showRole) // Uncomment when ShowAssignment exists
-  // showAssignments: ShowAssignment[];
+  @OneToMany(() => ShowAssignment, (assignment: ShowAssignment) => assignment.showRole)
+  showAssignments: ShowAssignment[];
 }

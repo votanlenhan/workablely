@@ -8,56 +8,60 @@ import { UpdateShowRoleDto } from './dto/update-show-role.dto';
 import { NotFoundException } from '@nestjs/common';
 import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
 
-// Mock the entire module - simplified
+// Mock the paginate function
 jest.mock('nestjs-typeorm-paginate', () => ({
-    paginate: jest.fn(), // Return a simple mock function initially
+    paginate: jest.fn(),
 }));
-
-// Get the mocked function instance
 const { paginate: mockPaginate } = require('nestjs-typeorm-paginate');
 
-// --- Mock Repository Type ---
-// Copied from roles.service.spec.ts
-type MockRepository<T = any> = {
+// Mock Repository Type Helper (Explicit definition)
+type MockRepository = {
   findOne: jest.Mock;
   create: jest.Mock;
   save: jest.Mock;
-  find: jest.Mock; // Added find for potential future use
   preload: jest.Mock;
   delete: jest.Mock;
-  findBy: jest.Mock; // Added findBy for potential future use
   createQueryBuilder: jest.Mock;
+  // Add find, findBy if needed by tests
 };
 
-// Mock Repository (instance, keep simple)
-const mockShowRoleRepository = { // Renamed variable for clarity
+// Mock Query Builder
+const mockQueryBuilder = {
+    orderBy: jest.fn().mockReturnThis(),
+    // Add other methods if needed
+};
+
+// Function to create the mock repository instance (now returns explicit type)
+const createMockRepository = (): MockRepository => ({
     findOne: jest.fn(),
     create: jest.fn(),
     save: jest.fn(),
     preload: jest.fn(),
     delete: jest.fn(),
-    findBy: jest.fn(), // Added findBy
-    find: jest.fn(), // Added find
-    createQueryBuilder: jest.fn().mockReturnValue({
-        orderBy: jest.fn().mockReturnThis(),
-    }),
-};
+    createQueryBuilder: jest.fn(() => mockQueryBuilder),
+});
 
-const mockQueryBuilder = mockShowRoleRepository.createQueryBuilder();
+const mockShowRole: ShowRole = {
+  id: 'test-uuid',
+  name: 'Key Photographer',
+  description: 'Primary shooter',
+  default_allocation_percentage: 25.00,
+  is_active: true,
+  created_at: new Date(),
+  updated_at: new Date(),
+  showAssignments: [],
+};
 
 describe('ShowRolesService', () => {
   let service: ShowRolesService;
-  let repository: MockRepository<ShowRole>; // Keep using the type
+  let repository: MockRepository; // Use the new explicit type
 
   beforeEach(async () => {
-    // Reset mocks before each test
-    Object.values(mockShowRoleRepository).forEach(mockFn => mockFn.mockClear());
-    // Add type assertion for mockFn
-    Object.values(mockQueryBuilder).forEach((mockFn: jest.Mock) => mockFn.mockClear()); 
-    // No need to reset mockQueryBuilder return value if it's constant
-
-    // Reset and setup default mock for paginate here
+    // Reset mocks
     mockPaginate.mockClear();
+    Object.values(mockQueryBuilder).forEach((mockFn: jest.Mock) => mockFn.mockClear());
+
+    // Default mock for paginate
     mockPaginate.mockResolvedValue({
         items: [],
         meta: { itemCount: 0, totalItems: 0, itemsPerPage: 10, totalPages: 0, currentPage: 1 },
@@ -67,15 +71,12 @@ describe('ShowRolesService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ShowRolesService,
-        {
-          provide: getRepositoryToken(ShowRole),
-          useValue: mockShowRoleRepository, // Use the renamed mock object
-        },
+        { provide: getRepositoryToken(ShowRole), useFactory: createMockRepository },
       ],
     }).compile();
 
     service = module.get<ShowRolesService>(ShowRolesService);
-    repository = module.get<MockRepository<ShowRole>>(getRepositoryToken(ShowRole)); // Keep using the type
+    repository = module.get<MockRepository>(getRepositoryToken(ShowRole));
   });
 
   it('should be defined', () => {
@@ -84,27 +85,32 @@ describe('ShowRolesService', () => {
 
   // --- CREATE Tests --- //
   describe('create', () => {
-    it('should create and return a show role', async () => {
-      const createDto: CreateShowRoleDto = { name: 'Key Photographer', default_allocation_percentage: 30 };
-      const expectedRole: ShowRole = {
-        id: 'uuid-1', name: 'Key Photographer', description: null, default_allocation_percentage: 30,
-        is_active: true, created_at: new Date(), updated_at: new Date()
-      };
+    const createDto: CreateShowRoleDto = { name: 'Key Photographer', description: 'Main photographer' };
+    const expectedRole: ShowRole = {
+      id: 'uuid-1',
+      name: 'Key Photographer',
+      description: 'Main photographer',
+      default_allocation_percentage: 0,
+      is_active: true,
+      created_at: expect.any(Date),
+      updated_at: expect.any(Date),
+      showAssignments: [],
+    };
 
-      mockShowRoleRepository.create.mockReturnValue(expectedRole);
-      mockShowRoleRepository.save.mockResolvedValue(expectedRole);
+    it('should create and return a show role', async () => {
+      repository.create.mockReturnValue(expectedRole);
+      repository.save.mockResolvedValue(expectedRole);
 
       const result = await service.create(createDto);
-      expect(mockShowRoleRepository.create).toHaveBeenCalledWith(createDto);
-      expect(mockShowRoleRepository.save).toHaveBeenCalledWith(expectedRole);
+      expect(repository.create).toHaveBeenCalledWith(createDto);
+      expect(repository.save).toHaveBeenCalledWith(expectedRole);
       expect(result).toEqual(expectedRole);
     });
 
     it('should throw an error if name already exists', async () => {
-        const createDto: CreateShowRoleDto = { name: 'Duplicate Role' };
         const error = { code: '23505' }; // Simulate unique constraint violation
-        mockShowRoleRepository.create.mockReturnValue({ name: 'Duplicate Role' }); // Need name for error message
-        mockShowRoleRepository.save.mockRejectedValue(error);
+        repository.create.mockReturnValue({ name: 'Duplicate Role' }); // Need name for error message
+        repository.save.mockRejectedValue(error);
 
         await expect(service.create(createDto)).rejects.toThrow(
             'ShowRole with name "Duplicate Role" already exists.'
@@ -112,10 +118,9 @@ describe('ShowRolesService', () => {
     });
 
      it('should re-throw non-unique constraint errors', async () => {
-        const createDto: CreateShowRoleDto = { name: 'Other Error Role' };
         const error = new Error('Some other DB error');
-        mockShowRoleRepository.create.mockReturnValue({ name: 'Other Error Role' });
-        mockShowRoleRepository.save.mockRejectedValue(error);
+        repository.create.mockReturnValue({ name: 'Other Error Role' });
+        repository.save.mockRejectedValue(error);
 
         await expect(service.create(createDto)).rejects.toThrow('Some other DB error');
     });
@@ -125,17 +130,20 @@ describe('ShowRolesService', () => {
   describe('findAll', () => {
     it('should return a paginated list of show roles', async () => {
       const options: IPaginationOptions = { page: 1, limit: 10, route: '/show-roles' };
-      const role1: Partial<ShowRole> = { id: 'uuid-1', name: 'Role 1' };
-      const paginatedResult = {
-          items: [role1],
+      const role1: Partial<ShowRole> = { id: 'uuid-r1', name: 'Role 1' }; // Corrected example ID
+      const paginatedResult: Pagination<ShowRole> = {
+          items: [role1 as ShowRole],
           meta: { itemCount: 1, totalItems: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
           links: { first: '/show-roles?limit=10', previous: '', next: '', last: '/show-roles?page=1&limit=10' }
       };
 
-      mockPaginate.mockResolvedValue(paginatedResult as any);
+      // Setup mocks before calling the service method
+      mockPaginate.mockResolvedValue(paginatedResult);
+      repository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any); // Return the mock builder
 
       const result = await service.findAll(options);
 
+      // Verify calls
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('show_role');
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('show_role.name', 'ASC');
       expect(mockPaginate).toHaveBeenCalledWith(mockQueryBuilder, options);
@@ -148,16 +156,16 @@ describe('ShowRolesService', () => {
     it('should return a show role if found', async () => {
       const roleId = 'uuid-r-find';
       const expectedRole: Partial<ShowRole> = { id: roleId, name: 'Retouch' };
-      mockShowRoleRepository.findOne.mockResolvedValue(expectedRole as ShowRole);
+      repository.findOne.mockResolvedValue(expectedRole as ShowRole);
 
       const result = await service.findOne(roleId);
-      expect(mockShowRoleRepository.findOne).toHaveBeenCalledWith({ where: { id: roleId } });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: roleId } });
       expect(result).toEqual(expectedRole);
     });
 
     it('should throw NotFoundException if show role not found', async () => {
       const roleId = 'not-found-role';
-      mockShowRoleRepository.findOne.mockResolvedValue(null);
+      repository.findOne.mockResolvedValue(null);
 
       await expect(service.findOne(roleId)).rejects.toThrow(NotFoundException);
       await expect(service.findOne(roleId)).rejects.toThrow(`ShowRole with ID "${roleId}" not found`);
@@ -166,40 +174,36 @@ describe('ShowRolesService', () => {
 
   // --- UPDATE Tests --- //
   describe('update', () => {
-    it('should update and return the show role', async () => {
-      const roleId = 'uuid-r-update';
-      const updateDto: UpdateShowRoleDto = { description: 'Updated Description' };
-      const existingRole: ShowRole = { id: roleId, name: 'Support', description: 'Original', default_allocation_percentage: 10, is_active: true, created_at: new Date(), updated_at: new Date() };
-      const preloadedRole: ShowRole = { ...existingRole, ...updateDto, updated_at: new Date() };
+    const roleId = 'role-uuid-update';
+    const updateDto: UpdateShowRoleDto = { name: 'Lead Photographer', default_allocation_percentage: 60 };
+    const existingRole: ShowRole = { id: roleId, name: 'Support', description: 'Original', default_allocation_percentage: 10, is_active: true, created_at: new Date(), updated_at: new Date(), showAssignments: [] };
+    const preloadedData = { ...existingRole, ...updateDto };
+    const updatedRole = { ...preloadedData, updated_at: new Date() };
 
-      mockShowRoleRepository.preload.mockResolvedValue(preloadedRole);
-      mockShowRoleRepository.save.mockResolvedValue(preloadedRole);
+    it('should update a show role successfully', async () => {
+      repository.preload.mockResolvedValue(preloadedData);
+      repository.save.mockResolvedValue(updatedRole);
 
       const result = await service.update(roleId, updateDto);
-      expect(mockShowRoleRepository.preload).toHaveBeenCalledWith({ id: roleId, ...updateDto });
-      expect(mockShowRoleRepository.save).toHaveBeenCalledWith(preloadedRole);
-      expect(result).toEqual(preloadedRole);
+      expect(repository.preload).toHaveBeenCalledWith({ id: roleId, ...updateDto });
+      expect(repository.save).toHaveBeenCalledWith(updatedRole);
+      expect(result).toEqual(updatedRole);
     });
 
      it('should throw an error if updated name conflicts', async () => {
-        const roleId = 'uuid-r-update-conflict';
-        const updateDto: UpdateShowRoleDto = { name: 'Existing Name' };
-        const preloadedRole = { id: roleId, name: 'Existing Name' }; // Simulate preload with conflicting name
         const error = { code: '23505' };
 
-        mockShowRoleRepository.preload.mockResolvedValue(preloadedRole);
-        mockShowRoleRepository.save.mockRejectedValue(error);
+        repository.preload.mockResolvedValue({ id: roleId, name: 'Existing Name' });
+        repository.save.mockRejectedValue(error);
 
         await expect(service.update(roleId, updateDto)).rejects.toThrow(
             'ShowRole with name "Existing Name" already exists.'
         );
-        expect(mockShowRoleRepository.preload).toHaveBeenCalledWith({ id: roleId, ...updateDto });
+        expect(repository.preload).toHaveBeenCalledWith({ id: roleId, ...updateDto });
     });
 
     it('should throw NotFoundException if show role to update is not found', async () => {
-      const roleId = 'non-existent-role-update';
-      const updateDto: UpdateShowRoleDto = { is_active: false };
-      mockShowRoleRepository.preload.mockResolvedValue(null);
+      repository.preload.mockResolvedValue(null);
 
       await expect(service.update(roleId, updateDto)).rejects.toThrow(NotFoundException);
       await expect(service.update(roleId, updateDto)).rejects.toThrow(`ShowRole with ID "${roleId}" not found`);
@@ -210,19 +214,19 @@ describe('ShowRolesService', () => {
   describe('remove', () => {
     it('should remove the show role successfully', async () => {
       const roleId = 'uuid-r-remove';
-      mockShowRoleRepository.delete.mockResolvedValue({ affected: 1, raw: [] });
+      repository.delete.mockResolvedValue({ affected: 1, raw: [] });
 
       await expect(service.remove(roleId)).resolves.toBeUndefined();
-      expect(mockShowRoleRepository.delete).toHaveBeenCalledWith(roleId);
+      expect(repository.delete).toHaveBeenCalledWith(roleId);
     });
 
     it('should throw NotFoundException if show role to remove is not found', async () => {
       const roleId = 'non-existent-role-remove';
-      mockShowRoleRepository.delete.mockResolvedValue({ affected: 0, raw: [] });
+      repository.delete.mockResolvedValue({ affected: 0, raw: [] });
 
       await expect(service.remove(roleId)).rejects.toThrow(NotFoundException);
       await expect(service.remove(roleId)).rejects.toThrow(`ShowRole with ID "${roleId}" not found`);
-      expect(mockShowRoleRepository.delete).toHaveBeenCalledWith(roleId);
+      expect(repository.delete).toHaveBeenCalledWith(roleId);
     });
   });
 }); 

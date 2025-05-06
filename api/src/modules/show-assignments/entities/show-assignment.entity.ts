@@ -1,41 +1,53 @@
-import { Entity, Column, Index, ManyToOne, JoinColumn, Unique } from 'typeorm';
-import { BaseEntity } from '../../../core/database/base.entity';
-import { Show } from '../../shows/entities/show.entity';
-import { User } from '../../users/entities/user.entity';
-import { ShowRole } from '../../show-roles/entities/show-role.entity';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
+  Unique,
+} from 'typeorm';
+import { Show } from 'src/modules/shows/entities/show.entity';
+import { User } from 'src/modules/users/entities/user.entity';
+import { ShowRole } from 'src/modules/show-roles/entities/show-role.entity';
+
+export enum ShowAssignmentConfirmationStatus {
+  PENDING = 'Pending',
+  CONFIRMED = 'Confirmed',
+  DECLINED = 'Declined',
+}
 
 @Entity({ name: 'show_assignments' })
-@Unique(['show_id', 'user_id']) // One user assigned only once per show (regardless of role? Decide based on logic)
-export class ShowAssignment extends BaseEntity {
+@Unique(['show_id', 'user_id']) // One user assigned only once per show
+@Index(['show_id', 'user_id'], { unique: true })
+export class ShowAssignment {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
   @Column({ type: 'uuid', nullable: false })
+  @Index()
   show_id: string;
 
-  @ManyToOne(() => Show, { nullable: false, onDelete: 'CASCADE' }) // Cascade delete if Show is deleted
-  @JoinColumn({ name: 'show_id' })
-  @Index()
-  show: Show;
-
   @Column({ type: 'uuid', nullable: false })
+  @Index()
   user_id: string;
 
-  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' }) // Cascade delete if User is deleted?
-  @JoinColumn({ name: 'user_id' })
-  @Index()
-  user: User;
-
   @Column({ type: 'uuid', nullable: false })
+  @Index()
   show_role_id: string;
 
-  @ManyToOne(() => ShowRole, { nullable: false, onDelete: 'RESTRICT' }) // Restrict deletion if assigned
-  @JoinColumn({ name: 'show_role_id' })
-  @Index()
-  show_role: ShowRole;
-
-  @Column({ nullable: false, default: 'Pending' })
-  confirmation_status: string; // Consider Enum
+  @Column({
+    type: 'enum',
+    enum: ShowAssignmentConfirmationStatus,
+    nullable: false,
+    default: ShowAssignmentConfirmationStatus.PENDING,
+  })
+  confirmation_status: ShowAssignmentConfirmationStatus;
 
   @Column({ type: 'text', nullable: true })
-  decline_reason?: string;
+  decline_reason?: string | null;
 
   @Column({
     type: 'timestamp with time zone',
@@ -45,13 +57,45 @@ export class ShowAssignment extends BaseEntity {
   assigned_at: Date;
 
   @Column({ type: 'timestamp with time zone', nullable: true })
-  confirmed_at?: Date;
+  confirmed_at?: Date | null;
 
   @Column({ type: 'uuid', nullable: true })
-  assigned_by_user_id?: string;
-
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'assigned_by_user_id' })
   @Index()
-  assigned_by?: User;
+  assigned_by_user_id?: string | null;
+
+  @CreateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
+  created_at: Date;
+
+  @UpdateDateColumn({
+    type: 'timestamp with time zone',
+    default: () => 'CURRENT_TIMESTAMP',
+    onUpdate: 'CURRENT_TIMESTAMP',
+    nullable: false,
+  })
+  updated_at: Date;
+
+  @Column({ type: 'uuid', nullable: true })
+  assignedByUserId: string | null;
+
+  // --- Relations --- //
+
+  @ManyToOne(() => Show, (show: Show) => show.assignments, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'show_id' })
+  show: Show;
+
+  @ManyToOne(() => User, (user: User) => user.assignments, { nullable: false, onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
+  user: User;
+
+  @ManyToOne(() => ShowRole, (showRole: ShowRole) => showRole.showAssignments, { nullable: false, onDelete: 'RESTRICT' })
+  @JoinColumn({ name: 'show_role_id' })
+  showRole: ShowRole;
+
+  @ManyToOne(() => User, (user: User) => user.assignedShowAssignments, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'assigned_by_user_id' })
+  assignedBy: User | null;
 }

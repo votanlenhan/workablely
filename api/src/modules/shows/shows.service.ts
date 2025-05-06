@@ -12,6 +12,7 @@ import {
   Pagination,
   IPaginationOptions,
 } from 'nestjs-typeorm-paginate';
+import { Client } from '@/modules/clients/entities/client.entity';
 
 @Injectable()
 export class ShowsService {
@@ -56,13 +57,13 @@ export class ShowsService {
       creatorUserId: string | null // Pass creatorUserId explicitly for now
     ): Promise<Show> {
     // Validate client_id exists
-    await this.clientsService.findOne(createShowDto.client_id);
+    await this.clientsService.findOne(createShowDto.clientId);
 
     const show = this.showRepository.create({
         ...createShowDto,
-        created_by_user_id: creatorUserId,
-        total_collected: createShowDto.deposit_amount || 0, // Initial collection is the deposit
-        // status defaults to PENDING in entity
+        createdByUserId: creatorUserId,
+        total_collected: createShowDto.deposit_amount ?? 0, // Initial collection is the deposit
+        status: ShowStatus.PENDING, // Default status
     });
 
     // Calculate initial amount_due and payment_status
@@ -99,9 +100,12 @@ export class ShowsService {
     // Fetch existing show first to recalculate dependent fields if needed
     const existingShow = await this.findOne(id); // Use findOne to ensure it exists
 
-    // If client_id is being updated, validate it
-    if (updateShowDto.client_id && updateShowDto.client_id !== existingShow.client_id) {
-        await this.clientsService.findOne(updateShowDto.client_id);
+    // Check if client needs to be updated
+    let clientRelation: Client | undefined = undefined;
+    if (updateShowDto.clientId && updateShowDto.clientId !== existingShow.clientId) {
+        // Validate new client exists
+        clientRelation = await this.clientsService.findOne(updateShowDto.clientId);
+        // The preload step below will handle setting the new clientId
     }
 
     // Use preload to merge data - careful not to overwrite calculated fields unintentionally
