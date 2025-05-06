@@ -12,6 +12,8 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  UseGuards,
+  SetMetadata,
 } from '@nestjs/common';
 import { PermissionsService } from './permissions.service';
 import { CreatePermissionDto } from './dto/create-permission.dto';
@@ -26,16 +28,18 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { RolesGuard, ROLES_KEY } from '@/core/guards/roles.guard';
 
-@ApiTags('Roles & Permissions') // Group endpoints in Swagger UI with Roles
-@Controller('permissions') // Base path for all routes
-// TODO: Add AuthGuard and appropriate PermissionsGuard later
-// @UseGuards(AuthGuard('jwt'), PermissionsGuard)
+@ApiTags('Roles & Permissions')
+@Controller('permissions')
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class PermissionsController {
   constructor(private readonly permissionsService: PermissionsService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new permission' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Create a new permission [Admin Only]' })
   @ApiResponse({
     status: 201,
     description: 'The permission has been successfully created.',
@@ -49,8 +53,6 @@ export class PermissionsController {
     status: 409,
     description: 'Conflict (e.g., permission already exists)',
   })
-  @HttpCode(HttpStatus.CREATED)
-  // TODO: Add Permissions decorator later: @RequiredPermissions({ action: 'create', subject: 'Permission' })
   create(
     @Body() createPermissionDto: CreatePermissionDto,
   ): Promise<Permission> {
@@ -64,14 +66,12 @@ export class PermissionsController {
   @ApiResponse({
     status: 200,
     description: 'Paginated list of permissions.',
-    // TODO: Define a paginated response DTO for Swagger if needed
   })
-  // TODO: Add Permissions decorator later: @RequiredPermissions({ action: 'read', subject: 'Permission' })
   findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
   ): Promise<Pagination<Permission>> {
-    limit = limit > 100 ? 100 : limit; // Cap limit at 100
+    limit = limit > 100 ? 100 : limit;
     return this.permissionsService.findAll({ page, limit });
   }
 
@@ -89,13 +89,13 @@ export class PermissionsController {
     type: Permission,
   })
   @ApiResponse({ status: 404, description: 'Permission not found.' })
-  // TODO: Add Permissions decorator later: @RequiredPermissions({ action: 'read', subject: 'Permission' })
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Permission> {
     return this.permissionsService.findOne(id);
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a permission description by ID' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Update a permission description by ID [Admin Only]' })
   @ApiParam({
     name: 'id',
     type: String,
@@ -113,7 +113,6 @@ export class PermissionsController {
     description: 'Bad Request (e.g., validation error)',
   })
   @ApiResponse({ status: 404, description: 'Permission not found.' })
-  // TODO: Add Permissions decorator later: @RequiredPermissions({ action: 'update', subject: 'Permission' })
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updatePermissionDto: UpdatePermissionDto,
@@ -122,7 +121,8 @@ export class PermissionsController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a permission by ID' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Delete a permission by ID [Admin Only]' })
   @ApiParam({
     name: 'id',
     type: String,
@@ -134,7 +134,6 @@ export class PermissionsController {
     description: 'The permission has been successfully deleted.',
   })
   @ApiResponse({ status: 404, description: 'Permission not found.' })
-  // TODO: Add Permissions decorator later: @RequiredPermissions({ action: 'delete', subject: 'Permission' })
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.permissionsService.remove(id);

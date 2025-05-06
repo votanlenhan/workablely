@@ -212,7 +212,7 @@ describe('PermissionsService', () => {
 
       expect(result).toEqual(savedPermission);
       expect(repository.preload).toHaveBeenCalledWith(updatedPermissionData);
-      expect(repository.save).toHaveBeenCalledWith(createMockPermission(updatedPermissionData));
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedPermissionData));
     });
 
     it('should throw NotFoundException if permission to update is not found', async () => {

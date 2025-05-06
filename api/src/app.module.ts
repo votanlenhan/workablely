@@ -9,6 +9,8 @@ import { UsersModule } from './modules/users/users.module';
 import { RolesModule } from './modules/roles/roles.module';
 import { PermissionsModule } from './modules/permissions/permissions.module';
 import { ClientsModule } from './modules/clients/clients.module';
+import { ShowRolesModule } from './modules/show-roles/show-roles.module';
+import { ShowsModule } from './modules/shows/shows.module';
 // ... other future modules
 
 // Explicitly import entities
@@ -16,6 +18,7 @@ import { User } from './modules/users/entities/user.entity';
 import { Role } from './modules/roles/entities/role.entity';
 import { Permission } from './modules/permissions/entities/permission.entity';
 import { Client } from './modules/clients/entities/client.entity';
+import { ShowRole } from './modules/show-roles/entities/show-role.entity';
 import { Show } from './modules/shows/entities/show.entity';
 
 @Module({
@@ -38,7 +41,14 @@ import { Show } from './modules/shows/entities/show.entity';
           username: configService.get<string>('DB_USERNAME'),
           password: configService.get<string>('DB_PASSWORD'),
           database: configService.get<string>('DB_DATABASE'),
-          entities: [User, Role, Permission, Client, Show],
+          entities: [
+            User,
+            Role,
+            Permission,
+            Client,
+            ShowRole,
+            Show,
+          ],
           synchronize: false,
           logging: configService.get<string>('NODE_ENV') === 'development',
         };
@@ -58,7 +68,8 @@ import { Show } from './modules/shows/entities/show.entity';
     PermissionsModule,
     UsersModule,
     ClientsModule,
-    // ShowRolesModule, // Add later
+    ShowRolesModule,
+    ShowsModule,
     // EquipmentModule, // Add later
     // ConfigurationsModule, // Add later
     // ExternalIncomesModule, // Add later

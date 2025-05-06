@@ -12,6 +12,8 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  UseGuards,
+  SetMetadata,
 } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -27,15 +29,18 @@ import {
   ApiQuery,
   ApiHideProperty,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { RolesGuard, ROLES_KEY } from '@/core/guards/roles.guard';
 
 @ApiTags('Users')
 @Controller('users')
-// TODO: Add AuthGuard and appropriate Permissions/Roles Guard later
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new user' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Create a new user [Admin Only]' })
   @ApiResponse({ status: 201, description: 'User created.', type: User })
   @ApiResponse({ status: 400, description: 'Bad Request.' })
   @ApiResponse({ status: 409, description: 'Conflict (Email exists).' })
@@ -73,7 +78,8 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update user by ID' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Update user by ID [Admin Only]' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiBody({ type: UpdateUserDto })
   @ApiResponse({ status: 200, description: 'User updated.', type: User })
@@ -89,7 +95,8 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete user by ID' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Delete user by ID [Admin Only]' })
   @ApiParam({ name: 'id', type: String, format: 'uuid' })
   @ApiResponse({ status: 204, description: 'User deleted.' })
   @ApiResponse({ status: 404, description: 'User not found.' })

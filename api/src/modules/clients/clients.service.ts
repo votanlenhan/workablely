@@ -2,7 +2,13 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from './entities/client.entity';
-import { CreateClientDto, UpdateClientDto } from './dto/client.dto';
+import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
+import {
+  paginate,
+  Pagination,
+  IPaginationOptions,
+} from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class ClientsService {
@@ -11,7 +17,7 @@ export class ClientsService {
     private readonly clientRepository: Repository<Client>,
   ) {}
 
-  async createClient(createClientDto: CreateClientDto): Promise<Client> {
+  async create(createClientDto: CreateClientDto): Promise<Client> {
     // Check if email exists if provided
     if (createClientDto.email) {
       const existingClient = await this.clientRepository.findOne({
@@ -24,15 +30,19 @@ export class ClientsService {
         );
       }
     }
-    const client = this.clientRepository.create(createClientDto);
-    return this.clientRepository.save(client);
+    const newClient = this.clientRepository.create(createClientDto);
+    return this.clientRepository.save(newClient);
   }
 
-  async findAllClients(): Promise<Client[]> {
-    return this.clientRepository.find();
+  async findAll(
+    options: IPaginationOptions,
+  ): Promise<Pagination<Client>> {
+    const queryBuilder = this.clientRepository.createQueryBuilder('client');
+    queryBuilder.orderBy('client.created_at', 'DESC'); // Default sort order
+    return paginate<Client>(queryBuilder, options);
   }
 
-  async findClientById(id: string): Promise<Client> {
+  async findOne(id: string): Promise<Client> {
     const client = await this.clientRepository.findOne({ where: { id } });
     if (!client) {
       throw new NotFoundException(`Client with ID "${id}" not found`);
@@ -40,10 +50,7 @@ export class ClientsService {
     return client;
   }
 
-  async updateClient(
-    id: string,
-    updateClientDto: UpdateClientDto,
-  ): Promise<Client> {
+  async update(id: string, updateClientDto: UpdateClientDto): Promise<Client> {
     // Check if email is being updated and if it conflicts
     if (updateClientDto.email) {
       const existingClient = await this.clientRepository.findOne({
@@ -60,6 +67,7 @@ export class ClientsService {
       }
     }
 
+    // Use preload to get entity merged with update DTO, handles partial updates
     const client = await this.clientRepository.preload({
       id: id,
       ...updateClientDto,
@@ -70,8 +78,10 @@ export class ClientsService {
     return this.clientRepository.save(client);
   }
 
-  async removeClient(id: string): Promise<void> {
-    const client = await this.findClientById(id); // Reuse findById to handle not found exception
-    await this.clientRepository.remove(client);
+  async remove(id: string): Promise<void> {
+    const result = await this.clientRepository.delete(id);
+    if (result.affected === 0) {
+      throw new NotFoundException(`Client with ID "${id}" not found`);
+    }
   }
 }

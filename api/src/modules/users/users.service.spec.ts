@@ -101,7 +101,11 @@ describe('UsersService', () => {
     userRepository = module.get(getRepositoryToken(User));
     roleRepository = module.get(getRepositoryToken(Role));
 
+    // Clear mocks and setup bcrypt mock here
     jest.clearAllMocks();
+    mockBcryptHash.mockResolvedValue('default_hashed_password'); // Provide a default mock
+    mockBcryptCompare.mockResolvedValue(true); // Default compare mock
+
   });
 
   it('should be defined', () => {
@@ -225,15 +229,14 @@ describe('UsersService', () => {
     const savedUser = createMockUser({ id: 'new-uuid', ...createdUserDataForMock, roles: mockRoles });
     const expectedPlainUser = (({ password_hash, ...rest }) => rest)(savedUser) as PlainUser;
 
-    beforeEach(() => {
-       mockBcryptHash.mockResolvedValue(hashedPassword);
-       userRepository.findOne.mockResolvedValue(null); 
-       roleRepository.findBy.mockResolvedValue(mockRoles);
-       userRepository.create.mockReturnValue(createdUserDataForMock as any); // Use the adjusted mock data
-       userRepository.save.mockResolvedValue(savedUser);
-    });
-
     it('should create user with hashed password and roles if roleIds provided', async () => {
+      // Setup mocks specific to this test case
+      mockBcryptHash.mockResolvedValue(hashedPassword);
+      userRepository.findOne.mockResolvedValue(null); 
+      roleRepository.findBy.mockResolvedValue(mockRoles);
+      userRepository.create.mockReturnValue(createdUserDataForMock as any);
+      userRepository.save.mockResolvedValue(savedUser);
+      
       const result = await service.createUser(createUserDto);
       
       expect(userRepository.findOne).toHaveBeenCalledWith({ where: { email: createUserDto.email } });
@@ -248,37 +251,47 @@ describe('UsersService', () => {
 
     it('should create user without roles if roleIds is not provided or empty', async () => {
       const dtoNoRoles: CreateUserDto = { ...createUserDto, roleIds: [] };
-      const createdDataNoRoles = { ...createdUserDataForMock, roles: [] };
-      const savedUserNoRoles = createMockUser({ ...savedUser, roles: []});
-      const expectedPlainNoRoles = (({ password_hash, ...rest }) => rest)(savedUserNoRoles) as PlainUser;
-
-      userRepository.create.mockReturnValue(createdDataNoRoles as any); 
-      userRepository.save.mockResolvedValue(savedUserNoRoles);
-
+      // Setup mocks specific to this test case
+      mockBcryptHash.mockResolvedValue(hashedPassword);
+      userRepository.findOne.mockResolvedValue(null);
+      userRepository.create.mockReturnValue({ ...createdUserDataForMock, roles: [] } as any);
+      userRepository.save.mockResolvedValue({ ...savedUser, roles: [] });
+      
       const result = await service.createUser(dtoNoRoles);
 
-      expect(roleRepository.findBy).not.toHaveBeenCalled(); // Should not be called
+      expect(roleRepository.findBy).not.toHaveBeenCalled();
       expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({ email: dtoNoRoles.email, roles: [] }));
       expect(userRepository.save).toHaveBeenCalledWith(expect.objectContaining({ email: dtoNoRoles.email, roles: [] }));
       expect(result.roles).toEqual([]);
     });
 
-    it('should throw ConflictException if email exists', async () => {
-        userRepository.findOne.mockResolvedValue(createMockUser());
-        await expect(service.createUser(createUserDto)).rejects.toThrow(ConflictException);
+    it('should throw ConflictException if email already exists', async () => {
+      // Setup mocks specific to this test case
+      userRepository.findOne.mockResolvedValue(createMockUser()); // Email exists
+
+      await expect(service.createUser(createUserDto)).rejects.toThrow(ConflictException);
+      expect(mockBcryptHash).not.toHaveBeenCalled();
     });
 
-    it('should throw NotFoundException if roleIds are invalid', async () => {
-        // Ensure roleIds exist before calling findBy
-        const dtoWithRoles: CreateUserDto = { ...createUserDto, roleIds: ['invalid-id'] };
-        roleRepository.findBy.mockResolvedValue([]); // Role not found
-        await expect(service.createUser(dtoWithRoles)).rejects.toThrow(NotFoundException);
-        expect(roleRepository.findBy).toHaveBeenCalledWith({ id: In(['invalid-id']) });
+    it('should throw NotFoundException if any role ID is invalid', async () => {
+      // Setup mocks specific to this test case
+      userRepository.findOne.mockResolvedValue(null); // Email is unique
+      // Mock findBy to return an empty array (role not found)
+      roleRepository.findBy.mockResolvedValue([]); // Correct mock for this case
+
+      await expect(service.createUser(createUserDto)).rejects.toThrow(NotFoundException);
+      expect(mockBcryptHash).toHaveBeenCalled();
     });
 
-    it('should throw InternalServerErrorException on save error', async () => {
-        userRepository.save.mockRejectedValue(new Error('DB save failed'));
-        await expect(service.createUser(createUserDto)).rejects.toThrow(InternalServerErrorException);
+    it('should throw InternalServerErrorException on database error', async () => {
+      // Setup mocks specific to this test case
+      userRepository.findOne.mockResolvedValue(null); // Email is unique
+      mockBcryptHash.mockResolvedValue(hashedPassword);
+      roleRepository.findBy.mockResolvedValue(mockRoles);
+      userRepository.create.mockReturnValue(createdUserDataForMock as any);
+      userRepository.save.mockRejectedValue(new Error('DB save failed')); // Mock save to reject
+
+      await expect(service.createUser(createUserDto)).rejects.toThrow(InternalServerErrorException);
     });
   });
 

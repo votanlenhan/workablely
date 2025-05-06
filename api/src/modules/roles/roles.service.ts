@@ -109,7 +109,7 @@ export class RolesService {
   async findOneByName(name: string): Promise<Role | null> {
     return this.roleRepository.findOne({
       where: { name },
-      relations: ['permissions'],
+      // relations: ['permissions'], // Removed unnecessary relation loading
     });
   }
 

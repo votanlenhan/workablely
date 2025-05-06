@@ -12,6 +12,8 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  UseGuards,
+  SetMetadata,
 } from '@nestjs/common';
 import { RolesService } from './roles.service';
 import { CreateRoleDto } from './dto/create-role.dto';
@@ -26,16 +28,18 @@ import {
   ApiBody,
   ApiQuery,
 } from '@nestjs/swagger';
+import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
+import { RolesGuard, ROLES_KEY } from '@/core/guards/roles.guard';
 
 @ApiTags('Roles & Permissions') // Group endpoints in Swagger UI
 @Controller('roles') // Base path for all routes in this controller
-// TODO: Add AuthGuard and RolesGuard/PermissionsGuard later
-// @UseGuards(AuthGuard('jwt'), RolesGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class RolesController {
   constructor(private readonly rolesService: RolesService) {}
 
   @Post()
-  @ApiOperation({ summary: 'Create a new role' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Create a new role [Admin Only]' })
   @ApiResponse({
     status: 201,
     description: 'The role has been successfully created.',
@@ -89,7 +93,8 @@ export class RolesController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a role by ID' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Update a role by ID [Admin Only]' })
   @ApiParam({
     name: 'id',
     type: String,
@@ -120,7 +125,8 @@ export class RolesController {
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Delete a role by ID' })
+  @SetMetadata(ROLES_KEY, ['Admin'])
+  @ApiOperation({ summary: 'Delete a role by ID [Admin Only]' })
   @ApiParam({
     name: 'id',
     type: String,

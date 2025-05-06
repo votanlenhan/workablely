@@ -7,69 +7,39 @@ import {
   OneToMany,
   Index,
 } from 'typeorm';
-import {
-  IsEmail,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  MaxLength,
-  IsPhoneNumber,
-} from 'class-validator';
-import { Show } from '../../shows/entities/show.entity'; // Adjust path as needed
+import { Show } from '../../shows/entities/show.entity'; // Uncommented and relative path
 
 @Entity('clients')
 export class Client {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ length: 255 })
-  @IsNotEmpty()
-  @IsString()
-  @MaxLength(255)
+  @Column({ type: 'varchar', length: 255, nullable: false })
   name: string;
 
-  @Column({ length: 20 })
-  @IsNotEmpty()
-  @IsString()
-  @IsPhoneNumber() // Removed null for region-agnostic validation
-  @MaxLength(20)
+  @Column({ type: 'varchar', length: 20, nullable: false })
   phone_number: string;
 
-  @Column({ length: 255, unique: true, nullable: true })
-  @Index({ unique: true, where: '"email" IS NOT NULL' }) // Ensure uniqueness for non-null emails
-  @IsOptional()
-  @IsEmail()
-  @MaxLength(255)
-  email?: string;
+  @Column({ type: 'varchar', length: 255, nullable: true, unique: true })
+  email: string | null;
 
   @Column({ type: 'text', nullable: true })
-  @IsOptional()
-  @IsString()
-  address?: string;
+  address: string | null;
 
-  @Column({ length: 100, nullable: true })
-  @IsOptional()
-  @IsString()
-  @MaxLength(100)
-  source?: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  source: string | null;
 
   @Column({ type: 'text', nullable: true })
-  @IsOptional()
-  @IsString()
-  notes?: string;
+  notes: string | null;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   created_at: Date;
 
-  @UpdateDateColumn({
-    type: 'timestamptz',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-  })
+  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   updated_at: Date;
 
   // --- Relations --- //
 
-  @OneToMany(() => Show, (show) => show.client)
+  @OneToMany(() => Show, (show: Show) => show.client) // Uncommented
   shows: Show[];
 }

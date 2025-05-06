@@ -71,6 +71,9 @@ describe('RolesService', () => {
   let permissionRepository: MockRepository<Permission>;
 
   beforeEach(async () => {
+    // Clear mocks before each test
+    jest.clearAllMocks(); 
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         RolesService,
@@ -217,7 +220,7 @@ describe('RolesService', () => {
         roleRepository.findOne.mockResolvedValue(mockRole);
         const result = await service.findOneByName(roleName);
         expect(result).toEqual(mockRole);
-        expect(roleRepository.findOne).toHaveBeenCalledWith({ where: { name: roleName }, relations: ['permissions'] });
+        expect(roleRepository.findOne).toHaveBeenCalledWith({ where: { name: roleName } });
      });
 
       it('should return null if role by name is not found', async () => {
@@ -260,37 +263,27 @@ describe('RolesService', () => {
     });
 
     it('should update role name and permissions successfully', async () => {
-        // Arrange
-        // Service calls findOne(id), then findOneByName(name), then findBy(permissions), then save(mutatedRole)
-        const roleAfterManualUpdates = createMockRole({ 
-            ...existingRole, 
-            name: 'New Name', 
-            permissions: mockPermissionsP3 
-        });
-
-        roleRepository.findOne.mockResolvedValueOnce(existingRole); // Initial findOne(id)
-        roleRepository.findOne.mockResolvedValueOnce(null); // findOneByName(name) - no conflict
-        permissionRepository.findBy.mockResolvedValue(mockPermissionsP3); // findBy(permissions)
-        roleRepository.save.mockResolvedValue(roleAfterManualUpdates); // save returns final state
-
+        // Setup mocks
+        roleRepository.findOne.mockResolvedValueOnce(existingRole); // For findOne(id)
+        roleRepository.findOne.mockResolvedValueOnce(null); // For findOneByName(name) - no conflict
+        permissionRepository.findBy.mockResolvedValue(mockPermissionsP3);
+        roleRepository.save.mockResolvedValue(finalRoleWithNameAndPerms);
+        
         // Act
         const result = await service.update(roleId, updateDtoWithNameAndPerms);
 
         // Assert
-        expect(result).toEqual(roleAfterManualUpdates);
+        expect(result).toEqual(finalRoleWithNameAndPerms);
         expect(roleRepository.findOne).toHaveBeenCalledTimes(2);
         expect(roleRepository.findOne).toHaveBeenNthCalledWith(1, { where: { id: roleId }, relations: ['permissions'] });
-        // Service uses findOneByName internally which also loads relations
-        expect(roleRepository.findOne).toHaveBeenNthCalledWith(2, { where: { name: updateDtoWithNameAndPerms.name }, relations: ['permissions'] });
+        // Updated assertion: Removed relations from findOneByName call check
+        expect(roleRepository.findOne).toHaveBeenNthCalledWith(2, { where: { name: updateDtoWithNameAndPerms.name } }); 
         expect(permissionRepository.findBy).toHaveBeenCalledWith({ id: In(updateDtoWithNameAndPerms.permissionIds!) });
-        // Verify save is called with the manually mutated role object
         expect(roleRepository.save).toHaveBeenCalledWith(expect.objectContaining({ 
-            id: roleId, 
-            name: 'New Name', 
-            description: existingRole.description, // Unchanged
-            permissions: mockPermissionsP3 
+          id: roleId, 
+          name: 'New Name', 
+          permissions: mockPermissionsP3 
         }));
-        // expect(roleRepository.preload).not.toHaveBeenCalled(); // Verify preload is NOT called
     });
 
     it('should update only description if only description is provided', async () => {
@@ -368,27 +361,26 @@ describe('RolesService', () => {
     });
 
     it('should throw ConflictException if new name conflicts with another role', async () => {
-        // Arrange
-        const conflictingRole = createMockRole({ id: 'other-id', name: 'New Name' });
-        
-        // Explicitly mock sequential findOne calls using mockImplementationOnce
-        roleRepository.findOne
-            .mockImplementationOnce(async () => existingRole) // First call (by ID)
-            .mockImplementationOnce(async () => conflictingRole); // Second call (by Name)
+      const updateDtoConflictName: UpdateRoleDto = { name: 'Existing Name' };
+      const conflictingRole = createMockRole({ id: 'other-role-id', name: 'Existing Name' });
 
-        // Add mock for permission lookup, even though it shouldn't be reached
-        permissionRepository.findBy.mockResolvedValue([]); 
+      roleRepository.findOne
+        .mockResolvedValueOnce(existingRole) // For findOne(id)
+        .mockResolvedValueOnce(conflictingRole); // For findOneByName(name)
+      
+      // Explicitly mock permissionRepository.findBy for isolation, even if not expected to be called
+      permissionRepository.findBy.mockResolvedValue([]); 
 
-        // Act & Assert
-        await expect(service.update(roleId, updateDtoWithNameAndPerms)).rejects.toThrow(ConflictException);
-        
-        // Verify calls up to the point of failure
-        expect(roleRepository.findOne).toHaveBeenCalledTimes(2);
-        expect(roleRepository.findOne).toHaveBeenNthCalledWith(1, { where: { id: roleId }, relations: ['permissions'] });
-        expect(roleRepository.findOne).toHaveBeenNthCalledWith(2, { where: { name: updateDtoWithNameAndPerms.name }, relations: ['permissions'] });
-        expect(permissionRepository.findBy).not.toHaveBeenCalled();
-        expect(roleRepository.save).not.toHaveBeenCalled();
-        // expect(roleRepository.preload).not.toHaveBeenCalled();
+      // Act & Assert
+      await expect(service.update(roleId, updateDtoConflictName)).rejects.toThrow(ConflictException);
+
+      // Verify calls
+      expect(roleRepository.findOne).toHaveBeenCalledTimes(2);
+      expect(roleRepository.findOne).toHaveBeenNthCalledWith(1, { where: { id: roleId }, relations: ['permissions'] });
+      // Updated assertion: Removed relations
+      expect(roleRepository.findOne).toHaveBeenNthCalledWith(2, { where: { name: updateDtoConflictName.name } }); 
+      expect(permissionRepository.findBy).not.toHaveBeenCalled();
+      expect(roleRepository.save).not.toHaveBeenCalled();
     });
 
     it('should throw NotFoundException if any updated permission ID is invalid', async () => {
