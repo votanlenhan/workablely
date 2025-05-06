@@ -16,6 +16,10 @@ import {
   paginate,
 } from 'nestjs-typeorm-paginate'; // Import pagination
 
+export interface FindAllRolesOptions extends IPaginationOptions {
+  name?: string;
+}
+
 @Injectable()
 export class RolesService {
   constructor(
@@ -75,13 +79,18 @@ export class RolesService {
    * @returns A paginated list of roles.
    */
   async findAll(
-    options: IPaginationOptions,
+    options: FindAllRolesOptions,
   ): Promise<Pagination<Role>> {
+    const { name, ...paginationOptions } = options;
     const queryBuilder = this.roleRepository.createQueryBuilder('role');
     queryBuilder.leftJoinAndSelect('role.permissions', 'permission') // Join and select permissions
                 .orderBy('role.name', 'ASC'); // Default order by name
 
-    return paginate<Role>(queryBuilder, options);
+    if (name) {
+      queryBuilder.andWhere('role.name = :name', { name });
+    }
+
+    return paginate<Role>(queryBuilder, paginationOptions);
   }
 
   /**

@@ -15,6 +15,8 @@ import {
   UseGuards,
   Req,
   SetMetadata,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ShowsService } from './shows.service';
 import { CreateShowDto } from './dto/create-show.dto';
@@ -78,6 +80,7 @@ export class ShowsController {
   @Delete(':id')
   @SetMetadata(ROLES_KEY, ['Admin', 'Manager'])
   @ApiOperation({ summary: 'Delete a show by ID [Admin/Manager Only]' })
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.showsService.remove(id);
   }

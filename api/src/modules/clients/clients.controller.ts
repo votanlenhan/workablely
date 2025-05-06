@@ -14,6 +14,9 @@ import {
   ValidationPipe,
   UseGuards,
   SetMetadata,
+  Req,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ClientsService } from './clients.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -23,6 +26,8 @@ import { Client } from './entities/client.entity';
 import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { RolesGuard, ROLES_KEY } from '@/core/guards/roles.guard';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Request } from 'express';
+import { User } from '@/modules/users/entities/user.entity';
 
 @ApiTags('Clients')
 @Controller('clients')
@@ -34,8 +39,13 @@ export class ClientsController {
   @Post()
   @SetMetadata(ROLES_KEY, ['Admin', 'Manager'])
   @ApiOperation({ summary: 'Create a new client [Admin/Manager Only]' })
-  create(@Body() createClientDto: CreateClientDto): Promise<Client> {
-    return this.clientsService.create(createClientDto);
+  create(
+    @Body() createClientDto: CreateClientDto,
+    @Req() req: Request,
+  ): Promise<Client> {
+    const currentUser = req.user as User;
+    const userId = currentUser.id;
+    return this.clientsService.create(createClientDto, userId);
   }
 
   @Get()
@@ -73,6 +83,7 @@ export class ClientsController {
   @Delete(':id')
   @SetMetadata(ROLES_KEY, ['Admin', 'Manager'])
   @ApiOperation({ summary: 'Delete a client by ID [Admin/Manager Only]' })
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.clientsService.remove(id);
   }

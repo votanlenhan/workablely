@@ -45,5 +45,15 @@ export class CreateUserDto {
   @IsOptional()
   readonly roleIds?: string[];
 
+  @ApiPropertyOptional({
+    description: 'Array of role names to assign to the new user. Used if roleIds are not provided.',
+    type: [String],
+    example: ['Admin', 'User'],
+  })
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  readonly roleNames?: string[];
+
   // avatar_url will likely be handled separately (e.g., after upload)
 }

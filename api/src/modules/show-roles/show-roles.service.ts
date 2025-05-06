@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ShowRole } from './entities/show-role.entity';
@@ -25,7 +25,7 @@ export class ShowRolesService {
     } catch (error) {
         // Handle potential unique constraint violation (e.g., PostgreSQL error code 23505)
         if (error.code === '23505') {
-            throw new Error(`ShowRole with name "${newShowRole.name}" already exists.`);
+            throw new ConflictException(`ShowRole with name "${newShowRole.name}" already exists.`);
         }
         throw error; // Re-throw other errors
     }
@@ -60,7 +60,7 @@ export class ShowRolesService {
         return await this.showRoleRepository.save(showRole);
     } catch (error) {
         if (error.code === '23505') {
-            throw new Error(`ShowRole with name "${showRole.name}" already exists.`);
+            throw new ConflictException(`ShowRole with name "${showRole.name}" already exists.`);
         }
         throw error;
     }

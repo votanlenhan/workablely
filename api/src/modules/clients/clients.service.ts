@@ -17,7 +17,14 @@ export class ClientsService {
     private readonly clientRepository: Repository<Client>,
   ) {}
 
-  async create(createClientDto: CreateClientDto): Promise<Client> {
+  async create(createClientDto: CreateClientDto, currentUserId?: string): Promise<Client> {
+    // Log the user ID for debugging purposes
+    if (currentUserId) {
+      console.log(`[ClientsService] Create method called by user ID: ${currentUserId}`);
+    } else {
+      console.warn('[ClientsService] Create method called without currentUserId.');
+    }
+
     // Check if email exists if provided
     if (createClientDto.email) {
       const existingClient = await this.clientRepository.findOne({

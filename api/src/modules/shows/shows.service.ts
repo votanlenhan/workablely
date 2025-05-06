@@ -76,9 +76,9 @@ export class ShowsService {
   async findAll(options: IPaginationOptions): Promise<Pagination<Show>> {
     const queryBuilder = this.showRepository.createQueryBuilder('show');
     queryBuilder
-      .leftJoinAndSelect('show.client', 'client') // Include client info
-      .leftJoinAndSelect('show.created_by_user', 'creator') // Include creator info
-      .orderBy('show.start_datetime', 'DESC'); // Default order by start time
+      .leftJoinAndSelect('show.client', 'client') // Join and select client
+      // .leftJoinAndSelect('show.created_by_user', 'createdByUser') // Temporarily remove this join
+      .orderBy('show.start_datetime', 'DESC');
 
     // Add filtering/searching capabilities later based on query params
 
@@ -88,7 +88,7 @@ export class ShowsService {
   async findOne(id: string): Promise<Show> {
     const show = await this.showRepository.findOne({
       where: { id },
-      relations: ['client', 'created_by_user'], // Load relations
+      relations: ['client'], // Simplified relations for debugging
     });
     if (!show) {
       throw new NotFoundException(`Show with ID "${id}" not found`);

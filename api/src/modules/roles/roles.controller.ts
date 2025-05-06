@@ -63,6 +63,7 @@ export class RolesController {
   @ApiOperation({ summary: 'Get all roles with pagination' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number, example: 10 })
+  @ApiQuery({ name: 'name', required: false, description: 'Filter by role name', type: String })
   @ApiResponse({
     status: 200,
     description: 'Paginated list of roles with their permissions.',
@@ -72,9 +73,10 @@ export class RolesController {
   findAll(
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+    @Query('name') name?: string,
   ): Promise<Pagination<Role>> {
     limit = limit > 100 ? 100 : limit; // Cap limit
-    return this.rolesService.findAll({ page, limit });
+    return this.rolesService.findAll({ page, limit, name });
   }
 
   @Get(':id')

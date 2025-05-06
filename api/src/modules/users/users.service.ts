@@ -80,6 +80,7 @@ export class UsersService {
     }
 
     const user = await queryBuilder.getOne();
+    console.log('[UsersService.findOneById] User found with roles:', JSON.stringify(user));
 
     if (!user) {
       throw new NotFoundException(`User with ID "${id}" not found.`);
@@ -122,7 +123,7 @@ export class UsersService {
    * @throws InternalServerErrorException on database error.
    */
   async createUser(createUserDto: CreateUserDto): Promise<PlainUser> {
-    const { email, password, roleIds, ...userData } = createUserDto;
+    const { email, password, roleIds, roleNames, ...userData } = createUserDto;
 
     // Check if user already exists
     const existingUser = await this.userRepository.findOne({
@@ -135,25 +136,34 @@ export class UsersService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, this.saltRounds);
 
-    let roles: Role[] = [];
-    // Check if roleIds is defined and not empty before querying
-    if (roleIds && roleIds.length > 0) { 
-      roles = await this.roleRepository.findBy({ id: In(roleIds) });
-      if (roles.length !== roleIds.length) {
-        const foundIds = roles.map((r) => r.id);
+    let rolesToAssign: Role[] = [];
+    if (roleIds && roleIds.length > 0) {
+      rolesToAssign = await this.roleRepository.findBy({ id: In(roleIds) });
+      if (rolesToAssign.length !== roleIds.length) {
+        const foundIds = rolesToAssign.map((r) => r.id);
         const notFoundIds = roleIds.filter((id) => !foundIds.includes(id));
         throw new NotFoundException(
           `Roles with IDs not found: ${notFoundIds.join(', ')}`,
         );
       }
-    } // else roles remains an empty array
+    } else if (roleNames && roleNames.length > 0) {
+      rolesToAssign = await this.roleRepository.findBy({ name: In(roleNames) });
+      if (rolesToAssign.length !== roleNames.length) {
+        const foundNames = rolesToAssign.map((r) => r.name);
+        const notFoundNames = roleNames.filter((name) => !foundNames.includes(name));
+        throw new NotFoundException(
+          `Roles with names not found: ${notFoundNames.join(', ')}`,
+        );
+      }
+    }
+    console.log('[UsersService.createUser] Roles to assign:', JSON.stringify(rolesToAssign));
 
     // Create user
     const newUser = this.userRepository.create({
       ...userData,
       email,
       password_hash: hashedPassword,
-      roles,
+      roles: rolesToAssign, // Use the determined roles
     });
 
     try {

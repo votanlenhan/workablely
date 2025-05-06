@@ -14,6 +14,8 @@ import {
   ValidationPipe,
   UseGuards,
   SetMetadata,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { ShowRolesService } from './show-roles.service';
 import { CreateShowRoleDto } from './dto/create-show-role.dto';
@@ -73,6 +75,7 @@ export class ShowRolesController {
   @Delete(':id')
   @SetMetadata(ROLES_KEY, ['Admin'])
   @ApiOperation({ summary: 'Delete a show role by ID [Admin Only]' })
+  @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string): Promise<void> {
     return this.showRolesService.remove(id);
   }

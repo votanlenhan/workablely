@@ -9,6 +9,7 @@ Phần này mô tả các công nghệ và nguyên tắc thiết kế kiến tr�
 - NestJS
 - PostgreSQL
 - Cucumber Test
+- Playwright (cho Kiểm thử End-to-End)
 - AWS Cloud services
 
 ## Thiết kế Hướng tới Khả năng Mở rộng (Scalability - Mục tiêu 500+ người dùng)
@@ -37,6 +38,15 @@ Phần này mô tả các công nghệ và nguyên tắc thiết kế kiến tr�
 - **Hạ tầng (AWS):**
   - Sử dụng các dịch vụ quản lý và có khả năng tự động co giãn như RDS (PostgreSQL), ECS/EKS hoặc Lambda (Compute), ELB (Load Balancing), CloudFront (CDN), SQS (Queue), Elasticache (Cache).
   - **Giám sát & Logging:** Thiết lập CloudWatch hoặc các công cụ tương đương để giám sát hiệu suất và ghi log chi tiết ngay từ đầu.
+
+## Chiến lược Kiểm thử
+
+- **Kiểm thử Đơn vị (Unit Tests):** Viết đồng thời với quá trình phát triển cho services và controllers phía backend (NestJS), sử dụng Jest.
+- **Kiểm thử Tích hợp (Integration Tests):** Kiểm tra sự tương tác giữa các thành phần khác nhau, ví dụ như service với database.
+- **Kiểm thử End-to-End (E2E Tests):**
+  - Sử dụng Playwright để kiểm thử các luồng người dùng quan trọng từ đầu đến cuối cho các API đã triển khai.
+  - Đảm bảo các kịch bản CRUD cơ bản và các luồng nghiệp vụ chính được bao phủ.
+  - Các bài kiểm thử E2E được đặt trong thư mục `e2e/` ở gốc dự án.
 
 ## Database Schema (Phase 1)
 
