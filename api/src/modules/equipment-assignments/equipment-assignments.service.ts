@@ -6,20 +6,29 @@ import {
   BadRequestException,
   Inject,
   forwardRef,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOneOptions, QueryFailedError } from 'typeorm';
+import { Repository, FindOneOptions, QueryFailedError, Not } from 'typeorm';
 import {
   EquipmentAssignment,
   AssignmentStatus,
-} from '../entities/equipment-assignment.entity';
-import { CreateEquipmentAssignmentDto } from '../dto/create-equipment-assignment.dto';
-import { UpdateEquipmentAssignmentDto } from '../dto/update-equipment-assignment.dto';
-import { EquipmentService } from '@/modules/equipment/equipment.service';
-import { EquipmentStatus } from '@/modules/equipment/entities/equipment.entity';
+} from '@/modules/equipment-assignments/entities/equipment-assignment.entity';
+import { CreateEquipmentAssignmentDto } from '@/modules/equipment-assignments/dto/create-equipment-assignment.dto';
+import { UpdateEquipmentAssignmentDto } from '@/modules/equipment-assignments/dto/update-equipment-assignment.dto';
+import { Equipment, EquipmentStatus } from '@/modules/equipment/entities/equipment.entity';
 import { ShowsService } from '@/modules/shows/shows.service';
 import { UsersService } from '@/modules/users/users.service';
 import { IPaginationOptions, Pagination, paginate } from 'nestjs-typeorm-paginate';
+import { User } from '@/modules/users/entities/user.entity';
+import { Show } from '@/modules/shows/entities/show.entity';
+
+interface FindAllAssignmentsFilter {
+  equipment_id?: string;
+  show_id?: string;
+  assigned_to_user_id?: string;
+  status?: string;
+}
 
 @Injectable()
 export class EquipmentAssignmentsService {
@@ -28,14 +37,12 @@ export class EquipmentAssignmentsService {
   constructor(
     @InjectRepository(EquipmentAssignment)
     private readonly assignmentRepository: Repository<EquipmentAssignment>,
-    @Inject(forwardRef(() => EquipmentService))
-    private readonly equipmentService: EquipmentService,
-    // Assuming ShowsService and UsersService are available and can be injected if needed
-    // for validation, e.g., checking if show_id or user_id exists.
-    @Inject(forwardRef(() => ShowsService))
-    private readonly showsService: ShowsService, 
-    @Inject(forwardRef(() => UsersService))
-    private readonly usersService: UsersService,
+    @InjectRepository(Equipment)
+    private readonly equipmentRepository: Repository<Equipment>,
+    @InjectRepository(User)
+    private readonly userRepository: Repository<User>,
+    @InjectRepository(Show)
+    private readonly showRepository: Repository<Show>,
   ) {}
 
   async create(
@@ -46,24 +53,37 @@ export class EquipmentAssignmentsService {
       `Creating new assignment for equipment ${createDto.equipment_id}`,
     );
 
-    const equipment = await this.equipmentService.findOne(createDto.equipment_id);
-    if (equipment.status !== EquipmentStatus.AVAILABLE) {
-      // Temporarily allow assigning equipment that is not available, for more complex scenarios
-      // Might need more robust logic depending on specific business rules (e.g. queuing system)
-      this.logger.warn(
-        `Equipment ${createDto.equipment_id} is currently ${equipment.status}, but proceeding with assignment.`,
-      );
-      // consider throwing BadRequestException here if strict availability is required:
-      // throw new BadRequestException(`Equipment ${createDto.equipment_id} is not available for assignment.`);
+    const equipment = await this.equipmentRepository.findOneBy({ id: createDto.equipment_id });
+    if (!equipment) {
+      throw new NotFoundException(`Equipment with ID "${createDto.equipment_id}" not found.`);
+    }
+    if (equipment.status === EquipmentStatus.IN_USE || equipment.status === EquipmentStatus.UNDER_MAINTENANCE) {
+      throw new ConflictException(`Equipment ID "${createDto.equipment_id}" is currently ${equipment.status} and cannot be assigned.`);
     }
 
-    // Validate show_id if provided
     if (createDto.show_id) {
-        await this.showsService.findOne(createDto.show_id);
+      const show = await this.showRepository.findOneBy({ id: createDto.show_id });
+      if (!show) {
+        throw new NotFoundException(`Show with ID "${createDto.show_id}" not found.`);
+      }
     }
-    // Validate user_id (assigned_to_user) if provided
+
     if (createDto.user_id) {
-        await this.usersService.findOneById(createDto.user_id);
+      const user = await this.userRepository.findOneBy({ id: createDto.user_id });
+      if (!user) {
+        throw new NotFoundException(`User to assign to with ID "${createDto.user_id}" not found.`);
+      }
+    }
+    
+    // Check for existing active assignment for this equipment
+    const existingActiveAssignment = await this.assignmentRepository.findOne({
+      where: {
+        equipment_id: createDto.equipment_id,
+        status: Not(AssignmentStatus.RETURNED), // Any status that is not 'Returned' is considered active/blocking
+      }
+    });
+    if (existingActiveAssignment) {
+      throw new ConflictException(`Equipment ID "${createDto.equipment_id}" is already actively assigned (Assignment ID: ${existingActiveAssignment.id}).`);
     }
 
     const newAssignment = this.assignmentRepository.create({
@@ -81,29 +101,45 @@ export class EquipmentAssignmentsService {
 
     try {
       const savedAssignment = await this.assignmentRepository.save(newAssignment);
-      // Update equipment status to 'In Use' after successful assignment
-      await this.equipmentService.update(createDto.equipment_id, {
-        status: EquipmentStatus.IN_USE,
-      });
+      equipment.status = EquipmentStatus.IN_USE;
+      await this.equipmentRepository.save(equipment);
       return savedAssignment;
     } catch (error) {
-      // Check for unique constraint violations or other specific DB errors if necessary
       this.logger.error(
         `Failed to create equipment assignment: ${error.message}`,
         error.stack,
       );
-      throw error;
+      throw new InternalServerErrorException('Could not create equipment assignment.');
     }
   }
 
   async findAll(
     options: IPaginationOptions,
+    filters: FindAllAssignmentsFilter,
   ): Promise<Pagination<EquipmentAssignment>> {
     this.logger.log('Fetching all equipment assignments with pagination');
-    return paginate<EquipmentAssignment>(this.assignmentRepository, options, {
-      relations: ['equipment', 'show', 'assigned_to_user', 'assigned_by_user'],
-      order: { assignment_date: 'DESC' },
-    });
+    const queryBuilder = this.assignmentRepository.createQueryBuilder('assignment');
+    queryBuilder
+      .leftJoinAndSelect('assignment.equipment', 'equipment')
+      .leftJoinAndSelect('assignment.show', 'show')
+      .leftJoinAndSelect('assignment.assigned_to_user', 'assigned_to_user')
+      .leftJoinAndSelect('assignment.assigned_by_user', 'assigned_by_user')
+      .orderBy('assignment.assignment_date', 'DESC');
+
+    if (filters.equipment_id) {
+      queryBuilder.andWhere('assignment.equipment_id = :equipmentId', { equipmentId: filters.equipment_id });
+    }
+    if (filters.show_id) {
+      queryBuilder.andWhere('assignment.show_id = :showId', { showId: filters.show_id });
+    }
+    if (filters.assigned_to_user_id) {
+      queryBuilder.andWhere('assignment.assigned_to_user_id = :assignedToUserId', { assignedToUserId: filters.assigned_to_user_id });
+    }
+    if (filters.status) {
+      queryBuilder.andWhere('assignment.status = :status', { status: filters.status });
+    }
+
+    return paginate<EquipmentAssignment>(queryBuilder, options);
   }
 
   async findOne(id: string): Promise<EquipmentAssignment> {
@@ -122,92 +158,123 @@ export class EquipmentAssignmentsService {
   async update(
     id: string,
     updateDto: UpdateEquipmentAssignmentDto,
+    updated_by_user_id: string,
   ): Promise<EquipmentAssignment> {
     this.logger.log(`Updating equipment assignment with id: ${id}`);
-    const assignment = await this.findOne(id); // Ensures assignment exists
+    const assignment = await this.findOne(id); // Fetches current assignment, includes relations
 
-    const previousStatus = assignment.status;
-    const previousEquipmentId = assignment.equipment_id;
+    const originalStatus = assignment.status;
+    const originalEquipmentId = assignment.equipment_id;
+    let newEquipmentEntity: Equipment | null = null;
 
-    // Validate show_id if provided and changed
+    // 1. Handle change of equipment_id first
+    if (updateDto.equipment_id && updateDto.equipment_id !== originalEquipmentId) {
+      newEquipmentEntity = await this.equipmentRepository.findOneBy({ id: updateDto.equipment_id });
+      if (!newEquipmentEntity) {
+        throw new NotFoundException(`New equipment with ID "${updateDto.equipment_id}" not found.`);
+      }
+      if (newEquipmentEntity.status !== EquipmentStatus.AVAILABLE) {
+        throw new ConflictException(`New equipment ID "${updateDto.equipment_id}" is ${newEquipmentEntity.status} and cannot be assigned.`);
+      }
+      // New equipment is valid and available.
+    }
+
+    // 2. Validate other foreign keys if they are being changed
     if (updateDto.show_id && updateDto.show_id !== assignment.show_id) {
-        await this.showsService.findOne(updateDto.show_id);
+      const show = await this.showRepository.findOneBy({ id: updateDto.show_id });
+      if (!show) throw new NotFoundException(`Show with ID "${updateDto.show_id}" not found.`);
     }
-    // Validate user_id (assigned_to_user) if provided and changed
     if (updateDto.user_id && updateDto.user_id !== assignment.user_id) {
-        await this.usersService.findOneById(updateDto.user_id);
-    }
-    // Validate equipment_id if provided and changed (more complex logic might be needed if equipment changes)
-    if (updateDto.equipment_id && updateDto.equipment_id !== assignment.equipment_id) {
-        const newEquipment = await this.equipmentService.findOne(updateDto.equipment_id);
-        if (newEquipment.status !== EquipmentStatus.AVAILABLE) {
-            this.logger.warn(
-              `New equipment ${updateDto.equipment_id} for assignment update is ${newEquipment.status}.`
-            );
-            // Potentially throw error if strict availability is required for equipment change
-        }
+      const user = await this.userRepository.findOneBy({ id: updateDto.user_id });
+      if (!user) throw new NotFoundException(`User to assign to with ID "${updateDto.user_id}" not found.`);
     }
 
+    // 3. Apply DTO changes to the assignment entity
     const updatePayload = {
       ...updateDto,
       ...(updateDto.assignment_date && { assignment_date: new Date(updateDto.assignment_date) }),
       ...(updateDto.expected_return_date && { expected_return_date: new Date(updateDto.expected_return_date) }),
       ...(updateDto.actual_return_date && { actual_return_date: new Date(updateDto.actual_return_date) }),
     };
+    this.assignmentRepository.merge(assignment, updatePayload);
+    // if you add updated_by_user_id to entity: assignment.updated_by_user_id = updated_by_user_id;
 
-    Object.assign(assignment, updatePayload);
-    const updatedAssignment = await this.assignmentRepository.save(assignment);
+    // 4. Save the assignment first
+    let savedAssignment: EquipmentAssignment;
+    try {
+      savedAssignment = await this.assignmentRepository.save(assignment);
+    } catch (error) {
+      this.logger.error(`Failed to save assignment update: ${error.message}`, error.stack);
+      throw new InternalServerErrorException('Could not update equipment assignment during save.');
+    }
 
-    // Logic to update equipment status based on assignment status change
-    if (updateDto.status && updateDto.status !== previousStatus) {
-      if (updateDto.status === AssignmentStatus.RETURNED || updateDto.status === AssignmentStatus.LOST || updateDto.status === AssignmentStatus.DAMAGED) {
-        // If assignment is marked as returned, lost, or damaged, set equipment to Available
-        // More complex logic might be needed if multiple assignments exist for one piece of equipment.
-        // This assumes one piece of equipment is fully tied to this assignment's active period.
-        await this.equipmentService.update(assignment.equipment_id, {
-          status: EquipmentStatus.AVAILABLE, // Or UNDER_MAINTENANCE if DAMAGED etc.
+    // 5. Handle equipment status changes
+    const newStatus = savedAssignment.status;
+
+    if (newEquipmentEntity) { // Equipment was changed
+      // Set new equipment to IN_USE (if assignment is active)
+      if (newStatus !== AssignmentStatus.RETURNED) { // Assuming any non-returned status means it's in use by this assignment
+        newEquipmentEntity.status = EquipmentStatus.IN_USE;
+        await this.equipmentRepository.save(newEquipmentEntity);
+      }
+      // Make old equipment available (if no other active assignments)
+      const oldEquipment = await this.equipmentRepository.findOneBy({ id: originalEquipmentId });
+      if (oldEquipment) {
+        const otherActiveAssignmentsForOld = await this.assignmentRepository.count({
+          where: { equipment_id: originalEquipmentId, status: Not(AssignmentStatus.RETURNED) }
         });
-      } else if (updateDto.status === AssignmentStatus.ASSIGNED) {
-        await this.equipmentService.update(assignment.equipment_id, {
-          status: EquipmentStatus.IN_USE,
-        });
+        if (otherActiveAssignmentsForOld === 0) {
+          oldEquipment.status = EquipmentStatus.AVAILABLE;
+          await this.equipmentRepository.save(oldEquipment);
+        }
+      }
+    } else { // Equipment was not changed, just status or other fields of assignment
+      if (newStatus && newStatus !== originalStatus) {
+        const currentEquipment = await this.equipmentRepository.findOneBy({ id: savedAssignment.equipment_id });
+        if (!currentEquipment) throw new InternalServerErrorException('Current equipment not found for status update.');
+
+        if (newStatus === AssignmentStatus.RETURNED) {
+          const otherActiveAssignments = await this.assignmentRepository.count({
+            where: { equipment_id: currentEquipment.id, status: Not(AssignmentStatus.RETURNED), id: Not(savedAssignment.id) }
+          });
+          if (otherActiveAssignments === 0) {
+            currentEquipment.status = EquipmentStatus.AVAILABLE;
+            await this.equipmentRepository.save(currentEquipment);
+          }
+        } else if (newStatus === AssignmentStatus.ASSIGNED) { // e.g., from Pending to Assigned
+          currentEquipment.status = EquipmentStatus.IN_USE;
+          await this.equipmentRepository.save(currentEquipment);
+        }
+        // Add more transitions like LOST, DAMAGED -> UNDER_MAINTENANCE if needed
       }
     }
-
-    // If equipment ID was changed in the update
-    if (updateDto.equipment_id && updateDto.equipment_id !== previousEquipmentId) {
-        // Set old equipment to AVAILABLE (if no other active assignments)
-        // This requires checking other assignments for previousEquipmentId
-        await this.equipmentService.update(previousEquipmentId, { status: EquipmentStatus.AVAILABLE });
-        // Set new equipment to IN_USE
-        await this.equipmentService.update(updateDto.equipment_id, { status: EquipmentStatus.IN_USE });
-    }
-
-    return updatedAssignment;
+    // Re-fetch the assignment to ensure all relations and latest data are returned
+    return this.findOne(savedAssignment.id);
   }
 
   async remove(id: string): Promise<void> {
     this.logger.log(`Removing equipment assignment with id: ${id}`);
-    const assignment = await this.findOne(id); // Ensures assignment exists
+    const assignment = await this.findOne(id); // Ensures assignment exists and loads equipment relation
 
-    // Before removing, set associated equipment back to AVAILABLE if it was IN_USE due to this assignment.
-    // This is a simplified check. A robust solution would check if there are OTHER active assignments for this equipment.
-    if (assignment.equipment.status === EquipmentStatus.IN_USE) {
-        const otherAssignments = await this.assignmentRepository.count({
-            where: {
-                equipment_id: assignment.equipment_id,
-                status: AssignmentStatus.ASSIGNED,
-                id: Not(assignment.id) // TypeORM `Not` operator if available and needed
-            }
-        });
-        // The above `Not(assignment.id)` is pseudo-code for TypeORM's Not. 
-        // A simpler check for now: if this one was ASSIGNED, make equipment AVAILABLE.
-        if (assignment.status === AssignmentStatus.ASSIGNED) {
-             await this.equipmentService.update(assignment.equipment_id, {
-                status: EquipmentStatus.AVAILABLE,
-            });
-        }
+    const equipmentId = assignment.equipment_id;
+    const wasActiveAssignment = assignment.status !== AssignmentStatus.RETURNED;
+
+    const result = await this.assignmentRepository.delete(id); // Use delete for @BeforeRemove or soft-delete for @BeforeSoftRemove
+    if (result.affected === 0) {
+      throw new NotFoundException(`Equipment assignment with ID "${id}" could not be deleted.`);
     }
-    await this.assignmentRepository.remove(assignment);
+
+    if (wasActiveAssignment && equipmentId) {
+      const equipment = await this.equipmentRepository.findOneBy({ id: equipmentId });
+      if (equipment) {
+        const otherActiveAssignments = await this.assignmentRepository.count({
+          where: { equipment_id: equipmentId, status: Not(AssignmentStatus.RETURNED) }
+        });
+        if (otherActiveAssignments === 0) {
+          equipment.status = EquipmentStatus.AVAILABLE;
+          await this.equipmentRepository.save(equipment);
+        }
+      }
+    }
   }
 } 

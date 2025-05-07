@@ -12,15 +12,15 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  SetMetadata,
 } from '@nestjs/common';
 import { EquipmentService } from './equipment.service';
 import { CreateEquipmentDto } from './dto/create-equipment.dto';
 import { UpdateEquipmentDto } from './dto/update-equipment.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@/core/guards/jwt-auth.guard';
-import { RolesGuard } from '@/core/guards/roles.guard';
-import { Roles } from '@/core/decorators/roles.decorator';
-import { RoleName } from '@/modules/roles/entities/role.entity'; // Assuming RoleName enum exists
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard, ROLES_KEY } from '../../core/guards/roles.guard';
+import { RoleName } from '../roles/entities/role.entity';
 import { Pagination } from 'nestjs-typeorm-paginate';
 import { Equipment } from './entities/equipment.entity';
 
@@ -32,8 +32,8 @@ export class EquipmentController {
   constructor(private readonly equipmentService: EquipmentService) {}
 
   @Post()
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
-  @ApiOperation({ summary: 'Create new equipment [Admin, Manager Only]' })
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER])
+  @ApiOperation({ summary: 'Create new equipment' })
   @ApiResponse({ status: 201, description: 'Equipment created successfully.', type: Equipment })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -43,33 +43,35 @@ export class EquipmentController {
   }
 
   @Get()
-  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.USER) // Or adjust as per who can view equipment
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER, RoleName.PHOTOGRAPHER])
   @ApiOperation({ summary: 'Get all equipment with pagination' })
   @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number, example: 1 })
   @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number, example: 10 })
-  @ApiResponse({ status: 200, description: 'List of equipment.', type: Pagination<Equipment> /* Check this type */ })
+  @ApiResponse({ status: 200, description: 'List of equipment.', type: Pagination<Equipment> })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   findAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
   ): Promise<Pagination<Equipment>> {
-    limit = limit > 100 ? 100 : limit; // Cap limit
+    limit = limit > 100 ? 100 : limit;
     return this.equipmentService.findAll({ page, limit, route: '/api/equipment' });
   }
 
   @Get(':id')
-  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.USER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER, RoleName.PHOTOGRAPHER])
   @ApiOperation({ summary: 'Get equipment by ID' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Equipment ID' })
   @ApiResponse({ status: 200, description: 'Equipment details.', type: Equipment })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Equipment not found.' })
   findOne(@Param('id', ParseUUIDPipe) id: string): Promise<Equipment> {
-    return this.equipmentService.findOne(id, { relations: ['assignments'] }); // Optionally load assignments
+    return this.equipmentService.findOne(id);
   }
 
   @Patch(':id')
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
-  @ApiOperation({ summary: 'Update equipment by ID [Admin, Manager Only]' })
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER])
+  @ApiOperation({ summary: 'Update equipment' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Equipment ID' })
   @ApiResponse({ status: 200, description: 'Equipment updated successfully.', type: Equipment })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -83,9 +85,10 @@ export class EquipmentController {
   }
 
   @Delete(':id')
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER])
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete equipment by ID [Admin, Manager Only]' })
+  @ApiOperation({ summary: 'Delete equipment' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid', description: 'Equipment ID' })
   @ApiResponse({ status: 204, description: 'Equipment deleted successfully.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Equipment not found.' })

@@ -12,16 +12,16 @@ import {
   HttpCode,
   HttpStatus,
   Req,
+  SetMetadata,
 } from '@nestjs/common';
 import { EquipmentAssignmentsService } from './equipment-assignments.service';
 import { CreateEquipmentAssignmentDto } from './dto/create-equipment-assignment.dto';
 import { UpdateEquipmentAssignmentDto } from './dto/update-equipment-assignment.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
-import { JwtAuthGuard } from '@/core/guards/jwt-auth.guard';
-import { RolesGuard } from '@/core/guards/roles.guard';
-import { Roles } from '@/core/decorators/roles.decorator';
-import { RoleName } from '@/modules/roles/entities/role.entity';
-import { AuthenticatedRequest } from '@/core/interfaces/authenticated-request.interface';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam } from '@nestjs/swagger';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard, ROLES_KEY } from '../../core/guards/roles.guard';
+import { RoleName } from '../roles/entities/role.entity';
+import { AuthenticatedRequest } from '../../auth/interfaces/authenticated-request.interface';
 import { Pagination } from 'nestjs-typeorm-paginate';
 import { EquipmentAssignment } from './entities/equipment-assignment.entity';
 
@@ -35,7 +35,7 @@ export class EquipmentAssignmentsController {
   ) {}
 
   @Post()
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER])
   @ApiOperation({ summary: 'Create new equipment assignment [Admin, Manager Only]' })
   @ApiResponse({ status: 201, description: 'Assignment created.', type: EquipmentAssignment })
   @ApiResponse({ status: 400, description: 'Invalid input / Equipment not available.' })
@@ -50,23 +50,32 @@ export class EquipmentAssignmentsController {
   }
 
   @Get()
-  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.USER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER, RoleName.PHOTOGRAPHER])
   @ApiOperation({ summary: 'Get all equipment assignments with pagination' })
   @ApiQuery({ name: 'page', required: false, type: Number })
   @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ name: 'equipment_id', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'show_id', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'assigned_to_user_id', required: false, type: String, format: 'uuid' })
+  @ApiQuery({ name: 'status', required: false, type: String })
   @ApiResponse({ status: 200, description: 'List of assignments.', type: Pagination<EquipmentAssignment> /* Check Type */ })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   findAll(
     @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
+    @Query('equipment_id') equipment_id?: string,
+    @Query('show_id') show_id?: string,
+    @Query('assigned_to_user_id') assigned_to_user_id?: string,
+    @Query('status') status?: string,
   ): Promise<Pagination<EquipmentAssignment>> {
     limit = limit > 100 ? 100 : limit;
-    return this.assignmentsService.findAll({ page, limit, route: '/api/equipment-assignments' });
+    return this.assignmentsService.findAll({ page, limit, route: '/api/equipment-assignments' }, { equipment_id, show_id, assigned_to_user_id, status });
   }
 
   @Get(':id')
-  @Roles(RoleName.ADMIN, RoleName.MANAGER, RoleName.USER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER, RoleName.PHOTOGRAPHER])
   @ApiOperation({ summary: 'Get equipment assignment by ID' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Assignment details.', type: EquipmentAssignment })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Assignment not found.' })
@@ -75,8 +84,9 @@ export class EquipmentAssignmentsController {
   }
 
   @Patch(':id')
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER])
   @ApiOperation({ summary: 'Update equipment assignment by ID [Admin, Manager Only]' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 200, description: 'Assignment updated.', type: EquipmentAssignment })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
@@ -84,14 +94,16 @@ export class EquipmentAssignmentsController {
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() updateDto: UpdateEquipmentAssignmentDto,
+    @Req() req: AuthenticatedRequest,
   ): Promise<EquipmentAssignment> {
-    return this.assignmentsService.update(id, updateDto);
+    return this.assignmentsService.update(id, updateDto, req.user.id);
   }
 
   @Delete(':id')
-  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  @SetMetadata(ROLES_KEY, [RoleName.ADMIN, RoleName.MANAGER])
   @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete equipment assignment by ID [Admin, Manager Only]' })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
   @ApiResponse({ status: 204, description: 'Assignment deleted.' })
   @ApiResponse({ status: 403, description: 'Forbidden.' })
   @ApiResponse({ status: 404, description: 'Assignment not found.' })

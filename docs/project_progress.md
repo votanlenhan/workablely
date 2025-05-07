@@ -37,134 +37,96 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
   - **Bổ sung `Users` module:** Hoàn thiện CRUD cho `UsersService` và `UsersController`, thêm chức năng gán/bỏ gán `Role`, hỗ trợ phân trang cho `findAll` trả về `PlainUser`.
   - **Triển khai module `Clients`:** Entity, DTOs, `ClientsService` (CRUD, phân trang), `ClientsController` (CRUD endpoints, phân trang).
   - **Triển khai module `ShowRoles`:** Entity, DTOs, `ShowRolesService` (CRUD, phân trang), `ShowRolesController` (CRUD endpoints, phân trang).
-  - **Triển khai module `Shows`:** Entity (không kế thừa BaseEntity), DTOs, `ShowsService` (CRUD, phân trang, logic tính toán cơ bản), `ShowsController` (CRUD endpoints, phân trang).
-  - **Triển khai module `ShowAssignments`:**
-    - Tạo cấu trúc cơ bản: Entity (`ShowAssignment`), DTOs (`CreateShowAssignmentDto`, `UpdateShowAssignmentDto`), Service (`ShowAssignmentsService`), Controller (`ShowAssignmentsController`), Module (`ShowAssignmentsModule`).
-    - Cập nhật các entity liên quan (`Show`, `User`, `ShowRole`) để thêm quan hệ `OneToMany`/`ManyToOne` với `ShowAssignment`.
+  - **Triển khai module `Shows`:** Entity, DTOs, `ShowsService` (CRUD, phân trang, logic tính toán cơ bản, `updateShowFinancesAfterPayment`), `ShowsController` (CRUD endpoints, phân trang).
+  - **Triển khai module `ShowAssignments`:** Entity, DTOs, `ShowAssignmentsService` (CRUD, phân trang), `ShowAssignmentsController` (CRUD endpoints, phân trang).
+  - **Triển khai module `Payments`:**
+    - Entity (`Payment` với quan hệ tới `Show` và `User`).
+    - DTOs (`CreatePaymentDto`, `UpdatePaymentDto`).
+    - `PaymentsService` (CRUD, phân trang, xử lý transaction với `QueryRunner`, gọi `showsService.updateShowFinancesAfterPayment`).
+    - `PaymentsController` (CRUD endpoints, Swagger, Guards, Roles).
     - Cập nhật `AppModule` và `ormconfig.ts`.
+  - **Triển khai module `Equipment`:**
+    - Entity (`Equipment` với enum `EquipmentStatus`).
+    - DTOs (`CreateEquipmentDto`, `UpdateEquipmentDto`).
+    - `EquipmentService` (CRUD, phân trang).
+    - `EquipmentController` (CRUD endpoints, Swagger, Guards, Roles).
+    - Cập nhật `AppModule` và `ormconfig.ts`.
+  - **Triển khai module `EquipmentAssignments`:**
+    - Entity (`EquipmentAssignment` với enum `AssignmentStatus`, quan hệ tới `Equipment`, `Show`, `User`).
+    - DTOs (`CreateEquipmentAssignmentDto`, `UpdateEquipmentAssignmentDto`).
+    - `EquipmentAssignmentsService` (CRUD, phân trang, logic cập nhật `Equipment.status` khi assignment thay đổi).
+    - `EquipmentAssignmentsController` (CRUD endpoints, Swagger, Guards, Roles).
+    - Cập nhật `AppModule` và `ormconfig.ts`, bao gồm cả việc inject repositories cần thiết vào service.
   - **Migrations:**
-    - Rất nhiều file migration cho schema ban đầu đã được tạo và chạy thành công trong `api/src/database/migrations`.
-    - **Xử lý sự cố migration:** Gặp nhiều lỗi khi tạo và chạy migration cho `ShowAssignments` và cập nhật quan hệ `Client-Show` do:
-      - Lỗi đường dẫn import giữa các entity (relative paths vs. aliases `@/`) khi chạy TypeORM CLI trực tiếp (`npx typeorm-ts-node-commonjs`).
-      - Lỗi "already exists" cho các khóa ngoại (`FK_...`), index (`IDX_...`), và kiểu dữ liệu (`enum`) do các lần chạy migration trước đó không hoàn chỉnh hoặc do cách TypeORM tự động tạo migration.
-    - **Giải pháp:**
-      - Sử dụng script `npm run typeorm -- migration:generate ...` để tạo migration (giải quyết lỗi đường dẫn).
-      - Comment out các lệnh `createForeignKey` bị trùng lặp trong migration cũ (`1746504872419-CreateShowsTableManual.ts`).
-      - Comment out các lệnh `DROP INDEX` và `CREATE TYPE` bị trùng lặp/không cần thiết trong migration mới nhất (`1746509098321-CreateShowAssignmentsAndUpdateRelations.ts`).
-      - Chạy lại `npm run migration:run` thành công sau khi sửa lỗi.
+    - Các migration ban đầu cho schema đã được tạo và chạy.
+    - Xử lý sự cố migration cho `ShowAssignments` và các quan hệ liên quan.
+    - Tạo và chạy thành công migration cho `Payments` (`CreatePaymentsTableAndRelations`) sau khi sửa các lỗi TypeScript liên quan đến định nghĩa entity và quan hệ (`Payment`, `Show`, `User`).
+    - Cập nhật `ormconfig.ts` để TypeORM CLI nhận diện đúng các entity mới.
+    - Tạo và chạy thành công migration cho `Equipment` và `EquipmentAssignments` (`CreateEquipmentAndAssignmentsTables`) sau khi sửa các lỗi TypeScript và import path.
 
 ## 4. Kiểm thử và Sửa lỗi:
 
-- Đã thực hiện chạy các bài kiểm thử (`npm run test`) cho backend ban đầu và xác định các lỗi khởi động/logic/phụ thuộc.
-- **Đã khắc phục các lỗi liên quan đến:**
-  - Đường dẫn import không chính xác.
-  - Thiếu các dependency cần thiết (`nestjs-typeorm-paginate`, `@golevelup/ts-jest`).
-  - Lỗi khởi động server `EADDRINUSE`.
-  - Các lỗi TypeScript (`TS2339`, `TS2307`, `TS2561`, `TS2739`, `TS18048`, `TS2322`, `TS2345`, `TS2451`).
-  - Các lỗi NestJS (`UnknownExportException`, `UnknownDependenciesException`).
-  - Lỗi TypeORM (`EntityMetadataNotFound`).
-  - Lỗi logic đăng nhập (thiếu `password_hash`).
+- **Đã khắc phục các lỗi chung:** Đường dẫn import, thiếu dependency, lỗi khởi động server, lỗi TypeScript, lỗi NestJS, lỗi TypeORM, lỗi logic.
 - **Unit Testing:**
-  - Đã viết unit tests toàn diện cho `PermissionsService`, `RolesService`, `UsersService` sử dụng Jest và mocking repositories.
-  - Đã viết unit tests cho `ClientsService` và `ShowRolesService`.
-  - Đã viết unit tests cho `ShowsService`.
-  - Gặp sự cố với alias path (`@/`) trong môi trường Jest, đã tạm thời sửa bằng đường dẫn tương đối trong các file test và service/module liên quan (`ShowsService`, `ShowsModule`), sau đó cấu hình `moduleNameMapper` trong `package.json` để giải quyết.
-  - Đã sửa lỗi các unit tests liên quan đến mocking (`repository.preload`, `createQueryBuilder`, `findOne` sequential calls), xử lý logic (duplicate role assignment), và các assertions.
-  - Đã sửa lỗi dependency injection trong các file test controller.
-  - **Tất cả unit tests hiện tại (`npm run test`) cho các module cốt lõi (auth, users, roles, permissions) đã PASS.**
-  - Đã viết unit tests cho `ShowAssignmentsService`, bao gồm các test case cho CRUD và xử lý logic (xác nhận, từ chối).
-  - Đã sửa lỗi tất cả các unit tests hiện có (bao gồm cả lỗi mocking `paginate` và các lỗi TypeScript/logic khác) cho các services: `ClientsService`, `ShowRolesService`, `ShowsService`, `ShowAssignmentsService`.
-  - **Tất cả các unit tests hiện có trong dự án cho các Services (`npm run test`) đều đang PASS.**
-  - **Đã viết và sửa lỗi unit tests cho tất cả các Controllers đã triển khai:** `ShowAssignmentsController`, `ShowsController`, `ClientsController`, `ShowRolesController`, `UsersController`, `PermissionsController`, `RolesController`, `AuthController`.
-  - **Tất cả các unit tests hiện có trong dự án cho các Controllers (`npm run test -- *.controller.spec.ts`) đều đang PASS.**
+  - Đã viết và sửa lỗi unit tests toàn diện cho tất cả các Services và Controllers đã triển khai, bao gồm: `Auth`, `Users`, `Roles`, `Permissions`, `Clients`, `ShowRoles`, `Shows`, `ShowAssignments`, `Payments`, `Equipment`, và `EquipmentAssignments`.
+  - Quá trình sửa lỗi unit test bao gồm:
+    - Chuẩn hóa và sửa lỗi đường dẫn import (relative vs. alias `@/`).
+    - Cấu hình Jest (`moduleNameMapper` trong `package.json`) và xử lý các vấn đề liên quan đến `ts-jest` và `modulePaths`.
+    - Sửa lỗi mock TypeORM repository (bao gồm `QueryRunner`, `DataSource`, `manager.getRepository`) và các service phụ thuộc.
+    - Đảm bảo các đối tượng mock (mock data) cung cấp đầy đủ các thuộc tính bắt buộc theo type definition (ví dụ: `created_at`, `updated_at` từ `BaseEntity`).
+    - Sửa lỗi logic trong các bài test (ví dụ: thứ tự tham số, kỳ vọng đúng cho mock calls, xử lý promise rejection).
+    - Ép kiểu (casting) cho các mock function của Jest (`as jest.Mock`) để giải quyết lỗi TypeScript `TS2339`.
+    - Điều chỉnh logic test cho phù hợp với thay đổi trong service (ví dụ: cách `ShowsService.remove` hoạt động, cách `PaymentsService.update` xử lý transaction và fetch dữ liệu).
+    - Khắc phục các lỗi TypeScript cụ thể như `TS2561` (sai tên thuộc tính trong `orderBy`) và `TS2322` (gán `null` cho type không cho phép `null`).
+  - **Kết quả:** Tất cả 24 bộ unit test (266 bài test) cho backend (`npm run test`) đều đang PASS.
 - Đã chạy linter (`npm run lint`) và formatter (`npm run format`).
 
 ## 5. Kiểm thử End-to-End (E2E) với Playwright:
 
 - **Thiết lập:**
-
-  - Cài đặt `@playwright/test` và các dependency trình duyệt (`npx playwright install --with-deps`).
-  - Tạo file cấu hình `playwright.config.ts` ở thư mục gốc dự án, trỏ `testDir` đến `./e2e` và cấu hình `baseURL` là `http://localhost:3000/api`.
-  - Tạo các file spec E2E (ví dụ: `auth.spec.ts`, `roles.spec.ts`, etc.) trong thư mục `e2e/` cho mỗi module API.
-
+  - Cài đặt Playwright, cấu hình `playwright.config.ts` (`testDir: './e2e'`, `baseURL`).
+  - Tạo các file spec E2E cho mỗi module API.
 - **Các thách thức và giải pháp chính trong quá trình viết và gỡ lỗi E2E tests:**
-
-  - **Quản lý Người dùng Admin và Vai trò Admin:**
-
-    - Các bài test ban đầu thất bại do người dùng `admin@example.com` không có vai trò 'Admin' hoặc vai trò không được gán một cách nhất quán.
-    - **Giải pháp:**
-      - Tạo một migration (`SeedDefaultRoles`) để đảm bảo các vai trò 'Admin' và 'User' tồn tại trong cơ sở dữ liệu trước khi chạy test.
-      - Chuẩn hóa khối `test.beforeAll` trong tất cả các file spec E2E để:
-        1. Thử đăng ký `admin@example.com` với `roleNames: ['Admin']` (xử lý cả trường hợp tạo người dùng mới với vai trò và trường hợp người dùng đã tồn tại).
-        2. Đăng nhập với `admin@example.com` để lấy `accessToken`.
-        3. Xác minh profile của admin (`/auth/profile`) có chứa vai trò 'Admin'.
-      - Cách tiếp cận này giúp việc xác thực và ủy quyền của admin trở nên đáng tin cậy cho các lệnh gọi API tiếp theo trong các bài test.
-
-  - **Validation DTO (snake_case vs. camelCase cho request payload):**
-
-    - Nhiều bài test thất bại do request payload sử dụng `snake_case` cho thuộc tính trong khi DTOs yêu cầu `camelCase` (ví dụ: `clientId` vs. `client_id`). `ValidationPipe` với `whitelist:true` đã loại bỏ các thuộc tính `snake_case` không mong muốn, dẫn đến lỗi validation do thiếu thuộc tính `camelCase`.
-    - **Giải pháp:** Cập nhật tất cả request payload trong E2E test để gửi thuộc tính `camelCase` khớp với định nghĩa DTO.
-
-  - **Đặt tên Thuộc tính API Response (snake_case vs. camelCase cho response body):**
-
-    - Nhận thấy sự không nhất quán trong việc đặt tên thuộc tính của API response.
-      - Response của entity `Show` được chuyển đổi thành `camelCase` (ví dụ: `clientId`, `createdAt`).
-      - Response của entity `ShowAssignment` phần lớn vẫn giữ `snake_case` (ví dụ: `show_id`, `created_at`).
-    - **Giải pháp:** Điều chỉnh các assertion trong E2E test để mong đợi đúng kiểu chữ (camelCase/snake_case) mà API trả về cho từng loại entity, đảm bảo test khớp với hành vi hiện tại của API. (Ghi nhận đây là một điểm cần cải thiện để đồng bộ hóa API response trong tương lai).
-
-  - **Validation Số điện thoại:**
-
-    - Test tạo client thất bại do chuỗi ngẫu nhiên không qua được validation `@IsPhoneNumber`.
-    - **Giải pháp:** Cập nhật test để sử dụng số điện thoại có định dạng E.164 hợp lệ (ví dụ: `+14155552671`).
-
-  - **HTTP Status Code cho Endpoint DELETE:**
-
-    - Một số endpoint `DELETE` trả về 200 OK thay vì 204 No Content.
-    - **Giải pháp:** Thêm decorator `@HttpCode(HttpStatus.NO_CONTENT)` vào các phương thức controller tương ứng (`ClientsController.remove`, `ShowRolesController.remove`, `ShowsController.remove`) để đảm bảo trả về status 204.
-
-  - **Xử lý Xung đột khi Tạo Tài nguyên Trùng lặp (409 Conflict):**
-
-    - `ShowRolesService` đã throw `Error` chung khi tạo vai trò trùng tên, dẫn đến lỗi 500 thay vì 409.
-    - **Giải pháp:** Sửa đổi `ShowRolesService.create` và `update` để throw `ConflictException` đối với các vi phạm ràng buộc unique, điều này được NestJS map thành status 409.
-
-  - **Assertion cho Kiểu Dữ liệu Số thập phân/Number:**
-
-    - Test cập nhật `ShowRoles` thất bại do mong đợi một chuỗi cho giá trị thập phân (`default_allocation_percentage`) trong khi API trả về một số.
-    - **Giải pháp:** Thay đổi assertion trong test để mong đợi một số.
-
-  - **Lỗi 500 khi GET với Quan hệ (Relations):**
-
-    - `GET /shows/:id` và `GET /shows` (list) ban đầu gây ra lỗi 500 khi cố gắng load một số quan hệ nhất định, đặc biệt là `created_by_user` và `assignments` với các chi tiết lồng nhau.
-    - **Giải pháp (Tạm thời để ổn định E2E):** Đơn giản hóa các quan hệ được load trong `ShowsService.findOne` (chỉ còn `['client']`) và `ShowsService.findAll` (chỉ còn `['client']`) để tránh lỗi 500. Điều này cho phép các bài test CRUD E2E cơ bản vượt qua. Nguyên nhân gốc của việc các quan hệ này gây ra lỗi 500 cần được điều tra thêm nếu các dữ liệu này cần thiết cho API response.
-
-  - **Lỗi Cú pháp File Test E2E:**
-    - Sửa lỗi template literal không được đóng đúng cách trong file `e2e/show-assignments.spec.ts` làm hỏng quá trình parse test.
-
+  - Quản lý Người dùng Admin và Vai trò Admin (chuẩn hóa `test.beforeAll`, migration `SeedDefaultRoles`).
+  - Validation DTO (snake_case vs. camelCase cho request payload).
+  - Đặt tên Thuộc tính API Response (snake_case vs. camelCase).
+  - Validation Số điện thoại (sử dụng E.164).
+  - HTTP Status Code cho Endpoint DELETE (sử dụng `@HttpCode(HttpStatus.NO_CONTENT)`).
+  - Xử lý Xung đột khi Tạo Tài nguyên Trùng lặp (sửu dụng `ConflictException`).
+  - Assertion cho Kiểu Dữ liệu Số thập phân/Number.
+  - Lỗi 500 khi GET `Show` với Relations (tạm thời đơn giản hóa relations, sau đó khôi phục và pass).
+  - **Sửa lỗi `TypeError: (0 , _randomHelpers.generateRandomString) is not a function`:** Tạo và export đúng các helper function trong `e2e/utils/random-helpers.ts`.
+  - **Sửa lỗi `TypeError: playwright.request.post is not a function`:** Sử dụng đúng fixture `request` từ `test.beforeAll(async ({ request }) => {...})` thay vì `playwright.request`.
+  - **Sửa lỗi 404 `Cannot POST /api/auth/signup` và `Cannot GET /auth/profile`:**
+    - Thêm global prefix `app.setGlobalPrefix('api');` vào `api/src/main.ts`.
+    - Sửa lỗi logic `baseURL` trong `APIRequestContext` của Playwright, chuyển sang sử dụng full URL path cho các request trong `adminRequestContext` (trong `payments.spec.ts`).
+    - Đồng bộ hóa tất cả các file spec E2E khác (`auth`, `roles`, `clients`, `permissions`, `users`, `shows`, `show-assignments`, `show-roles`) để sử dụng `BASE_URL` và full path cho các API calls.
+  - **Sửa lỗi `QueryRunnerAlreadyReleasedError` trong `PaymentsService`:** Refactor lại logic `create` và `update` để đảm bảo `QueryRunner` được release đúng lúc và việc fetch lại entity sau transaction sử dụng query mới.
+  - **Sửa lỗi `Playwright Test did not expect test.beforeAll()` và `test.describe()` errors:** Di chuyển `test.beforeAll` và `test.afterAll` vào trong `test.describe` cho các file spec mới (`equipment.spec.ts`, `equipment-assignments.spec.ts`). Reinstall `node_modules` để giải quyết vấn đề phiên bản Playwright tiềm ẩn.
+  - **Sửa lỗi payload và DTO trong E2E tests cho `Equipment` và `EquipmentAssignments`**:
+    - `equipment.spec.ts`: Sửa payload POST (bỏ các trường không có trong DTO), đảm bảo `serial_number` là duy nhất.
+    - `equipment-assignments.spec.ts`: Sửa logic tạo Role (để xử lý conflict 409 khi chạy song song), sửa định dạng số điện thoại client, sửa payload DTO (thay `assigned_to_user_id` bằng `user_id`, `assignment_notes` bằng `notes`, `return_notes` bằng `notes`).
 - **Trạng thái Kiểm thử E2E Hiện tại:**
-  - Tất cả các file spec E2E riêng lẻ (`auth.spec.ts`, `roles.spec.ts`, `permissions.spec.ts`, `users.spec.ts`, `clients.spec.ts`, `show-roles.spec.ts`, `shows.spec.ts`, `show-assignments.spec.ts`) hiện tại đều **PASS**.
+  - **Tất cả 70 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai đều đang PASS.**
 
 ## 6. Trạng thái Hiện tại:
 
-- Phần backend NestJS đã có cấu trúc cơ bản, các module `auth`, `users`, `roles`, `permissions`, `clients`, `show-roles`, `shows`, `show-assignments` đã được triển khai với các chức năng CRUD và logic nghiệp vụ cơ bản.
-- Chức năng đăng ký, đăng nhập, quản lý người dùng, vai trò, quyền hạn, khách hàng, vai trò show, show, và gán vai trò cho show cơ bản hoạt động.
-- Các API endpoints liên quan đều hỗ trợ phân trang (ngoại trừ `ShowAssignments` hiện tại chưa phân trang).
-- **Migrations:** Tất cả các migration hiện có, bao gồm cả migration cho `show_assignments` (`1746509098321`) và seed dữ liệu (`SeedDefaultRoles`), đã chạy thành công sau khi xử lý các sự cố.
+- Phần backend NestJS đã có các module `Auth`, `Users`, `Roles`, `Permissions`, `Clients`, `ShowRoles`, `Shows`, `ShowAssignments`, `Payments`, `Equipment`, và `EquipmentAssignments` được triển khai với CRUD và logic nghiệp vụ cốt lõi.
+- Các chức năng liên quan đến các module trên hoạt động ổn định.
+- Tất cả các API endpoints hỗ trợ phân trang.
+- **Migrations:** Tất cả các migration, bao gồm cả cho `Payments`, `Equipment`, và `EquipmentAssignments`, đã chạy thành công.
 - **Server backend (`npm run start:dev`) đang chạy ổn định.**
-- **Unit Tests:** Đã bao phủ tất cả các services và controllers đã triển khai. **Tất cả các unit tests (`npm run test`) đều đang PASS.**
-- **E2E Tests:** Đã triển khai và sửa lỗi cho tất cả các module API hiện có. **Tất cả các E2E tests (`npx playwright test`) đều đang PASS khi chạy riêng lẻ.**
-- Các tài liệu yêu cầu (`specs.md`) và kiến trúc (`architecture.md`) đã được tạo và cập nhật. `project_progress.md` đã được cập nhật.
+- **Unit Tests:** Tất cả unit tests đều PASS (24 suites, 266 tests).
+- **E2E Tests:** Tất cả E2E tests đều PASS (70 tests).
+- Các tài liệu yêu cầu (`specs.md`) và kiến trúc (`architecture.md`) đã được cập nhật. `project_progress.md` được cập nhật thường xuyên.
 
 ## 7. Bước Tiếp theo Đề xuất:
 
-- **Testing:**
-  - Chạy toàn bộ bộ E2E tests (`npx playwright test`) để đảm bảo không có xung đột giữa các file spec khi chạy cùng nhau và các tài nguyên được dọn dẹp đúng cách.
-  - Điều tra và khắc phục triệt để nguyên nhân gây lỗi 500 khi load quan hệ `created_by_user` và `assignments` trong `ShowsService` nếu các dữ liệu này cần thiết cho API response.
-  - Bổ sung E2E tests cho các luồng nghiệp vụ phức tạp hơn (ví dụ: tạo Show, gán Assignment, sau đó xác nhận Assignment).
-- **Hoàn thiện `ShowAssignments`:**
-  - Thêm phân trang (pagination) cho `findAll` trong `ShowAssignmentsService` và `ShowAssignmentsController`.
-  - Xem xét lại và hoàn thiện logic trong `ShowAssignmentsService` (ví dụ: validation, xử lý edge cases).
-- **Triển khai các module nghiệp vụ khác:** `Payments`, `Equipment`, `Expenses`, `RevenueAllocations`, `MemberEvaluations` etc. theo `docs/architecture.md`.
-- **Xem xét lại các TODO:** Giải quyết các ghi chú TODO còn lại trong code (ví dụ: trong `show.entity.ts`, `user.entity.ts` về các relations chưa được implement).
+- **Triển khai các module nghiệp vụ còn lại theo `docs/architecture.md` và `docs/specs.md`:**
+  - Ưu tiên tiếp theo có thể là các module tài chính khác như `Expenses`, `ExternalIncomes`, `RevenueAllocations`.
+  - Sau đó là `MemberEvaluations`, `AuditLogs`, `Configurations`.
+- **Xem xét lại các TODO:** Giải quyết các ghi chú TODO còn lại trong code.
+- **Tích hợp Frontend:** Bắt đầu kế hoạch tích hợp với các giao diện Flutter và NextJS khi các API chính đã ổn định.
 
 - [x] `ShowAssignmentsController`
 - [x] `ShowsController`
@@ -174,3 +136,6 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
 - [x] `PermissionsController`
 - [x] `RolesController`
 - [x] `AuthController`
+- [x] `PaymentsController`
+- [x] `EquipmentController`
+- [x] `EquipmentAssignmentsController`

@@ -7,9 +7,19 @@ import { EquipmentModule } from '@/modules/equipment/equipment.module';
 import { ShowsModule } from '@/modules/shows/shows.module';
 import { UsersModule } from '@/modules/users/users.module';
 
+// Import entities needed for repository injection
+import { Equipment } from '@/modules/equipment/entities/equipment.entity';
+import { User } from '@/modules/users/entities/user.entity';
+import { Show } from '@/modules/shows/entities/show.entity';
+
 @Module({
   imports: [
-    TypeOrmModule.forFeature([EquipmentAssignment]),
+    TypeOrmModule.forFeature([
+      EquipmentAssignment, 
+      Equipment, 
+      User, 
+      Show
+    ]),
     forwardRef(() => EquipmentModule),
     forwardRef(() => ShowsModule),
     forwardRef(() => UsersModule),

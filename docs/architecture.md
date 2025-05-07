@@ -158,14 +158,15 @@ Dưới đây là cấu trúc ban đầu cho các bảng chính trong cơ sở d
 
 - `id` (UUID, PK)
 - `name` (VARCHAR, Not Null)
+- `description` (TEXT, Nullable)
 - `serial_number` (VARCHAR, Unique, Nullable)
-- `category` (VARCHAR, Not Null)
+- `category` (VARCHAR, Nullable)
 - `brand` (VARCHAR, Nullable)
 - `model` (VARCHAR, Nullable)
 - `purchase_date` (DATE, Nullable)
 - `purchase_price` (DECIMAL(10, 2), Nullable, Default: 0.00)
-- `current_status` (VARCHAR, Not Null, Default: 'Available')
-- `condition_notes` (TEXT, Nullable)
+- `status` (ENUM EquipmentStatus, Not Null, Default: 'Available')
+- `notes` (TEXT, Nullable)
 - `last_maintenance_date` (DATE, Nullable)
 - `next_maintenance_date` (DATE, Nullable)
 - `created_at` (TIMESTAMPTZ, Not Null, Default: NOW())
@@ -177,14 +178,16 @@ Dưới đây là cấu trúc ban đầu cho các bảng chính trong cơ sở d
 - `id` (UUID, PK)
 - `equipment_id` (UUID, FK -> equipment.id, Not Null)
 - `show_id` (UUID, FK -> shows.id, Nullable)
-- `assigned_to_user_id` (UUID, FK -> users.id, Nullable)
-- `assigned_by_user_id` (UUID, FK -> users.id, Nullable)
-- `assigned_at` (TIMESTAMPTZ, Not Null, Default: NOW())
-- `expected_return_datetime` (TIMESTAMPTZ, Nullable)
-- `actual_return_datetime` (TIMESTAMPTZ, Nullable)
-- `assignment_notes` (TEXT, Nullable)
-- `return_notes` (TEXT, Nullable)
-- _Relations: M2O with `equipment`, M2O with `shows`, M2O with `users` (assigned_to), M2O with `users` (assigned_by)_
+- `user_id` (UUID, FK -> users.id, Nullable)
+- `assigned_by_user_id` (UUID, FK -> users.id, Not Null)
+- `assignment_date` (TIMESTAMPTZ, Not Null)
+- `expected_return_date` (TIMESTAMPTZ, Nullable)
+- `actual_return_date` (TIMESTAMPTZ, Nullable)
+- `status` (ENUM AssignmentStatus, Not Null, Default: 'Assigned')
+- `notes` (TEXT, Nullable)
+- `created_at` (TIMESTAMPTZ, Not Null, Default: NOW())
+- `updated_at` (TIMESTAMPTZ, Not Null, Default: NOW())
+- _Relations: M2O with `equipment`, M2O with `shows`, M2O with `users` (user_id for who is assigned), M2O with `users` (assigned_by_user_id)_
 
 **10. `payments`** - `id` (UUID, PK) - `show_id` (UUID, FK -> shows.id, Not Null) - `amount` (DECIMAL(12, 2), Not Null) - `payment_date` (TIMESTAMPTZ, Not Null, Default: NOW()) - `payment_method` (VARCHAR, Nullable) - `transaction_reference` (VARCHAR, Nullable) - `notes` (TEXT, Nullable) - `is_deposit` (BOOLEAN, Not Null, Default: false) - `recorded_by_user_id` (UUID, FK -> users.id, Nullable) - `created_at` (TIMESTAMPTZ, Not Null, Default: NOW()) - `updated_at` (TIMESTAMPTZ, Not Null, Default: NOW()) - _Relations: M2O with `shows`, M2O with `users` (recorded_by)_
 

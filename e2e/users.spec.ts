@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 // Helper to generate a random string for uniqueness
 const generateRandomString = (length: number = 8) => Math.random().toString(36).substring(2, 2 + length);
 
@@ -16,7 +18,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
   test.beforeAll(async ({ request }) => {
     // 1. Attempt to sign up the admin user with 'Admin' role by name
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -35,7 +37,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in users.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -45,7 +47,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
     
     // 3. Verify the logged-in user has the Admin role via profile check
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in users.spec: ${await profileResponse.text()}`).toBeTruthy();
@@ -59,7 +61,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
   });
 
   test('POST /users - should create a new user successfully', async ({ request }) => {
-    const response = await request.post('/users', {
+    const response = await request.post(`${BASE_URL}/users`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         email: newUserEmail,
@@ -78,7 +80,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
   });
 
   test('POST /users - should fail to create a user with a duplicate email', async ({ request }) => {
-    const response = await request.post('/users', {
+    const response = await request.post(`${BASE_URL}/users`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         email: newUserEmail, // Duplicate email
@@ -92,7 +94,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
 
   test('GET /users/:id - should retrieve the created user by ID', async ({ request }) => {
     expect(createdUserId).not.toBe('');
-    const response = await request.get(`/users/${createdUserId}`, {
+    const response = await request.get(`${BASE_URL}/users/${createdUserId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -102,7 +104,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
   });
 
   test('GET /users - should retrieve a list of users (and check for created user)', async ({ request }) => {
-    const response = await request.get('/users', {
+    const response = await request.get(`${BASE_URL}/users`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { page: 1, limit: 50 }, // Fetch more to increase chance of finding user without knowing total pages
     });
@@ -119,7 +121,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
 
   test('PATCH /users/:id - should update the created user', async ({ request }) => {
     expect(createdUserId).not.toBe('');
-    const response = await request.patch(`/users/${createdUserId}`, {
+    const response = await request.patch(`${BASE_URL}/users/${createdUserId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         first_name: updatedUserFirstName,
@@ -134,7 +136,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
 
   test('DELETE /users/:id - should delete the created user', async ({ request }) => {
     expect(createdUserId).not.toBe('');
-    const response = await request.delete(`/users/${createdUserId}`, {
+    const response = await request.delete(`${BASE_URL}/users/${createdUserId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -142,7 +144,7 @@ test.describe.serial('Users API CRUD Flows (Admin)', () => {
 
   test('GET /users/:id - should fail to retrieve the deleted user', async ({ request }) => {
     expect(createdUserId).not.toBe('');
-    const response = await request.get(`/users/${createdUserId}`, {
+    const response = await request.get(`${BASE_URL}/users/${createdUserId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found

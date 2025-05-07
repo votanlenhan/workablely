@@ -22,7 +22,37 @@ export class SeedDefaultRoles1746550138303 implements MigrationInterface {
             console.log('Admin role already exists');
         }
 
-        // Seed User Role
+        // Seed Manager Role
+        let managerRole = await roleRepository.findOne({ where: { name: 'Manager' } });
+        if (!managerRole) {
+            managerRole = roleRepository.create({
+                name: 'Manager',
+                description: 'Manager with operational permissions',
+                is_system_role: false,
+                permissions: [] // Manager role might get permissions via a different process or all implicitly
+            });
+            await roleRepository.save(managerRole);
+            console.log('Manager role seeded');
+        } else {
+            console.log('Manager role already exists');
+        }
+        
+        // Seed Photographer Role
+        let photographerRole = await roleRepository.findOne({ where: { name: 'Photographer' } });
+        if (!photographerRole) {
+            photographerRole = roleRepository.create({
+                name: 'Photographer',
+                description: 'Photographer role for show assignments',
+                is_system_role: false,
+                permissions: [] // Photographer role might get permissions via a different process or all implicitly
+            });
+            await roleRepository.save(photographerRole);
+            console.log('Photographer role seeded');
+        } else {
+            console.log('Photographer role already exists');
+        }
+
+        // Seed User Role (can be a fallback or default)
         let userRole = await roleRepository.findOne({ where: { name: 'User' } });
         if (!userRole) {
             userRole = roleRepository.create({
@@ -47,20 +77,16 @@ export class SeedDefaultRoles1746550138303 implements MigrationInterface {
 
         const roleRepository = queryRunner.manager.getRepository(Role);
 
-        const adminRole = await roleRepository.findOne({ where: { name: 'Admin', is_system_role: true } });
-        if (adminRole) {
-            // Before deleting, consider unassigning this role from users or permissions if necessary
-            // await queryRunner.query(`DELETE FROM "user_roles" WHERE "role_id" = $1`, [adminRole.id]);
-            // await queryRunner.query(`DELETE FROM "role_permissions" WHERE "role_id" = $1`, [adminRole.id]);
-            await roleRepository.delete({ name: 'Admin', is_system_role: true });
-            console.log('Admin role removed by down migration (if it was a system role)');
-        }
-
-        const userRole = await roleRepository.findOne({ where: { name: 'User' } });
-        if (userRole && !userRole.is_system_role) { // Only remove if not marked as system by mistake elsewhere
-            // Similar cautions as above
-            await roleRepository.delete({ name: 'User', is_system_role: false });
-            console.log('User role removed by down migration (if it was not a system role)');
+        const rolesToDelete = ['Admin', 'Manager', 'Photographer', 'User'];
+        for (const roleName of rolesToDelete) {
+            const role = await roleRepository.findOne({ where: { name: roleName } });
+            if (role) {
+                // Before deleting, consider unassigning this role from users or permissions if necessary
+                // await queryRunner.query(`DELETE FROM "user_roles" WHERE "role_id" = $1`, [role.id]);
+                // await queryRunner.query(`DELETE FROM "role_permissions" WHERE "role_id" = $1`, [role.id]);
+                await roleRepository.delete({ name: roleName });
+                console.log(`${roleName} role removed by down migration`);
+            }
         }
     }
 

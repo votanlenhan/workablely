@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 // Helper to generate a random name
 const generateRandomName = (prefix: string) => {
   const randomString = Math.random().toString(36).substring(2, 8);
@@ -19,7 +21,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
   test.beforeAll(async ({ request }) => {
     // 1. Attempt to sign up the admin user with 'Admin' role by name
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -38,7 +40,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in roles.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -48,7 +50,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
     
     // 3. Verify the logged-in user has the Admin role via profile check
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in roles.spec: ${await profileResponse.text()}`).toBeTruthy();
@@ -62,7 +64,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
   });
 
   test('POST /roles - should create a new role successfully', async ({ request }) => {
-    const response = await request.post('/roles', {
+    const response = await request.post(`${BASE_URL}/roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: newRoleName,
@@ -79,7 +81,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
   });
 
   test('POST /roles - should fail to create a role with a duplicate name', async ({ request }) => {
-    const response = await request.post('/roles', {
+    const response = await request.post(`${BASE_URL}/roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: newRoleName, // Duplicate name
@@ -91,7 +93,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
 
   test('GET /roles/:id - should retrieve the created role by ID', async ({ request }) => {
     expect(createdRoleId).not.toBe('');
-    const response = await request.get(`/roles/${createdRoleId}`, {
+    const response = await request.get(`${BASE_URL}/roles/${createdRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -101,7 +103,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
   });
 
   test('GET /roles - should retrieve a list of roles (basic check)', async ({ request }) => {
-    const response = await request.get('/roles', {
+    const response = await request.get(`${BASE_URL}/roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       // params: { page: 1, limit: 10 } // Optional: add pagination params if testing pagination
     });
@@ -118,7 +120,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
 
   test('PATCH /roles/:id - should update the created role', async ({ request }) => {
     expect(createdRoleId).not.toBe('');
-    const response = await request.patch(`/roles/${createdRoleId}`, {
+    const response = await request.patch(`${BASE_URL}/roles/${createdRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         description: updatedRoleDescription,
@@ -133,7 +135,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
 
   test('DELETE /roles/:id - should delete the created role', async ({ request }) => {
     expect(createdRoleId).not.toBe('');
-    const response = await request.delete(`/roles/${createdRoleId}`, {
+    const response = await request.delete(`${BASE_URL}/roles/${createdRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -141,7 +143,7 @@ test.describe.serial('Roles API CRUD Flows', () => {
 
   test('GET /roles/:id - should fail to retrieve the deleted role', async ({ request }) => {
     expect(createdRoleId).not.toBe('');
-    const response = await request.get(`/roles/${createdRoleId}`, {
+    const response = await request.get(`${BASE_URL}/roles/${createdRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found

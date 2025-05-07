@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 // Helper to generate a random name
 const generateRandomName = (prefix: string) => {
   const randomString = Math.random().toString(36).substring(2, 8);
@@ -19,7 +21,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
   test.beforeAll(async ({ request }) => {
     // 1. Attempt to sign up the admin user with 'Admin' role by name
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -38,7 +40,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in permissions.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -48,7 +50,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
     
     // 3. Verify the logged-in user has the Admin role via profile check
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in permissions.spec: ${await profileResponse.text()}`).toBeTruthy();
@@ -62,7 +64,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
   });
 
   test('POST /permissions - should create a new permission successfully', async ({ request }) => {
-    const response = await request.post('/permissions', {
+    const response = await request.post(`${BASE_URL}/permissions`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         action: newPermissionAction,
@@ -79,7 +81,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
   });
 
   test('POST /permissions - should fail to create a permission with a duplicate action and subject', async ({ request }) => {
-    const response = await request.post('/permissions', {
+    const response = await request.post(`${BASE_URL}/permissions`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         action: newPermissionAction, // Duplicate action
@@ -92,7 +94,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
 
   test('GET /permissions/:id - should retrieve the created permission by ID', async ({ request }) => {
     expect(createdPermissionId).not.toBe('');
-    const response = await request.get(`/permissions/${createdPermissionId}`, {
+    const response = await request.get(`${BASE_URL}/permissions/${createdPermissionId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -103,7 +105,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
   });
 
   test('GET /permissions - should retrieve a list of permissions (basic check)', async ({ request }) => {
-    const response = await request.get('/permissions', {
+    const response = await request.get(`${BASE_URL}/permissions`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -120,7 +122,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
 
   test('PATCH /permissions/:id - should update the created permission', async ({ request }) => {
     expect(createdPermissionId).not.toBe('');
-    const response = await request.patch(`/permissions/${createdPermissionId}`, {
+    const response = await request.patch(`${BASE_URL}/permissions/${createdPermissionId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         description: updatedPermissionDescription,
@@ -136,7 +138,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
 
   test('DELETE /permissions/:id - should delete the created permission', async ({ request }) => {
     expect(createdPermissionId).not.toBe('');
-    const response = await request.delete(`/permissions/${createdPermissionId}`, {
+    const response = await request.delete(`${BASE_URL}/permissions/${createdPermissionId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -144,7 +146,7 @@ test.describe.serial('Permissions API CRUD Flows', () => {
 
   test('GET /permissions/:id - should fail to retrieve the deleted permission', async ({ request }) => {
     expect(createdPermissionId).not.toBe('');
-    const response = await request.get(`/permissions/${createdPermissionId}`, {
+    const response = await request.get(`${BASE_URL}/permissions/${createdPermissionId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found

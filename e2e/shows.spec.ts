@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 const generateRandomString = (length: number = 8) => Math.random().toString(36).substring(2, 2 + length);
 
 let accessToken = '';
@@ -16,7 +18,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
   test.beforeAll(async ({ request }) => {
     // 1. Attempt to sign up the admin user with 'Admin' role by name
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -35,7 +37,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in shows.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -45,7 +47,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
     
     // 3. Verify the logged-in user has the Admin role via profile check
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in shows.spec: ${await profileResponse.text()}`).toBeTruthy();
@@ -60,7 +62,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
     // Create a client to be used for creating shows (using the obtained admin accessToken)
     const clientName = `TestClientForShows_${generateRandomString()}`;
     const validPhoneNumber = '+14155552672'; // Use a valid phone number
-    const clientResponse = await request.post('/clients', {
+    const clientResponse = await request.post(`${BASE_URL}/clients`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: clientName,
@@ -77,7 +79,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
     const startTime = new Date();
     const endTime = new Date(startTime.getTime() + 2 * 60 * 60 * 1000); // 2 hours later
 
-    const response = await request.post('/shows', {
+    const response = await request.post(`${BASE_URL}/shows`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         clientId: testClientId,
@@ -103,7 +105,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
 
   test('GET /shows/:id - should retrieve the created show by ID', async ({ request }) => {
     expect(createdShowId).not.toBe('');
-    const response = await request.get(`/shows/${createdShowId}`, {
+    const response = await request.get(`${BASE_URL}/shows/${createdShowId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     console.log(`[E2E Shows Test] GET /shows/${createdShowId} status: ${response.status()}`);
@@ -118,7 +120,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
   });
 
   test('GET /shows - should retrieve a list of shows (and check for created show)', async ({ request }) => {
-    const response = await request.get('/shows', {
+    const response = await request.get(`${BASE_URL}/shows`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { page: 1, limit: 50 }, 
     });
@@ -142,7 +144,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
 
   test('PATCH /shows/:id - should update the created show', async ({ request }) => {
     expect(createdShowId).not.toBe('');
-    const response = await request.patch(`/shows/${createdShowId}`, {
+    const response = await request.patch(`${BASE_URL}/shows/${createdShowId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         title: updatedShowTitle,
@@ -161,7 +163,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
 
   test('DELETE /shows/:id - should delete the created show', async ({ request }) => {
     expect(createdShowId).not.toBe('');
-    const response = await request.delete(`/shows/${createdShowId}`, {
+    const response = await request.delete(`${BASE_URL}/shows/${createdShowId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -169,7 +171,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
 
   test('GET /shows/:id - should fail to retrieve the deleted show', async ({ request }) => {
     expect(createdShowId).not.toBe('');
-    const response = await request.get(`/shows/${createdShowId}`, {
+    const response = await request.get(`${BASE_URL}/shows/${createdShowId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found
@@ -178,7 +180,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
   // Cleanup: Delete the client created for these tests
   test.afterAll(async ({ request }) => {
     if (testClientId) {
-      await request.delete(`/clients/${testClientId}`, {
+      await request.delete(`${BASE_URL}/clients/${testClientId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       // console.log(`Cleaned up client: ${testClientId}`);

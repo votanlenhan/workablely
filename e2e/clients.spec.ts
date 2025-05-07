@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 // Helper to generate a random string for uniqueness
 const generateRandomString = (length: number = 8) => Math.random().toString(36).substring(2, 2 + length);
 
@@ -18,7 +20,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
     // If the user already exists (409), it's fine, assuming they were created correctly before.
     // UsersService.createUser should assign the 'Admin' role if the role exists.
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -37,7 +39,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in clients.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -49,7 +51,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
     // This is the crucial check. If this fails, either signup didn't assign the role,
     // or the profile endpoint doesn't return it correctly.
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed: ${await profileResponse.text()}`).toBeTruthy();
@@ -63,7 +65,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
   });
 
   test('POST /clients - should create a new client successfully', async ({ request }) => {
-    const response = await request.post('/clients', {
+    const response = await request.post(`${BASE_URL}/clients`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: newClientName,
@@ -82,7 +84,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
 
   test('GET /clients/:id - should retrieve the created client by ID', async ({ request }) => {
     expect(createdClientId).not.toBe('');
-    const response = await request.get(`/clients/${createdClientId}`, {
+    const response = await request.get(`${BASE_URL}/clients/${createdClientId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -92,7 +94,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
   });
 
   test('GET /clients - should retrieve a list of clients (and check for created client)', async ({ request }) => {
-    const response = await request.get('/clients', {
+    const response = await request.get(`${BASE_URL}/clients`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { page: 1, limit: 50 }, 
     });
@@ -109,7 +111,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
 
   test('PATCH /clients/:id - should update the created client', async ({ request }) => {
     expect(createdClientId).not.toBe('');
-    const response = await request.patch(`/clients/${createdClientId}`, {
+    const response = await request.patch(`${BASE_URL}/clients/${createdClientId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: updatedClientName,
@@ -123,7 +125,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
 
   test('DELETE /clients/:id - should delete the created client', async ({ request }) => {
     expect(createdClientId).not.toBe('');
-    const response = await request.delete(`/clients/${createdClientId}`, {
+    const response = await request.delete(`${BASE_URL}/clients/${createdClientId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -131,7 +133,7 @@ test.describe.serial('Clients API CRUD Flows', () => {
 
   test('GET /clients/:id - should fail to retrieve the deleted client', async ({ request }) => {
     expect(createdClientId).not.toBe('');
-    const response = await request.get(`/clients/${createdClientId}`, {
+    const response = await request.get(`${BASE_URL}/clients/${createdClientId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found

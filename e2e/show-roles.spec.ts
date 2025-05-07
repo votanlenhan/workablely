@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 // Helper to generate a random string for uniqueness
 const generateRandomString = (length: number = 8) => Math.random().toString(36).substring(2, 2 + length);
 
@@ -15,7 +17,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
   test.beforeAll(async ({ request }) => {
     // 1. Attempt to sign up the admin user with 'Admin' role by name
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -34,7 +36,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in show-roles.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -44,7 +46,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
     
     // 3. Verify the logged-in user has the Admin role via profile check
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in show-roles.spec: ${await profileResponse.text()}`).toBeTruthy();
@@ -58,7 +60,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
   });
 
   test('POST /show-roles - should create a new show role successfully', async ({ request }) => {
-    const response = await request.post('/show-roles', {
+    const response = await request.post(`${BASE_URL}/show-roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: newShowRoleName,
@@ -75,7 +77,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
   });
 
   test('POST /show-roles - should fail to create a show role with a duplicate name', async ({ request }) => {
-    const response = await request.post('/show-roles', {
+    const response = await request.post(`${BASE_URL}/show-roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         name: newShowRoleName, // Duplicate name
@@ -87,7 +89,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
 
   test('GET /show-roles/:id - should retrieve the created show role by ID', async ({ request }) => {
     expect(createdShowRoleId).not.toBe('');
-    const response = await request.get(`/show-roles/${createdShowRoleId}`, {
+    const response = await request.get(`${BASE_URL}/show-roles/${createdShowRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -97,7 +99,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
   });
 
   test('GET /show-roles - should retrieve a list of show roles (and check for created role)', async ({ request }) => {
-    const response = await request.get('/show-roles', {
+    const response = await request.get(`${BASE_URL}/show-roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       params: { page: 1, limit: 50 }, 
     });
@@ -114,7 +116,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
 
   test('PATCH /show-roles/:id - should update the created show role', async ({ request }) => {
     expect(createdShowRoleId).not.toBe('');
-    const response = await request.patch(`/show-roles/${createdShowRoleId}`, {
+    const response = await request.patch(`${BASE_URL}/show-roles/${createdShowRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         description: updatedShowRoleDescription,
@@ -130,7 +132,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
 
   test('DELETE /show-roles/:id - should delete the created show role', async ({ request }) => {
     expect(createdShowRoleId).not.toBe('');
-    const response = await request.delete(`/show-roles/${createdShowRoleId}`, {
+    const response = await request.delete(`${BASE_URL}/show-roles/${createdShowRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -138,7 +140,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
 
   test('GET /show-roles/:id - should fail to retrieve the deleted show role', async ({ request }) => {
     expect(createdShowRoleId).not.toBe('');
-    const response = await request.get(`/show-roles/${createdShowRoleId}`, {
+    const response = await request.get(`${BASE_URL}/show-roles/${createdShowRoleId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found

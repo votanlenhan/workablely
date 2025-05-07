@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+const BASE_URL = 'http://localhost:3000/api'; // Define BASE_URL
+
 const generateRandomString = (length: number = 8) => Math.random().toString(36).substring(2, 2 + length);
 
 let accessToken = '';
@@ -19,7 +21,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
   test.beforeAll(async ({ request }) => {
     // 1. Attempt to sign up the admin user with 'Admin' role by name
     try {
-      const signupResponse = await request.post('/auth/signup', {
+      const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
         data: {
           email: adminUserEmail,
           password: adminPassword,
@@ -38,7 +40,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
     }
 
     // 2. Log in as admin to get the access token
-    const loginResponse = await request.post('/auth/login', {
+    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
       data: { email: adminUserEmail, password: adminPassword },
     });
     expect(loginResponse.ok(), `Admin login failed in show-assignments.spec: ${await loginResponse.text()}`).toBeTruthy();
@@ -48,7 +50,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
     
     // 3. Verify the logged-in user has the Admin role via profile check
     if (accessToken) {
-      const profileResponse = await request.get('/auth/profile', {
+      const profileResponse = await request.get(`${BASE_URL}/auth/profile`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in show-assignments.spec: ${await profileResponse.text()}`).toBeTruthy();
@@ -63,7 +65,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
     // 4. Create a Client
     const clientName = `TestClientForSA_${generateRandomString()}`;
     const validClientPhoneNumber = '+14155552673'; // Unique valid phone number
-    const clientResponse = await request.post('/clients', {
+    const clientResponse = await request.post(`${BASE_URL}/clients`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: { name: clientName, phone_number: validClientPhoneNumber },
     });
@@ -73,7 +75,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
     // 5. Create a Show
     const showTitle = `TestShowForSA_${generateRandomString()}`;
     const startTime = new Date();
-    const showResponse = await request.post('/shows', {
+    const showResponse = await request.post(`${BASE_URL}/shows`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         clientId: testClientIdForShowAssignments, // Use camelCase
@@ -88,7 +90,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
 
     // 6. Create a User (the one to be assigned)
     const userEmail = `assigneduser_${generateRandomString()}@example.com`;
-    const userResponse = await request.post('/users', { 
+    const userResponse = await request.post(`${BASE_URL}/users`, { 
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         email: userEmail,
@@ -102,7 +104,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
 
     // 7. Create a ShowRole
     const showRoleName = `TestShowRoleForSA_${generateRandomString()}`;
-    const showRoleResponse = await request.post('/show-roles', {
+    const showRoleResponse = await request.post(`${BASE_URL}/show-roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: { name: showRoleName, description: 'Role for SA E2E' },
     });
@@ -115,7 +117,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
   });
 
   test('POST /show-assignments - should create a new show assignment successfully', async ({ request }) => {
-    const response = await request.post('/show-assignments', {
+    const response = await request.post(`${BASE_URL}/show-assignments`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         showId: testShowId,
@@ -136,7 +138,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
   });
 
   test('POST /show-assignments - should fail with duplicate assignment (user to show)', async ({ request }) => {
-    const response = await request.post('/show-assignments', {
+    const response = await request.post(`${BASE_URL}/show-assignments`, {
         headers: { Authorization: `Bearer ${accessToken}` },
         data: {
             showId: testShowId,
@@ -149,7 +151,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
 
   test('GET /show-assignments/:id - should retrieve the created show assignment by ID', async ({ request }) => {
     expect(createdShowAssignmentId).not.toBe('');
-    const response = await request.get(`/show-assignments/${createdShowAssignmentId}`, {
+    const response = await request.get(`${BASE_URL}/show-assignments/${createdShowAssignmentId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
@@ -159,27 +161,31 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
   });
 
   test('GET /show-assignments - should retrieve a list of show assignments (basic check)', async ({ request }) => {
-    // Note: This endpoint might not have pagination implemented yet as per docs.
-    // Adjust test if/when pagination is added.
-    const response = await request.get('/show-assignments', {
+    const response = await request.get(`${BASE_URL}/show-assignments`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.ok()).toBeTruthy();
-    const listResponseBody = await response.json();
-    // Assuming it returns an array directly if no pagination
-    expect(Array.isArray(listResponseBody)).toBeTruthy(); 
-    const foundAssignment = listResponseBody.find(sa => sa.id === createdShowAssignmentId);
+    const responseBody = await response.json();
+
+    // Expect a paginated response object
+    expect(responseBody).toBeInstanceOf(Object);
+    expect(responseBody).toHaveProperty('items');
+    expect(responseBody).toHaveProperty('meta');
+    expect(Array.isArray(responseBody.items)).toBeTruthy();
+
+    // Find the created assignment in the items array
+    const foundAssignment = responseBody.items.find(sa => sa.id === createdShowAssignmentId);
     expect(foundAssignment).toBeDefined();
     if (foundAssignment) {
-        expect(foundAssignment.show_id).toBe(testShowId);
-        expect(foundAssignment.user_id).toBe(testUserIdForAssignment);
-        expect(foundAssignment.show_role_id).toBe(testShowRoleId);
+      expect(foundAssignment.show_id).toBe(testShowId);
+      expect(foundAssignment.user_id).toBe(testUserIdForAssignment);
+      expect(foundAssignment.show_role_id).toBe(testShowRoleId);
     }
   });
 
   test('PATCH /show-assignments/:id - should update the created show assignment', async ({ request }) => {
     expect(createdShowAssignmentId).not.toBe('');
-    const response = await request.patch(`/show-assignments/${createdShowAssignmentId}`, {
+    const response = await request.patch(`${BASE_URL}/show-assignments/${createdShowAssignmentId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
       data: {
         confirmationStatus: 'Confirmed',
@@ -194,7 +200,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
 
   test('DELETE /show-assignments/:id - should delete the created show assignment', async ({ request }) => {
     expect(createdShowAssignmentId).not.toBe('');
-    const response = await request.delete(`/show-assignments/${createdShowAssignmentId}`, {
+    const response = await request.delete(`${BASE_URL}/show-assignments/${createdShowAssignmentId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(204); // No Content
@@ -202,7 +208,7 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
 
   test('GET /show-assignments/:id - should fail to retrieve the deleted show assignment', async ({ request }) => {
     expect(createdShowAssignmentId).not.toBe('');
-    const response = await request.get(`/show-assignments/${createdShowAssignmentId}`, {
+    const response = await request.get(`${BASE_URL}/show-assignments/${createdShowAssignmentId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     expect(response.status()).toBe(404); // Not Found
@@ -214,27 +220,27 @@ test.describe.serial('ShowAssignments API CRUD Flows', () => {
     // Ensure accessToken is available in this scope if defined globally in the describe block
     if (createdShowAssignmentId) { // First delete the assignment itself if it was created
         try {
-            await request.delete(`/show-assignments/${createdShowAssignmentId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+            await request.delete(`${BASE_URL}/show-assignments/${createdShowAssignmentId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
         } catch (e) { console.error(`Failed to delete showAssignment ${createdShowAssignmentId}:`, e); }
     }
     if (testShowId) {
       try {
-        await request.delete(`/shows/${testShowId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+        await request.delete(`${BASE_URL}/shows/${testShowId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
       } catch (e) { console.error(`Failed to delete show ${testShowId}:`, e); }
     }
     if (testClientIdForShowAssignments) {
       try {
-        await request.delete(`/clients/${testClientIdForShowAssignments}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+        await request.delete(`${BASE_URL}/clients/${testClientIdForShowAssignments}`, { headers: { Authorization: `Bearer ${accessToken}` } });
       } catch (e) { console.error(`Failed to delete client ${testClientIdForShowAssignments}:`, e); }
     }
     if (testUserIdForAssignment) {
       try {
-        await request.delete(`/users/${testUserIdForAssignment}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+        await request.delete(`${BASE_URL}/users/${testUserIdForAssignment}`, { headers: { Authorization: `Bearer ${accessToken}` } });
       } catch (e) { console.error(`Failed to delete user ${testUserIdForAssignment}:`, e); }
     }
     if (testShowRoleId) {
       try {
-        await request.delete(`/show-roles/${testShowRoleId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
+        await request.delete(`${BASE_URL}/show-roles/${testShowRoleId}`, { headers: { Authorization: `Bearer ${accessToken}` } });
       } catch (e) { console.error(`Failed to delete showRole ${testShowRoleId}:`, e); }
     }
     // console.log('Cleaned up entities for ShowAssignments tests.');
