@@ -18,6 +18,7 @@ import { EquipmentAssignmentsModule } from './modules/equipment-assignments/equi
 import { ExpensesModule } from './modules/expenses/expenses.module';
 import { ExternalIncomesModule } from './modules/external-incomes/external-incomes.module';
 import { ConfigurationsModule } from './modules/configurations/configurations.module';
+import { RevenueAllocationsModule } from './modules/revenue-allocations/revenue-allocations.module';
 // ... other future modules
 
 // Explicitly import entities
@@ -34,6 +35,7 @@ import { EquipmentAssignment } from './modules/equipment-assignments/entities/eq
 import { Expense } from './modules/expenses/entities/expense.entity';
 import { ExternalIncome } from './modules/external-incomes/entities/external-income.entity';
 import { Configuration } from './modules/configurations/entities/configuration.entity';
+import { RevenueAllocation } from './modules/revenue-allocations/entities/revenue-allocation.entity';
 
 @Module({
   imports: [
@@ -69,6 +71,7 @@ import { Configuration } from './modules/configurations/entities/configuration.e
             Expense,
             ExternalIncome,
             Configuration,
+            RevenueAllocation,
           ],
           synchronize: false,
           logging: configService.get<string>('NODE_ENV') === 'development',
@@ -98,6 +101,7 @@ import { Configuration } from './modules/configurations/entities/configuration.e
     ExpensesModule,
     ExternalIncomesModule,
     ConfigurationsModule,
+    RevenueAllocationsModule,
     // ConfigurationsModule, // Add later
     // ExternalIncomesModule, // Add later
     // ExpensesModule, // Add later

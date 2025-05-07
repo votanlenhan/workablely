@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException, 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, FindOneOptions } from 'typeorm';
 import { paginate, Pagination, IPaginationOptions } from 'nestjs-typeorm-paginate';
-import { ShowAssignment, ShowAssignmentConfirmationStatus } from './entities/show-assignment.entity';
+import { ShowAssignment, ConfirmationStatus } from './entities/show-assignment.entity';
 import { CreateShowAssignmentDto } from './dto/create-show-assignment.dto';
 import { UpdateShowAssignmentDto } from './dto/update-show-assignment.dto';
 import { ShowsService } from '../shows/shows.service';
@@ -72,7 +72,7 @@ export class ShowAssignmentsService {
     queryBuilder
       .leftJoinAndSelect('assignment.user', 'user')
       .leftJoinAndSelect('assignment.show', 'show')
-      .leftJoinAndSelect('assignment.showRole', 'showRole')
+      .leftJoinAndSelect('assignment.show_role', 'show_role')
       .leftJoinAndSelect('assignment.assignedBy', 'assignedBy')
       .orderBy('assignment.assigned_at', 'DESC'); // Default sort order
 
@@ -88,7 +88,7 @@ export class ShowAssignmentsService {
   async findOne(id: string): Promise<ShowAssignment> {
     const options: FindOneOptions<ShowAssignment> = {
       where: { id },
-      relations: ['user', 'show', 'showRole', 'assignedBy'],
+      relations: ['user', 'show', 'show_role', 'assignedBy'],
     };
     const assignment = await this.assignmentRepository.findOne(options);
     if (!assignment) {
@@ -105,45 +105,37 @@ export class ShowAssignmentsService {
    * @throws NotFoundException if the assignment is not found.
    */
   async update(id: string, updateShowAssignmentDto: UpdateShowAssignmentDto): Promise<ShowAssignment> {
-    // Fetch the existing assignment first to apply logic based on current state
-    const assignmentToUpdate = await this.findOne(id); // This uses findOne which loads relations
+    const assignmentToUpdate = await this.findOne(id);
 
-    // Determine the final status and handle confirmedAt logic
-    let confirmedAtValue: Date | null = assignmentToUpdate.confirmed_at ?? null;
+    let confirmedAtValue: Date | undefined = assignmentToUpdate.confirmed_at ?? undefined;
     const finalStatus = updateShowAssignmentDto.confirmationStatus ?? assignmentToUpdate.confirmation_status;
 
-    if (updateShowAssignmentDto.confirmationStatus) { // Only update confirmedAt if status is explicitly changed
-      if (finalStatus === ShowAssignmentConfirmationStatus.CONFIRMED) {
+    if (updateShowAssignmentDto.confirmationStatus) {
+      if (finalStatus === ConfirmationStatus.CONFIRMED) {
         confirmedAtValue = new Date();
       } else {
-        confirmedAtValue = null; // Clear confirmedAt if status changes away from Confirmed
+        confirmedAtValue = undefined;
       }
     }
 
-    // Determine the final decline reason
-    let declineReasonValue: string | null = assignmentToUpdate.decline_reason ?? null;
-    if (updateShowAssignmentDto.declineReason !== undefined) { // If declineReason is in DTO
-      if (finalStatus === ShowAssignmentConfirmationStatus.DECLINED) {
+    let declineReasonValue: string | undefined = assignmentToUpdate.decline_reason ?? undefined;
+    if (updateShowAssignmentDto.declineReason !== undefined) {
+      if (finalStatus === ConfirmationStatus.DECLINED) {
         declineReasonValue = updateShowAssignmentDto.declineReason;
       } else {
-        // Optional: Throw error or ignore if trying to set reason when not Declined
-        // console.warn('Attempted to set decline reason when status is not Declined');
-        declineReasonValue = null; // Clear reason if status is not Declined
+        declineReasonValue = undefined;
       }
-    } else if (finalStatus !== ShowAssignmentConfirmationStatus.DECLINED) {
-        declineReasonValue = null; // Clear reason if status is changed away from Declined and no new reason provided
+    } else if (finalStatus !== ConfirmationStatus.DECLINED) {
+        declineReasonValue = undefined;
     }
     
-    // Check if reason is required when declining
-    if (finalStatus === ShowAssignmentConfirmationStatus.DECLINED && (declineReasonValue === null || declineReasonValue.trim() === '')) {
+    if (finalStatus === ConfirmationStatus.DECLINED && (declineReasonValue === undefined || declineReasonValue.trim() === '')) {
         throw new BadRequestException('Decline reason is required and cannot be empty when status is set to Declined');
     }
 
-    // Use save with the fetched entity for better update handling
     assignmentToUpdate.confirmation_status = finalStatus;
     assignmentToUpdate.decline_reason = declineReasonValue;
     assignmentToUpdate.confirmed_at = confirmedAtValue;
-    // Note: assigned_by_user_id, show_id, user_id, show_role_id should generally not be updated here
 
     return this.assignmentRepository.save(assignmentToUpdate);
   }

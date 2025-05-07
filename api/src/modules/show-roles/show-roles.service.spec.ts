@@ -50,6 +50,7 @@ const mockShowRole: ShowRole = {
   created_at: new Date(),
   updated_at: new Date(),
   showAssignments: [],
+  revenue_allocations: [],
 };
 
 describe('ShowRolesService', () => {
@@ -95,6 +96,7 @@ describe('ShowRolesService', () => {
       created_at: expect.any(Date),
       updated_at: expect.any(Date),
       showAssignments: [],
+      revenue_allocations: [],
     };
 
     it('should create and return a show role', async () => {
@@ -176,7 +178,7 @@ describe('ShowRolesService', () => {
   describe('update', () => {
     const roleId = 'role-uuid-update';
     const updateDto: UpdateShowRoleDto = { name: 'Lead Photographer', default_allocation_percentage: 60 };
-    const existingRole: ShowRole = { id: roleId, name: 'Support', description: 'Original', default_allocation_percentage: 10, is_active: true, created_at: new Date(), updated_at: new Date(), showAssignments: [] };
+    const existingRole: ShowRole = { id: roleId, name: 'Support', description: 'Original', default_allocation_percentage: 10, is_active: true, created_at: new Date(), updated_at: new Date(), showAssignments: [], revenue_allocations: [] };
     const preloadedData = { ...existingRole, ...updateDto };
     const updatedRole = { ...preloadedData, updated_at: new Date() };
 

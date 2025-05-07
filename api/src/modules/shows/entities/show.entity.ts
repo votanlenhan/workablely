@@ -7,14 +7,15 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { Client } from '../../clients/entities/client.entity';
 import { User } from '../../users/entities/user.entity';
 import { ShowAssignment } from '../../show-assignments/entities/show-assignment.entity';
 import { Payment } from '../../payments/entities/payment.entity';
 import { EquipmentAssignment } from '../../equipment-assignments/entities/equipment-assignment.entity';
+import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
 // Import related entities later
-// import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
 // import { MemberEvaluation } from '../../member-evaluations/entities/member-evaluation.entity';
 
 // Enum for Show Status (Consider defining in a separate constants file)
@@ -151,7 +152,8 @@ export class Show {
   createdBy: User | null;
 
   @Column('uuid', { name: 'created_by_user_id', nullable: true })
-  createdByUserId: string | null;
+  @Index()
+  created_by_user_id?: string;
 
   @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -170,8 +172,8 @@ export class Show {
   @OneToMany(() => EquipmentAssignment, (assignment) => assignment.show)
   equipmentAssignments: EquipmentAssignment[];
 
-  // @OneToMany(() => RevenueAllocation, (allocation) => allocation.show) // Uncomment later
-  // revenueAllocations: RevenueAllocation[];
+  @OneToMany(() => RevenueAllocation, (allocation) => allocation.show)
+  revenue_allocations: RevenueAllocation[];
 
   // @OneToMany(() => MemberEvaluation, (evaluation) => evaluation.show) // Uncomment later
   // memberEvaluations: MemberEvaluation[];

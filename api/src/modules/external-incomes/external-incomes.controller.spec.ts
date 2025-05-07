@@ -4,7 +4,7 @@ import { ExternalIncomesService } from './external-incomes.service';
 import { CreateExternalIncomeDto } from './dto/create-external-income.dto';
 import { UpdateExternalIncomeDto } from './dto/update-external-income.dto';
 import { ExternalIncome } from './entities/external-income.entity';
-import { User } from '../users/entities/user.entity';
+import { User, PlainUser } from '../users/entities/user.entity';
 import { Role, RoleName } from '../roles/entities/role.entity';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
@@ -12,57 +12,78 @@ import { AuthenticatedRequest } from '../../auth/interfaces/authenticated-reques
 import { Pagination } from 'nestjs-typeorm-paginate';
 import { CanActivate, ForbiddenException } from '@nestjs/common';
 
-const mockAdminUserId = 'admin-user-uuid-ei';
+const mockAdminUserId = 'admin-user-uuid';
 const mockAdminUser: User = {
   id: mockAdminUserId,
-  email: 'admin.ei@example.com',
+  email: 'admin@example.com',
   first_name: 'Admin',
-  last_name: 'EI',
-  roles: [{ name: RoleName.ADMIN } as Role],
-  password_hash: 'hashed',
+  last_name: 'User',
+  roles: [{ name: RoleName.ADMIN }] as Role[],
+  password_hash: 'hashedpassword',
   created_at: new Date(),
   updated_at: new Date(),
   is_active: true,
-  phone_number: null,
-  avatar_url: null,
-  last_login_at: null,
-  assignments: [],
-  assignedShowAssignments: [],
-  equipment_assignments_as_assignee: [],
-  equipment_assignments_as_assigner: [],
-  recordedPayments: [],
+  phone_number: undefined,
+  avatar_url: undefined,
+  last_login_at: undefined,
+  created_shows: [],
+  show_assignments: [],
+  assigned_show_assignments: [],
+  equipment_assignments: [],
+  assigned_equipment_assignments: [],
+  recorded_payments: [],
+  recorded_expenses: [],
   recorded_external_incomes: [],
-  hashPasswordBeforeInsert: jest.fn().mockResolvedValue(undefined),
-  hashPassword: jest.fn().mockResolvedValue('hashed_new_password'),
-  validatePassword: jest.fn().mockResolvedValue(true),
+  revenue_allocations: [],
   get full_name() { return `${this.first_name} ${this.last_name}`; },
+  validatePassword: jest.fn(),
+  hashPassword: jest.fn(),
+  hashPasswordBeforeInsert: jest.fn(),
+  emailToLowerCase: jest.fn(),
+  toPlainObject: jest.fn().mockReturnValue({ id: mockAdminUserId, email: 'admin@example.com'} as PlainUser) as () => PlainUser,
+  hasId: jest.fn(),
+  save: jest.fn(),
+  remove: jest.fn(),
+  softRemove: jest.fn(),
+  recover: jest.fn(),
+  reload: jest.fn(),
 } as User;
 
-const mockManagerUserId = 'manager-user-uuid-ei';
+const mockManagerUserId = 'manager-user-uuid';
 const mockManagerUser: User = {
   id: mockManagerUserId,
-  email: 'manager.ei@example.com',
+  email: 'manager@example.com',
   first_name: 'Manager',
-  last_name: 'EI',
-  roles: [{ name: RoleName.MANAGER } as Role],
-  // ... other properties similar to mockAdminUser
-  password_hash: 'hashed',
+  last_name: 'User',
+  roles: [{ name: RoleName.MANAGER }] as Role[],
+  password_hash: 'hashedpassword',
   created_at: new Date(),
   updated_at: new Date(),
   is_active: true,
-  phone_number: null,
-  avatar_url: null,
-  last_login_at: null,
-  assignments: [],
-  assignedShowAssignments: [],
-  equipment_assignments_as_assignee: [],
-  equipment_assignments_as_assigner: [],
-  recordedPayments: [],
+  phone_number: undefined,
+  avatar_url: undefined,
+  last_login_at: undefined,
+  created_shows: [],
+  show_assignments: [],
+  assigned_show_assignments: [],
+  equipment_assignments: [],
+  assigned_equipment_assignments: [],
+  recorded_payments: [],
+  recorded_expenses: [],
   recorded_external_incomes: [],
-  hashPasswordBeforeInsert: jest.fn().mockResolvedValue(undefined),
-  hashPassword: jest.fn().mockResolvedValue('hashed_new_password'),
-  validatePassword: jest.fn().mockResolvedValue(true),
-  get full_name() { return `${this.first_name} ${this.last_name}`; },    
+  revenue_allocations: [],
+  get full_name() { return `${this.first_name} ${this.last_name}`; },
+  validatePassword: jest.fn(),
+  hashPassword: jest.fn(),
+  hashPasswordBeforeInsert: jest.fn(),
+  emailToLowerCase: jest.fn(),
+  toPlainObject: jest.fn().mockReturnValue({ id: mockManagerUserId, email: 'manager@example.com'} as PlainUser) as () => PlainUser,
+  hasId: jest.fn(),
+  save: jest.fn(),
+  remove: jest.fn(),
+  softRemove: jest.fn(),
+  recover: jest.fn(),
+  reload: jest.fn(),
 } as User;
 
 const mockIncomeId = 'ei-controller-uuid-456';

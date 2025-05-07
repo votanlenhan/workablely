@@ -13,6 +13,7 @@ import {
   IPaginationOptions,
 } from 'nestjs-typeorm-paginate';
 import { Client } from '@/modules/clients/entities/client.entity';
+import { RevenueAllocationsService } from '../revenue-allocations/revenue-allocations.service';
 
 @Injectable()
 export class ShowsService {
@@ -29,6 +30,9 @@ export class ShowsService {
     // Inject UsersService later to get creator user ID
     // @Inject(forwardRef(() => UsersService))
     // private readonly usersService: UsersService,
+
+    @Inject(forwardRef(() => RevenueAllocationsService))
+    private readonly revenueAllocationsService: RevenueAllocationsService,
   ) {}
 
   /**
@@ -59,14 +63,17 @@ export class ShowsService {
       creatorUserId: string | null
     ): Promise<Show> {
     await this.clientsService.findOne(createShowDto.clientId);
-    const show = this.showRepository.create({
+    const showEntityData = {
         ...createShowDto,
-        createdByUserId: creatorUserId,
+        created_by_user_id: creatorUserId === null ? undefined : creatorUserId,
         total_collected: createShowDto.deposit_amount ?? 0,
         status: ShowStatus.PENDING,
         start_datetime: new Date(createShowDto.start_datetime),
+        end_datetime: createShowDto.end_datetime ? new Date(createShowDto.end_datetime) : null,
         deposit_date: createShowDto.deposit_date ? new Date(createShowDto.deposit_date) : null,
-    });
+        post_processing_deadline: createShowDto.post_processing_deadline ? new Date(createShowDto.post_processing_deadline) : null,
+    };
+    const show = this.showRepository.create(showEntityData);
     show.deposit_amount = createShowDto.deposit_amount ?? null;
     show.amount_due = this.calculateAmountDue(show.total_price, show.total_collected);
     show.payment_status = this.determinePaymentStatus(show.total_price, show.total_collected);
@@ -136,7 +143,19 @@ export class ShowsService {
     } else if (updateShowDto.status === ShowStatus.COMPLETED && !showToUpdate.completed_at) {
         showToUpdate.completed_at = new Date();
     }
-    return this.showRepository.save(showToUpdate);
+
+    const savedShow = await this.showRepository.save(showToUpdate);
+
+    if (savedShow.status === ShowStatus.DELIVERED || savedShow.status === ShowStatus.COMPLETED) {
+      this.logger.log(`Show ${savedShow.id} status is ${savedShow.status}, triggering revenue allocation.`);
+      try {
+        await this.revenueAllocationsService.calculateAndSaveAllocationsForShow(savedShow.id);
+        this.logger.log(`Revenue allocation successfully triggered for show ${savedShow.id}.`);
+      } catch (error) {
+        this.logger.error(`Failed to calculate or save revenue allocations for show ${savedShow.id}: ${error.message}`, error.stack);
+      }
+    }
+    return savedShow;
   }
 
   /**

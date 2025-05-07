@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ShowAssignmentsService } from './show-assignments.service';
-import { ShowAssignment, ShowAssignmentConfirmationStatus } from './entities/show-assignment.entity';
+import { ShowAssignment, ConfirmationStatus } from './entities/show-assignment.entity';
 import { CreateShowAssignmentDto } from './dto/create-show-assignment.dto';
 import { UpdateShowAssignmentDto } from './dto/update-show-assignment.dto';
 import { ShowsService } from '../shows/shows.service';
@@ -117,12 +117,15 @@ describe('ShowAssignmentsService', () => {
       user_id: 'user-uuid-1',
       show_role_id: 'show-role-uuid-1',
       assigned_by_user_id: mockAssigner.id,
-      confirmation_status: ShowAssignmentConfirmationStatus.PENDING,
+      confirmation_status: ConfirmationStatus.PENDING,
       assigned_at: expect.any(Date),
       created_at: expect.any(Date),
       updated_at: expect.any(Date),
-      decline_reason: null,
-      confirmed_at: null,
+      decline_reason: undefined,
+      confirmed_at: undefined,
+      show: mockShow as any,
+      user: mockUser as any,
+      show_role: mockShowRole as any,
     };
 
     it('should create and return a new assignment', async () => {
@@ -196,7 +199,7 @@ describe('ShowAssignmentsService', () => {
       expect(repository.createQueryBuilder).toHaveBeenCalledWith('assignment');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.user', 'user');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.show', 'show');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.showRole', 'showRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.show_role', 'show_role');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.assignedBy', 'assignedBy');
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('assignment.assigned_at', 'DESC');
       expect(mockPaginate).toHaveBeenCalledWith(mockQueryBuilder, options);
@@ -248,7 +251,22 @@ describe('ShowAssignmentsService', () => {
   // --- Test Cases for findOne() ---
   describe('findOne', () => {
     const assignmentId = 'find-uuid-1';
-    const mockAssignment = { id: assignmentId, showId: 's1', userId: 'u1' };
+    const mockAssignment: ShowAssignment = {
+      id: assignmentId,
+      show_id: 's1',
+      user_id: 'u1',
+      show_role_id: 'r1',
+      confirmation_status: ConfirmationStatus.PENDING,
+      decline_reason: undefined,
+      confirmed_at: undefined,
+      assigned_at: new Date(),
+      created_at: new Date(),
+      updated_at: new Date(),
+      assigned_by_user_id: 'admin-uuid',
+      show: { id: 's1' } as any,
+      user: { id: 'u1' } as any,
+      show_role: { id: 'r1' } as any,
+    };
 
     it('should return a single assignment if found', async () => {
       repository.findOne!.mockResolvedValue(mockAssignment);
@@ -256,7 +274,7 @@ describe('ShowAssignmentsService', () => {
       expect(result).toEqual(mockAssignment);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: assignmentId },
-        relations: ['user', 'show', 'showRole', 'assignedBy'],
+        relations: ['user', 'show', 'show_role', 'assignedBy'],
       });
     });
 
@@ -276,41 +294,45 @@ describe('ShowAssignmentsService', () => {
         show_id: 's1',
         user_id: 'u1',
         show_role_id: 'r1',
-        confirmation_status: ShowAssignmentConfirmationStatus.PENDING,
-        decline_reason: null,
-        confirmed_at: null,
+        confirmation_status: ConfirmationStatus.PENDING,
+        decline_reason: undefined,
+        confirmed_at: undefined,
         assigned_at: new Date(),
-        assignedByUserId: 'admin1',
+        assigned_by_user_id: 'admin1',
         created_at: new Date(),
         updated_at: new Date(),
         show: {} as any,
         user: {} as any,
-        showRole: {} as any,
-        assignedBy: {} as any,
+        show_role: {} as any,
+        assigned_by_user: {} as any,
       };
-      const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ShowAssignmentConfirmationStatus.CONFIRMED };
-      const expectedSavedAssignment = { 
-        ...existingAssignment, 
-        confirmation_status: ShowAssignmentConfirmationStatus.CONFIRMED,
-        confirmed_at: expect.any(Date),
-        decline_reason: null,
+      const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ConfirmationStatus.CONFIRMED };
+      const updatedAssignmentData: ShowAssignment = {
+        id: idConfirm,
+        show_id: 's1',
+        user_id: 'u1',
+        show_role_id: 'r1',
+        confirmation_status: updateDto.confirmationStatus!,
+        decline_reason: updateDto.declineReason,
+        confirmed_at: updateDto.confirmationStatus === ConfirmationStatus.CONFIRMED ? expect.any(Date) : undefined,
+        assigned_at: existingAssignment.assigned_at,
+        assigned_by_user_id: existingAssignment.assigned_by_user_id,
+        created_at: existingAssignment.created_at,
         updated_at: expect.any(Date),
+        show: existingAssignment.show,
+        user: existingAssignment.user,
+        show_role: existingAssignment.show_role,
+        assigned_by_user: existingAssignment.assigned_by_user,
       };
 
       repository.findOne.mockResolvedValue(existingAssignment);
-      repository.save.mockResolvedValue(expectedSavedAssignment);
+      repository.save.mockResolvedValue(updatedAssignmentData);
 
       const result = await service.update(idConfirm, updateDto);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idConfirm }, relations: ['user', 'show', 'showRole', 'assignedBy'] });
-      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
-        id: idConfirm,
-        confirmation_status: ShowAssignmentConfirmationStatus.CONFIRMED,
-        confirmed_at: expect.any(Date),
-        decline_reason: null,
-        updated_at: expect.any(Date),
-      }));
-      expect(result).toEqual(expectedSavedAssignment);
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idConfirm }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
+      expect(result).toEqual(updatedAssignmentData);
     });
 
     // Test case 2: Update to DECLINED with reason
@@ -321,41 +343,38 @@ describe('ShowAssignmentsService', () => {
         show_id: 's2',
         user_id: 'u2',
         show_role_id: 'r2',
-        confirmation_status: ShowAssignmentConfirmationStatus.PENDING,
-        decline_reason: null, 
-        confirmed_at: null,   
-        assigned_at: new Date(), 
-        assignedByUserId: 'admin2', 
+        confirmation_status: ConfirmationStatus.PENDING,
+        decline_reason: undefined,
+        confirmed_at: undefined,
+        assigned_at: new Date(),
+        assigned_by_user_id: 'admin2',
         created_at: new Date(),
         updated_at: new Date(),
-        show: {} as any, user: {} as any, showRole: {} as any, assignedBy: {} as any,
+        show: {} as any, 
+        user: {} as any, 
+        show_role: {} as any,
+        assigned_by_user: {} as any,
       };
       const updateDtoDecline: UpdateShowAssignmentDto = {
-        confirmationStatus: ShowAssignmentConfirmationStatus.DECLINED,
+        confirmationStatus: ConfirmationStatus.DECLINED,
         declineReason: 'Not available',
       };
-      const expectedSavedDeclined = {
+      const updatedAssignmentData: ShowAssignment = {
         ...existingAssignmentDeclined,
-        confirmation_status: ShowAssignmentConfirmationStatus.DECLINED,
-        decline_reason: 'Not available',
-        confirmed_at: null,
+        confirmation_status: updateDtoDecline.confirmationStatus!,
+        decline_reason: updateDtoDecline.declineReason,
+        confirmed_at: updateDtoDecline.confirmationStatus === ConfirmationStatus.CONFIRMED ? expect.any(Date) : undefined,
         updated_at: expect.any(Date),
       };
 
       repository.findOne.mockResolvedValue(existingAssignmentDeclined);
-      repository.save.mockResolvedValue(expectedSavedDeclined);
+      repository.save.mockResolvedValue(updatedAssignmentData);
 
       const result = await service.update(idDecline, updateDtoDecline);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDecline }, relations: ['user', 'show', 'showRole', 'assignedBy'] });
-      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
-        id: idDecline,
-        confirmation_status: ShowAssignmentConfirmationStatus.DECLINED,
-        decline_reason: 'Not available',
-        confirmed_at: null,
-        updated_at: expect.any(Date),
-      }));
-      expect(result).toEqual(expectedSavedDeclined);
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDecline }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
+      expect(result).toEqual(updatedAssignmentData);
     });
 
     // Test case 3: Update DECLINED without reason (Error)
@@ -363,14 +382,15 @@ describe('ShowAssignmentsService', () => {
       const idDeclineNoReason = 'update-uuid-decline-noreason';
       const existingAssignment: ShowAssignment = {
         id: idDeclineNoReason,
-        show_id: 's1', user_id: 'u1', show_role_id: 'r1', confirmation_status: ShowAssignmentConfirmationStatus.PENDING, decline_reason: null, confirmed_at: null, assigned_at: new Date(), assignedByUserId: 'admin1', created_at: new Date(), updated_at: new Date(), show: {} as any, user: {} as any, showRole: {} as any, assignedBy: {} as any,
+        show_id: 's1', user_id: 'u1', show_role_id: 'r1', confirmation_status: ConfirmationStatus.PENDING, decline_reason: undefined, confirmed_at: undefined, assigned_at: new Date(), assigned_by_user_id: 'admin1', created_at: new Date(), updated_at: new Date(), show: {} as any, user: {} as any, show_role: {} as any,
+        assigned_by_user: {} as any,
       };
-      const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ShowAssignmentConfirmationStatus.DECLINED };
+      const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ConfirmationStatus.DECLINED };
       
       repository.findOne.mockResolvedValue(existingAssignment);
 
       await expect(service.update(idDeclineNoReason, updateDto)).rejects.toThrow(BadRequestException);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDeclineNoReason }, relations: ['user', 'show', 'showRole', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDeclineNoReason }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -380,34 +400,30 @@ describe('ShowAssignmentsService', () => {
       const existingAssignment: ShowAssignment = {
           id: idOnlyReason, 
           show_id: 's1', user_id: 'u1', show_role_id: 'r1', 
-          confirmation_status: ShowAssignmentConfirmationStatus.PENDING, 
-          decline_reason: null, 
-          confirmed_at: null, 
+          confirmation_status: ConfirmationStatus.PENDING, 
+          decline_reason: undefined, 
+          confirmed_at: undefined, 
           assigned_at: new Date(), 
-          assignedByUserId: 'admin1', 
+          assigned_by_user_id: 'admin1', 
           created_at: new Date(), 
           updated_at: new Date(), 
-          show: {} as any, user: {} as any, showRole: {} as any, assignedBy: {} as any,
+          show: {} as any, user: {} as any, show_role: {} as any,
       };
       const updateDto: UpdateShowAssignmentDto = { declineReason: 'Changed mind' };
-      const expectedSavedAssignment = { 
+      const updatedAssignmentData: ShowAssignment = { 
         ...existingAssignment,
-        decline_reason: null,
+        confirmed_at: existingAssignment.confirmation_status === ConfirmationStatus.CONFIRMED ? expect.any(Date) : undefined,
         updated_at: expect.any(Date),
       };
 
       repository.findOne.mockResolvedValue(existingAssignment); 
-      repository.save.mockResolvedValue(expectedSavedAssignment); 
+      repository.save.mockResolvedValue(updatedAssignmentData); 
 
       const result = await service.update(idOnlyReason, updateDto);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idOnlyReason }, relations: ['user', 'show', 'showRole', 'assignedBy'] });
-      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
-        id: idOnlyReason,
-        decline_reason: null,
-        updated_at: expect.any(Date),
-      }));
-      expect(result).toEqual(expectedSavedAssignment);
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idOnlyReason }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
+      expect(result).toEqual(updatedAssignmentData);
     });
 
     // Test case 5: Change status away from DECLINED (should clear reason)
@@ -416,48 +432,42 @@ describe('ShowAssignmentsService', () => {
       const existingAssignment: ShowAssignment = {
           id: idClearReason, 
           show_id: 's4', user_id: 'u4', show_role_id: 'r4', 
-          confirmation_status: ShowAssignmentConfirmationStatus.DECLINED, 
+          confirmation_status: ConfirmationStatus.DECLINED, 
           decline_reason: 'Was sick', 
-          confirmed_at: null, 
+          confirmed_at: undefined, 
           assigned_at: new Date(), 
-          assignedByUserId: 'admin4', 
+          assigned_by_user_id: 'admin4', 
           created_at: new Date(), 
           updated_at: new Date(), 
-          show: {} as any, user: {} as any, showRole: {} as any, assignedBy: {} as any,
+          show: {} as any, user: {} as any, show_role: {} as any,
       };
-      const updateDtoToPending: UpdateShowAssignmentDto = { confirmationStatus: ShowAssignmentConfirmationStatus.PENDING };
-      const expectedSavedPending = {
+      const updateDtoToPending: UpdateShowAssignmentDto = { confirmationStatus: ConfirmationStatus.PENDING };
+      const updatedAssignmentData: ShowAssignment = {
         ...existingAssignment,
-        confirmation_status: ShowAssignmentConfirmationStatus.PENDING,
-        decline_reason: null,
-        confirmed_at: null,
+        confirmation_status: updateDtoToPending.confirmationStatus!,
+        decline_reason: undefined,
+        confirmed_at: updateDtoToPending.confirmationStatus === ConfirmationStatus.CONFIRMED ? expect.any(Date) : undefined,
         updated_at: expect.any(Date),
       };
 
       repository.findOne.mockResolvedValue(existingAssignment);
-      repository.save.mockResolvedValue(expectedSavedPending);
+      repository.save.mockResolvedValue(updatedAssignmentData);
 
       const result = await service.update(idClearReason, updateDtoToPending);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idClearReason }, relations: ['user', 'show', 'showRole', 'assignedBy'] });
-      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining({
-        id: idClearReason,
-        confirmation_status: ShowAssignmentConfirmationStatus.PENDING,
-        decline_reason: null,
-        confirmed_at: null,
-        updated_at: expect.any(Date),
-      }));
-      expect(result).toEqual(expectedSavedPending);
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idClearReason }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
+      expect(result).toEqual(updatedAssignmentData);
     });
 
     // Test case 6: Not Found
     it('should throw NotFoundException if assignment to update is not found', async () => {
       const idNotFound = 'update-uuid-notfound';
-      const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ShowAssignmentConfirmationStatus.CONFIRMED };
+      const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ConfirmationStatus.CONFIRMED };
       repository.findOne.mockResolvedValue(null);
 
       await expect(service.update(idNotFound, updateDto)).rejects.toThrow(NotFoundException);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idNotFound }, relations: ['user', 'show', 'showRole', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idNotFound }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
       expect(repository.save).not.toHaveBeenCalled();
     });
   });

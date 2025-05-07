@@ -11,12 +11,30 @@ import { User } from '../users/entities/user.entity';
 import { Payment } from '../payments/entities/payment.entity';
 import { NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { IPaginationOptions, Pagination, paginate } from 'nestjs-typeorm-paginate';
+import { RevenueAllocationsService } from '../revenue-allocations/revenue-allocations.service';
+import { DataSource } from 'typeorm';
 
 // Mock the entire module
 jest.mock('nestjs-typeorm-paginate', () => ({
     ...jest.requireActual('nestjs-typeorm-paginate'), // Keep other exports if any
     paginate: jest.fn(),
 }));
+
+const mockDataSource = {
+  createQueryRunner: jest.fn().mockReturnValue({
+    connect: jest.fn(),
+    startTransaction: jest.fn(),
+    commitTransaction: jest.fn(),
+    rollbackTransaction: jest.fn(),
+    release: jest.fn(),
+    manager: {
+      getRepository: jest.fn(),
+      findOne: jest.fn(),
+      save: jest.fn(),
+      delete: jest.fn(),
+    },
+  }),
+};
 
 // --- Mocks --- //
 const mockShowRepository = {
@@ -140,6 +158,8 @@ describe('ShowsService', () => {
           provide: ClientsService,
           useValue: mockClientsService,
         },
+        { provide: RevenueAllocationsService, useValue: { calculateAndSaveAllocationsForShow: jest.fn() } },
+        { provide: DataSource, useValue: mockDataSource },
       ],
     }).compile();
 
@@ -182,7 +202,7 @@ describe('ShowsService', () => {
         total_price: createDto.total_price,
         deposit_amount: createDto.deposit_amount,
         deposit_date: new Date(createDto.deposit_date!),
-        createdByUserId: creatorUserId,
+        created_by_user_id: creatorUserId,
         total_collected: createDto.deposit_amount || 0,
         amount_due: expectedAmountDue,
         payment_status: expectedPaymentStatus,
@@ -218,7 +238,7 @@ describe('ShowsService', () => {
           show_type: createDtoNoDeposit.show_type,
           start_datetime: new Date(createDtoNoDeposit.start_datetime),
           total_price: createDtoNoDeposit.total_price,
-          createdByUserId: creatorUserId,
+          created_by_user_id: creatorUserId,
           total_collected: 0,
           amount_due: expectedAmountDue,
           payment_status: expectedPaymentStatus,

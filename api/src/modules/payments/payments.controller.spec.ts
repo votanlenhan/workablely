@@ -58,36 +58,65 @@ describe('PaymentsController', () => {
 
   describe('create', () => {
     const createDto: CreatePaymentDto = { show_id: 's1', amount: 100, payment_date: new Date().toISOString() };
-    const mockFullPayment: Payment = {
+    const mockPayment: Payment = {
       id: 'p1',
       show_id: createDto.show_id,
       amount: createDto.amount,
       payment_date: new Date(createDto.payment_date!),
-      payment_method: null,
-      transaction_reference: null,
-      notes: null,
+      payment_method: undefined,
+      transaction_reference: undefined,
+      notes: undefined,
       is_deposit: false,
       recorded_by_user_id: mockUser.id,
       created_at: new Date(),
       updated_at: new Date(),
-      show: null as any,
-      recordedBy: null as any,
+      show: { id: 's1' } as any,
+      recorded_by_user: mockUser as any,
     };
 
     it('should call service.create and return the result', async () => {
-      mockPaymentsService.create.mockResolvedValue(mockFullPayment);
+      const expectedPayment: Payment = {
+        id: 'p1',
+        show_id: createDto.show_id,
+        amount: createDto.amount,
+        payment_date: new Date(createDto.payment_date!),
+        payment_method: createDto.payment_method,
+        transaction_reference: createDto.transaction_reference,
+        notes: createDto.notes,
+        is_deposit: createDto.is_deposit ?? false,
+        recorded_by_user_id: mockUser.id,
+        created_at: new Date(),
+        updated_at: new Date(),
+        show: { id: createDto.show_id } as any,
+        recorded_by_user: mockUser as any,
+      };
+      (service.create as jest.Mock).mockResolvedValue(expectedPayment as Payment);
       const result = await controller.create(createDto, mockRequest as any);
       expect(service.create).toHaveBeenCalledWith(createDto, mockUser.id);
-      expect(result).toEqual(mockFullPayment);
+      expect(result).toEqual(expectedPayment);
     });
   });
 
   describe('findAll', () => {
-    const mockPaymentItem: Payment = {
-        id: 'p1', show_id: 's1', amount: 100, payment_date: new Date(), payment_method: null, transaction_reference: null, notes: null, is_deposit: false, recorded_by_user_id: 'u1', created_at: new Date(), updated_at: new Date(), show: null as any, recordedBy: null as any
-    };
+    const mockPaymentList: Payment[] = [
+      {
+        id: 'p1',
+        show_id: 's1',
+        amount: 100,
+        payment_date: new Date(),
+        payment_method: undefined,
+        transaction_reference: undefined,
+        notes: undefined,
+        is_deposit: false,
+        recorded_by_user_id: 'u1',
+        created_at: new Date(),
+        updated_at: new Date(),
+        show: null as any,
+        recorded_by_user: null as any,
+      },
+    ];
     const paginatedResult: Pagination<Payment> = {
-      items: [mockPaymentItem],
+      items: mockPaymentList,
       meta: { totalItems: 1, itemCount: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1},
       links: { first: '', previous: '', next: '', last: ''}
     };
@@ -107,28 +136,67 @@ describe('PaymentsController', () => {
 
   describe('findOne', () => {
     const paymentId = 'p1';
-    const mockFullPayment: Payment = {
-        id: paymentId, show_id: 's1', amount: 100, payment_date: new Date(), payment_method: null, transaction_reference: null, notes: null, is_deposit: false, recorded_by_user_id: 'u1', created_at: new Date(), updated_at: new Date(), show: null as any, recordedBy: null as any
+    const mockPayment: Payment = {
+      id: paymentId,
+      show_id: 's1',
+      amount: 100,
+      payment_date: new Date(),
+      payment_method: undefined,
+      transaction_reference: undefined,
+      notes: undefined,
+      is_deposit: false,
+      recorded_by_user_id: mockUser.id,
+      created_at: new Date(),
+      updated_at: new Date(),
+      show: { id: 's1' } as any,
+      recorded_by_user: mockUser as any,
     };
     it('should call service.findOne and return the result', async () => {
-      mockPaymentsService.findOne.mockResolvedValue(mockFullPayment);
+      mockPaymentsService.findOne.mockResolvedValue(mockPayment);
       const result = await controller.findOne(paymentId);
       expect(service.findOne).toHaveBeenCalledWith(paymentId);
-      expect(result).toEqual(mockFullPayment);
+      expect(result).toEqual(mockPayment);
     });
   });
 
   describe('update', () => {
     const paymentId = 'p1';
     const updateDto: UpdatePaymentDto = { amount: 150 };
-    const mockUpdatedPayment: Payment = {
-        id: paymentId, show_id: 's1', amount: 150, payment_date: new Date(), payment_method: null, transaction_reference: null, notes: null, is_deposit: false, recorded_by_user_id: 'u1', created_at: new Date(), updated_at: new Date(), show: null as any, recordedBy: null as any
+    const mockPayment: Payment = {
+      id: paymentId,
+      show_id: 's1',
+      amount: 100,
+      payment_date: new Date(),
+      payment_method: undefined,
+      transaction_reference: undefined,
+      notes: undefined,
+      is_deposit: false,
+      recorded_by_user_id: mockUser.id,
+      created_at: new Date(),
+      updated_at: new Date(),
+      show: { id: 's1' } as any,
+      recorded_by_user: mockUser as any,
+    };
+    const updatedPayment: Payment = {
+      id: paymentId,
+      show_id: 's1',
+      amount: updateDto.amount ?? mockPayment.amount,
+      payment_date: updateDto.payment_date ? new Date(updateDto.payment_date) : mockPayment.payment_date,
+      payment_method: updateDto.payment_method,
+      transaction_reference: updateDto.transaction_reference,
+      notes: updateDto.notes,
+      is_deposit: updateDto.is_deposit ?? mockPayment.is_deposit,
+      recorded_by_user_id: mockUser.id,
+      created_at: mockPayment.created_at,
+      updated_at: new Date(),
+      show: mockPayment.show,
+      recorded_by_user: mockPayment.recorded_by_user,
     };
     it('should call service.update and return the result', async () => {
-      mockPaymentsService.update.mockResolvedValue(mockUpdatedPayment);
+      mockPaymentsService.update.mockResolvedValue(updatedPayment as Payment);
       const result = await controller.update(paymentId, updateDto, mockRequest as any);
       expect(service.update).toHaveBeenCalledWith(paymentId, updateDto, mockUser.id);
-      expect(result).toEqual(mockUpdatedPayment);
+      expect(result).toEqual(updatedPayment);
     });
   });
 

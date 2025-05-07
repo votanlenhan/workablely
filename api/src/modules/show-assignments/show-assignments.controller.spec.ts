@@ -8,7 +8,7 @@ import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/core/guards/roles.guard';
 import { RoleName } from '@/modules/roles/entities/role.entity';
 import { User } from '@/modules/users/entities/user.entity';
-import { ShowAssignment, ShowAssignmentConfirmationStatus } from './entities/show-assignment.entity';
+import { ShowAssignment, ConfirmationStatus } from './entities/show-assignment.entity';
 import { Pagination, IPaginationOptions } from 'nestjs-typeorm-paginate';
 
 // Mock Service Type Helper (Explicit definition)
@@ -59,7 +59,7 @@ describe('ShowAssignmentsController', () => {
   // --- Test Cases for create() ---
   describe('create', () => {
     const createDto: CreateShowAssignmentDto = { showId: 's1', userId: 'u1', showRoleId: 'r1' };
-    const createdAssignment: Partial<ShowAssignment> = { id: 'a1', ...createDto, confirmation_status: ShowAssignmentConfirmationStatus.PENDING };
+    const createdAssignment: Partial<ShowAssignment> = { id: 'a1', ...createDto, confirmation_status: ConfirmationStatus.PENDING };
 
     it('should call service.create and return the result', async () => {
       service.create.mockResolvedValue(createdAssignment);
@@ -141,8 +141,8 @@ describe('ShowAssignmentsController', () => {
   // --- Test Cases for update() ---
   describe('update', () => {
     const assignmentId = 'update-a1';
-    const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ShowAssignmentConfirmationStatus.CONFIRMED };
-    const updatedAssignment: Partial<ShowAssignment> = { id: assignmentId, confirmation_status: ShowAssignmentConfirmationStatus.CONFIRMED };
+    const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ConfirmationStatus.CONFIRMED };
+    const updatedAssignment: Partial<ShowAssignment> = { id: assignmentId, confirmation_status: ConfirmationStatus.CONFIRMED };
 
     it('should call service.update and return the result', async () => {
       service.update.mockResolvedValue(updatedAssignment);

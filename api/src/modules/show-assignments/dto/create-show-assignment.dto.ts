@@ -1,5 +1,5 @@
 import { IsEnum, IsNotEmpty, IsOptional, IsString, IsUUID, MaxLength } from 'class-validator';
-import { ShowAssignmentConfirmationStatus } from '../entities/show-assignment.entity';
+import { ConfirmationStatus } from '../entities/show-assignment.entity';
 
 export class CreateShowAssignmentDto {
   @IsUUID()

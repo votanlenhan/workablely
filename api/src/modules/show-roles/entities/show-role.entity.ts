@@ -1,23 +1,21 @@
 import {
   Entity,
-  PrimaryGeneratedColumn,
   Column,
-  CreateDateColumn,
-  UpdateDateColumn,
   OneToMany,
+  Index,
 } from 'typeorm';
-import { ShowAssignment } from 'src/modules/show-assignments/entities/show-assignment.entity';
+import { BaseEntity } from '../../../core/database/base.entity';
+import { ShowAssignment } from '../../show-assignments/entities/show-assignment.entity';
+import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
 
-@Entity('show_roles')
-export class ShowRole {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
-
+@Entity({ name: 'show_roles' })
+export class ShowRole extends BaseEntity {
   @Column({ type: 'varchar', length: 255, unique: true, nullable: false })
+  @Index()
   name: string;
 
   @Column({ type: 'text', nullable: true })
-  description: string | null;
+  description?: string;
 
   @Column({
     type: 'decimal',
@@ -26,18 +24,15 @@ export class ShowRole {
     nullable: true,
     default: 0.00,
   })
-  default_allocation_percentage: number | null;
+  default_allocation_percentage?: number;
 
   @Column({ type: 'boolean', default: true, nullable: false })
   is_active: boolean;
 
-  @CreateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
-  created_at: Date;
-
-  @UpdateDateColumn({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
-  updated_at: Date;
-
   // --- Relations --- //
-  @OneToMany(() => ShowAssignment, (assignment: ShowAssignment) => assignment.showRole)
+  @OneToMany(() => ShowAssignment, (assignment) => assignment.show_role)
   showAssignments: ShowAssignment[];
+
+  @OneToMany(() => RevenueAllocation, (allocation) => allocation.show_role)
+  revenue_allocations: RevenueAllocation[];
 }
