@@ -13,4 +13,16 @@ export function generateRandomPhoneNumber(): string {
   // Adjust country code or format as needed for your specific testing requirements
   const num = Math.floor(Math.random() * 10000000000).toString().padStart(10, '0');
   return `+1${num}`;
+}
+
+export function generateRandomUser(roleNames: string[] = []): any {
+  const randomSuffix = generateRandomString(8);
+  return {
+    email: `testuser_${randomSuffix}@example.com`,
+    password: `Password${randomSuffix}!`,
+    first_name: `Test`,
+    last_name: `User_${randomSuffix}`,
+    roleNames: roleNames,
+    phone_number: generateRandomPhoneNumber(), 
+  };
 } 

@@ -73,7 +73,7 @@ test.describe.serial('ShowRoles API CRUD Flows', () => {
     expect(responseBody).toHaveProperty('id');
     createdShowRoleId = responseBody.id;
     expect(responseBody.name).toBe(newShowRoleName);
-    expect(responseBody.default_allocation_percentage).toBe('10.50'); // TypeORM might return decimal as string
+    expect(responseBody.default_allocation_percentage).toBe(10.5); // Changed to expect number
   });
 
   test('POST /show-roles - should fail to create a show role with a duplicate name', async ({ request }) => {

@@ -1,39 +1,35 @@
-import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../core/database/base.entity';
 import { User } from '../../users/entities/user.entity';
 
 @Entity({ name: 'expenses' })
 export class Expense extends BaseEntity {
-  @Column({ nullable: false })
+  @Column({ type: 'varchar', length: 255 })
   description: string;
 
   @Column({
     type: 'decimal',
     precision: 12,
     scale: 2,
-    nullable: false,
   })
   amount: number;
 
-  @Column({ type: 'date', nullable: false })
-  @Index()
+  @Column({ type: 'date' })
   expense_date: Date;
 
-  @Column({ nullable: false })
-  @Index()
-  category: string; // Consider Enum or separate table
+  @Column({ type: 'varchar', length: 100 })
+  category: string;
 
-  @Column({ type: 'boolean', default: false, nullable: false })
-  @Index()
+  @Column({ type: 'boolean', default: false })
   is_wishlist_expense: boolean;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   payment_method?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   vendor?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 2048, nullable: true })
   receipt_url?: string;
 
   @Column({ type: 'text', nullable: true })
@@ -44,6 +40,5 @@ export class Expense extends BaseEntity {
 
   @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
   @JoinColumn({ name: 'recorded_by_user_id' })
-  @Index()
-  recorded_by?: User;
+  recorded_by_user?: User;
 }

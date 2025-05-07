@@ -2,6 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import * as pg from 'pg'; // Added import for pg
+
+// --- PG Type Parser Configuration ---
+// Ensure DECIMAL and NUMERIC types are parsed as numbers
+const PG_DECIMAL_OID = 1700;
+pg.types.setTypeParser(PG_DECIMAL_OID, (value: string) => {
+  return parseFloat(value);
+});
+// const PG_NUMERIC_OID = 1700; // Same as DECIMAL, but can be explicit if other OIDs are used
+// pg.types.setTypeParser(PG_NUMERIC_OID, parseFloat);
+// --- End PG Type Parser Configuration ---
 
 async function bootstrap() {
   console.log('[main.ts] Bootstrapping application...'); // LOG START

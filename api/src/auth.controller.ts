@@ -29,6 +29,7 @@ export class AuthController {
    */
   @UseGuards(LocalAuthGuard)
   @Post('login')
+  @HttpCode(HttpStatus.OK) // Added HttpCode decorator for 200 OK
   async login(
     @Request() req,
     @Body() loginDto: LoginDto,

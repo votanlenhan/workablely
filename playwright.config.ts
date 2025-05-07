@@ -1,4 +1,11 @@
 import { defineConfig, devices } from '@playwright/test';
+import path from 'path'; // Import path
+
+// Attempt to set TS_NODE_PROJECT to guide Playwright's TS transpilation
+// This should point to the tsconfig that correctly handles NestJS decorators and paths
+process.env.TS_NODE_PROJECT = path.resolve(__dirname, 'api/tsconfig.json');
+
+console.log(`[Playwright Config] Set TS_NODE_PROJECT to: ${process.env.TS_NODE_PROJECT}`);
 
 /**
  * Read environment variables from file.
@@ -11,6 +18,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e', // Directory where your E2E tests are located
+  globalSetup: require.resolve('./e2e/global-setup'),
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */

@@ -64,6 +64,13 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
     - `ExpensesController` (CRUD endpoints, Swagger, Guards (`JwtAuthGuard`, `RolesGuard`), Roles (`Admin`, `Manager`), xử lý `AuthenticatedRequest`).
     - `ExpensesModule` (imports `TypeOrmModule.forFeature([Expense, User])`).
     - Cập nhật `AppModule` và `ormconfig.ts`.
+  - **Triển khai module `ExternalIncomes`:**
+    - Entity (`ExternalIncome` với quan hệ tới `User` cho `recorded_by_user_id`).
+    - DTOs (`CreateExternalIncomeDto`, `UpdateExternalIncomeDto` với validation và Swagger decorators).
+    - `ExternalIncomesService` (CRUD, phân trang, xử lý `income_date` string to Date, filtering).
+    - `ExternalIncomesController` (CRUD endpoints, Swagger, Guards (`JwtAuthGuard`, `RolesGuard`), Roles (`Admin`, `Manager`), xử lý `AuthenticatedRequest`, logic phân quyền cho Manager chỉ xem/sửa/xóa income của mình).
+    - `ExternalIncomesModule` (imports `TypeOrmModule.forFeature([ExternalIncome, User])`).
+    - Cập nhật `AppModule` và `ormconfig.ts`.
   - **Migrations:**
     - Các migration ban đầu cho schema đã được tạo và chạy.
     - Xử lý sự cố migration cho `ShowAssignments` và các quan hệ liên quan.
@@ -71,6 +78,7 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
     - Cập nhật `ormconfig.ts` để TypeORM CLI nhận diện đúng các entity mới.
     - Tạo và chạy thành công migration cho `Equipment` và `EquipmentAssignments` (`CreateEquipmentAndAssignmentsTables`) sau khi sửa các lỗi TypeScript và import path.
     - Tạo và chạy thành công migration cho `Expenses` (`CreateExpensesTable`).
+    - Tạo và chạy thành công migration cho `ExternalIncomes` (`CreateExternalIncomesTable`).
 
 ## 4. Kiểm thử và Sửa lỗi:
 
@@ -87,7 +95,8 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
     - Điều chỉnh logic test cho phù hợp với thay đổi trong service (ví dụ: cách `ShowsService.remove` hoạt động, cách `PaymentsService.update` xử lý transaction và fetch dữ liệu).
     - Khắc phục các lỗi TypeScript cụ thể như `TS2561` (sai tên thuộc tính trong `orderBy`), `TS2322` (gán `null` cho type không cho phép `null`), và các vấn đề với mock `Pagination` constructor trong `ExpensesService.spec.ts`.
     - Sửa lỗi mock `User` entity trong `ExpensesController.spec.ts` để bao gồm các thuộc tính và phương thức cần thiết.
-  - **Kết quả:** Tất cả 26 bộ unit test (292 bài test) cho backend (`npm run test`) đều đang PASS.
+    - Viết và sửa lỗi unit tests cho `ExternalIncomesService` và `ExternalIncomesController`, bao gồm các trường hợp phân quyền và filter.
+  - **Kết quả:** Tất cả 28 bộ unit test (320 bài test) cho backend (`npm run test`) đều đang PASS.
 - Đã chạy linter (`npm run lint`) và formatter (`npm run format`).
 
 ## 5. Kiểm thử End-to-End (E2E) với Playwright:
@@ -127,18 +136,29 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
       - Debug bằng cách log token và response của `/auth/profile`, thấy rằng API trả về 404 cho `/auth/profile` (không có `/api`).
       - **Giải pháp:** Chỉnh sửa tất cả các lệnh gọi API trong `expenses.spec.ts` (sử dụng `adminRequestContext`, `managerRequestContext`, `regularUserRequestContext`) để sử dụng full path (`${BASE_URL}/endpoint`) thay vì dựa vào `baseURL` của context. Điều này cho thấy có thể có vấn đề với cách Playwright xử lý `baseURL` trong `newContext` ở một số trường hợp cụ thể.
     - **Sửa lỗi `login` method trong `AuthController` không trả về HTTP 200:** Thêm `@HttpCode(HttpStatus.OK)` vào `login` method.
-- **Trạng thái Kiểm thử E2E Hiện tại:**
-  - **Tất cả 84 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai (bao gồm cả `Expenses`) đều đang PASS.**
+  - **Trạng thái Kiểm thử E2E Hiện tại:**
+    - **Tất cả 84 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai (bao gồm cả `Expenses`) đều đang PASS.**
+    - **Cập nhật sau khi thêm `ExternalIncomes` module:**
+      - **Giải quyết lỗi `TypeError: Decorators cannot be used to decorate parameters` khi Playwright import enum/entity từ API sources:**
+        - Tạo root `tsconfig.json` và cài đặt `@types/node`, `@types/jest` ở root.
+        - Thử nghiệm với `process.env.TS_NODE_PROJECT` trong `playwright.config.ts` trỏ đến `api/tsconfig.json`.
+      - **Sửa lỗi kiểu dữ liệu `DECIMAL` (PostgreSQL) trả về dạng string trong API response (ví dụ: `amount` trong `ExternalIncomes`):**
+        - Ban đầu thử dùng `@Transform` trong `ExternalIncome` entity.
+        - **Giải pháp cuối cùng và toàn diện hơn:** Cấu hình `pg.types.setTypeParser` trong `api/src/main.ts` để `DECIMAL` (OID 1700) được parse thành `parseFloat` globally.
+      - **Cập nhật E2E tests (`show-roles.spec.ts`, `shows.spec.ts`)** để kỳ vọng các trường decimal (như `default_allocation_percentage`, `total_price`) là `number` thay vì `string`.
+      - **Sửa lỗi `TypeError: Assignment to constant variable` trong `external-incomes.spec.ts`:** Thay đổi khai báo `createdExternalIncomeIds` từ `const` thành `let`.
+      - **Cập nhật logic test trong `external-incomes.spec.ts`:** Thay đổi kỳ vọng status code từ 403 sang 404 khi GET một resource đã bị xóa (đúng với logic hiện tại).
+    - **Kết quả:** Tất cả 101 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai (bao gồm `ExternalIncomes`) đều đang PASS.
 
 ## 6. Trạng thái Hiện tại:
 
-- Phần backend NestJS đã có các module `Auth`, `Users`, `Roles`, `Permissions`, `Clients`, `ShowRoles`, `Shows`, `ShowAssignments`, `Payments`, `Equipment`, `EquipmentAssignments`, và `Expenses` được triển khai với CRUD và logic nghiệp vụ cốt lõi.
+- Phần backend NestJS đã có các module `Auth`, `Users`, `Roles`, `Permissions`, `Clients`, `ShowRoles`, `Shows`, `ShowAssignments`, `Payments`, `Equipment`, `EquipmentAssignments`, `Expenses`, và `ExternalIncomes` được triển khai với CRUD và logic nghiệp vụ cốt lõi.
 - Các chức năng liên quan đến các module trên hoạt động ổn định.
 - Tất cả các API endpoints hỗ trợ phân trang.
-- **Migrations:** Tất cả các migration, bao gồm cả cho `Payments`, `Equipment`, `EquipmentAssignments`, và `Expenses`, đã chạy thành công.
+- **Migrations:** Tất cả các migration, bao gồm cả cho `Payments`, `Equipment`, `EquipmentAssignments`, `Expenses`, và `ExternalIncomes`, đã chạy thành công.
 - **Server backend (`npm run start:dev`) đang chạy ổn định.**
-- **Unit Tests:** Tất cả unit tests đều PASS (26 suites, 292 tests).
-- **E2E Tests:** Tất cả E2E tests đều PASS (84 tests).
+- **Unit Tests:** Tất cả unit tests đều PASS (28 suites, 320 tests).
+- **E2E Tests:** Tất cả E2E tests đều PASS (101 tests).
 - Các tài liệu yêu cầu (`specs.md`) và kiến trúc (`architecture.md`) đã được cập nhật. `project_progress.md` được cập nhật thường xuyên.
 
 ## 7. Bước Tiếp theo Đề xuất:
@@ -161,3 +181,4 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
 - [x] `EquipmentController`
 - [x] `EquipmentAssignmentsController`
 - [x] `ExpensesController`
+- [x] `ExternalIncomesController`

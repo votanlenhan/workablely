@@ -24,6 +24,8 @@ const options: DataSourceOptions = {
     'src/modules/payments/entities/payment.entity.ts',
     'src/modules/equipment/entities/equipment.entity.ts',
     'src/modules/equipment-assignments/entities/equipment-assignment.entity.ts',
+    'src/modules/expenses/entities/expense.entity.ts',
+    'src/modules/external-incomes/entities/external-income.entity.ts',
     // TODO: Add ALL other entities used by migrations below
     // Example: 'src/modules/equipment/entities/equipment.entity.ts',
     // Example: 'src/modules/payments/entities/payment.entity.ts',

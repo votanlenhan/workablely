@@ -100,7 +100,7 @@ test.describe.serial('Shows API CRUD Flows', () => {
     expect(responseBody.title).toBe(newShowTitle);
     expect(responseBody.clientId).toBe(testClientId);
     expect(responseBody.show_type).toBe(newShowType);
-    expect(responseBody.total_price).toBe('1500.75'); // Decimal as string
+    expect(responseBody.total_price).toBe(1500.75); // Changed to expect number
   });
 
   test('GET /shows/:id - should retrieve the created show by ID', async ({ request }) => {

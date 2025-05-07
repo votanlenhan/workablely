@@ -15,6 +15,8 @@ import { ShowAssignmentsModule } from './modules/show-assignments/show-assignmen
 import { PaymentsModule } from './modules/payments/payments.module';
 import { EquipmentModule } from './modules/equipment/equipment.module';
 import { EquipmentAssignmentsModule } from './modules/equipment-assignments/equipment-assignments.module';
+import { ExpensesModule } from './modules/expenses/expenses.module';
+import { ExternalIncomesModule } from './modules/external-incomes/external-incomes.module';
 // ... other future modules
 
 // Explicitly import entities
@@ -28,6 +30,8 @@ import { ShowAssignment } from './modules/show-assignments/entities/show-assignm
 import { Payment } from './modules/payments/entities/payment.entity';
 import { Equipment } from './modules/equipment/entities/equipment.entity';
 import { EquipmentAssignment } from './modules/equipment-assignments/entities/equipment-assignment.entity';
+import { Expense } from './modules/expenses/entities/expense.entity';
+import { ExternalIncome } from './modules/external-incomes/entities/external-income.entity';
 
 @Module({
   imports: [
@@ -60,6 +64,8 @@ import { EquipmentAssignment } from './modules/equipment-assignments/entities/eq
             Payment,
             Equipment,
             EquipmentAssignment,
+            Expense,
+            ExternalIncome,
           ],
           synchronize: false,
           logging: configService.get<string>('NODE_ENV') === 'development',
@@ -86,6 +92,8 @@ import { EquipmentAssignment } from './modules/equipment-assignments/entities/eq
     PaymentsModule,
     EquipmentModule,
     EquipmentAssignmentsModule,
+    ExpensesModule,
+    ExternalIncomesModule,
     // ConfigurationsModule, // Add later
     // ExternalIncomesModule, // Add later
     // ExpensesModule, // Add later

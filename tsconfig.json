@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "es2021",
+    "module": "commonjs",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["api/src/*"]
+    },
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "outDir": "dist", 
+    "rootDir": ".",
+    "types": ["node", "jest"]
+  },
+  "include": [
+    "e2e/**/*.ts",
+    "api/src/**/*.ts" // Temporarily include api/src to see if it helps Playwright resolve types for decorators
+  ],
+  "exclude": [
+    "node_modules",
+    "api/dist",
+    "web/dist"
+  ]
+} 
