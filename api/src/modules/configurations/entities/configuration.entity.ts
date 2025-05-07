@@ -1,42 +1,30 @@
-import {
-  Entity,
-  Column,
-  PrimaryColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
-// Note: No BaseEntity as PK is 'key' (string), not generated UUID
+import { Entity, Column, Index, PrimaryColumn } from 'typeorm';
+import { BaseEntity } from '../../../core/database/base.entity';
+import { ConfigurationValueType } from './configuration-value-type.enum';
 
+/**
+ * Represents a system configuration entry.
+ */
 @Entity({ name: 'configurations' })
-export class Configuration {
-  @PrimaryColumn({ type: 'varchar', length: 255 })
+export class Configuration extends BaseEntity {
+  @Index({ unique: true })
+  @Column({ type: 'varchar', length: 255, nullable: false, unique: true })
   key: string;
 
-  @Column({ type: 'varchar', nullable: false })
-  value: string;
+  @Column({ type: 'text', nullable: false }) // Using text to accommodate potentially long JSON strings or other values
+  value: string; // Value will be stored as string, interpretation depends on value_type
 
   @Column({ type: 'text', nullable: true })
   description?: string;
 
-  @Column({ type: 'varchar', nullable: false, default: 'string' })
-  value_type: string; // 'string', 'number', 'boolean', 'percentage'
+  @Column({
+    type: 'enum',
+    enum: ConfigurationValueType,
+    default: ConfigurationValueType.STRING,
+    nullable: false,
+  })
+  value_type: ConfigurationValueType;
 
   @Column({ type: 'boolean', default: true, nullable: false })
   is_editable: boolean;
-
-  // Manually adding created_at and updated_at as it doesn't inherit BaseEntity
-  @CreateDateColumn({
-    type: 'timestamp with time zone',
-    default: () => 'CURRENT_TIMESTAMP',
-    nullable: false,
-  })
-  created_at: Date;
-
-  @UpdateDateColumn({
-    type: 'timestamp with time zone',
-    default: () => 'CURRENT_TIMESTAMP',
-    onUpdate: 'CURRENT_TIMESTAMP',
-    nullable: false,
-  })
-  updated_at: Date;
 }
