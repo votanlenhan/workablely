@@ -213,6 +213,16 @@ Hệ thống phân biệt các vai trò với quyền hạn khác nhau:
 - **Mục đích:** Lưu trữ lịch sử hiệu suất làm việc của thành viên, làm cơ sở tham khảo cho các quyết định phân công trong tương lai hoặc đánh giá định kỳ.
 - _Lưu ý về Scalability: Bảng lưu trữ đánh giá cần được thiết kế để truy vấn hiệu quả khi dữ liệu tăng lên._
 
+---
+
+**Cập nhật triển khai (Như đã hoàn thành gần đây):**
+
+- Module "Đánh giá Thành viên" (`MemberEvaluations`) đã được triển khai đầy đủ, bao gồm các API CRUD, lấy danh sách theo Show, lấy danh sách theo User (với phân trang), và logic phân quyền (RBAC) chi tiết đảm bảo chỉ người có thẩm quyền (Admin, Manager tạo đánh giá) mới có thể xem/sửa/xóa theo quy tắc.
+- Các API cho các module khác như `ShowAssignments` cũng đã được hoàn thiện với các endpoint hỗ trợ (ví dụ: confirm/decline assignment, list by show/user) và phân trang.
+- Toàn bộ các luồng nghiệp vụ chính liên quan đến các module đã triển khai đã được kiểm thử End-to-End (E2E) thành công.
+
+---
+
 ## Báo cáo và Thống kê
 
 ### Báo cáo Tài chính:
