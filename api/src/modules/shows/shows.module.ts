@@ -5,6 +5,7 @@ import { ShowsController } from './shows.controller';
 import { Show } from './entities/show.entity';
 import { ClientsModule } from '@/modules/clients/clients.module';
 import { PaymentsModule } from '@/modules/payments/payments.module';
+import { RevenueAllocationsModule } from '@/modules/revenue-allocations/revenue-allocations.module';
 // import { UsersModule } from '@/modules/users/users.module'; // Import UsersModule later
 
 @Module({
@@ -12,6 +13,7 @@ import { PaymentsModule } from '@/modules/payments/payments.module';
     TypeOrmModule.forFeature([Show]),
     forwardRef(() => ClientsModule),
     forwardRef(() => PaymentsModule),
+    forwardRef(() => RevenueAllocationsModule),
     // forwardRef(() => UsersModule), // Add later
   ],
   controllers: [ShowsController],

@@ -61,8 +61,15 @@ export class AuthController {
    */
   @Post('signup')
   @HttpCode(HttpStatus.CREATED) // Set response code to 201 Created
-  async signup(@Body() createUserDto: CreateUserDto): Promise<PlainUser> {
-    return this.authService.signup(createUserDto);
+  async signup(
+    @Body() createUserDto: CreateUserDto,
+  ): Promise<{ access_token: string; user: PlainUser }> {
+    const plainUser: PlainUser = await this.authService.signup(createUserDto);
+    const tokenData = await this.authService.login(plainUser);
+    return {
+      access_token: tokenData.access_token,
+      user: plainUser,
+    };
   }
 
   // TODO: Add signup/register endpoint if needed

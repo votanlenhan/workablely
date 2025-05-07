@@ -1,75 +1,48 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
-import { generateRandomString, generateRandomPhoneNumber } from './utils/random-helpers';
+import { createRandomUser, UserData, generateRandomString } from './utils/user-helpers';
+import { RoleName } from '../api/src/modules/roles/entities/role-name.enum';
 
 const BASE_URL = 'http://localhost:3000/api';
 
 let adminRequestContext: APIRequestContext;
-let adminUser: any;
+let adminApiUser: UserData;
 let createdEquipmentIds: string[] = [];
 
 test.describe('Equipment API', () => {
-  test.beforeAll(async ({ playwright, request }) => {
-    const adminEmail = `admin_${generateRandomString(8)}@example.com`;
-    const adminPassword = 'password123';
-    const adminFirstName = 'Admin';
-    const adminLastName = 'UserE2E';
-
-    const signupResponse = await request.post(`${BASE_URL}/auth/signup`, {
-      data: {
-        email: adminEmail,
-        password: adminPassword,
-        first_name: adminFirstName,
-        last_name: adminLastName,
-        roleNames: ['Admin'], 
-      },
-    });
-    expect(signupResponse.ok(), `Admin Signup Failed: ${await signupResponse.text()}`).toBeTruthy();
-    adminUser = await signupResponse.json();
-    expect(adminUser).toHaveProperty('id');
-
-    const loginResponse = await request.post(`${BASE_URL}/auth/login`, {
-      data: {
-        email: adminEmail,
-        password: adminPassword,
-      },
-    });
-    expect(loginResponse.ok(), `Admin Login Failed: ${await loginResponse.text()}`).toBeTruthy();
-    const { access_token } = await loginResponse.json();
-    expect(access_token).toBeTruthy();
+  test.beforeAll(async ({ playwright }) => {
+    adminApiUser = await createRandomUser(playwright, BASE_URL, RoleName.ADMIN);
+    
+    expect(adminApiUser.token, 'Admin token not received from createRandomUser').toBeTruthy();
+    expect(adminApiUser.id, 'Admin ID not received from createRandomUser').toBeTruthy();
 
     adminRequestContext = await playwright.request.newContext({
+      baseURL: BASE_URL,
       extraHTTPHeaders: {
-        Authorization: `Bearer ${access_token}`,
+        Authorization: `Bearer ${adminApiUser.token}`,
       },
     });
 
     const profileResponse = await adminRequestContext.get(`${BASE_URL}/auth/profile`);
     expect(profileResponse.ok(), `Failed to get admin profile: ${await profileResponse.text()}`).toBeTruthy();
     const profile = await profileResponse.json();
-    expect(profile.id).toEqual(adminUser.id);
+    expect(profile.id).toEqual(adminApiUser.id);
     expect(profile.roles.some((r: any) => r.name === 'Admin')).toBeTruthy();
+    console.log(`[Equipment E2E] Admin user ${adminApiUser.email} (ID: ${adminApiUser.id}) set up and verified.`);
   });
 
   test.afterAll(async () => {
     if (adminRequestContext) {
         for (const equipId of createdEquipmentIds) {
             try {
-                await adminRequestContext.delete(`${BASE_URL}/equipment/${equipId}`);
+                await adminRequestContext.delete(`/equipment/${equipId}`);
             } catch (error) {
                 console.error(`Failed to delete equipment ${equipId}:`, error);
-            }
-        }
-        if (adminUser && adminUser.id) {
-            try {
-                await adminRequestContext.delete(`${BASE_URL}/users/${adminUser.id}`);
-            } catch (error) {
-                console.error(`Error deleting admin user ${adminUser.id}:`, error);
             }
         }
         await adminRequestContext.dispose();
     }
     createdEquipmentIds = []; 
-    adminUser = null;
+    adminApiUser = null;
   });
 
   const getSampleEquipmentPayload = () => ({

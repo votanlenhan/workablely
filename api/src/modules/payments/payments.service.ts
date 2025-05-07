@@ -78,7 +78,7 @@ export class PaymentsService {
     const queryBuilder = this.paymentRepository.createQueryBuilder('payment');
     queryBuilder
       .leftJoinAndSelect('payment.show', 'show')
-      .leftJoinAndSelect('payment.recordedBy', 'recordedBy')
+      .leftJoinAndSelect('payment.recorded_by_user', 'recordedBy')
       .orderBy('payment.payment_date', 'DESC');
     
     this.logger.log(`Fetching all payments with options: ${JSON.stringify(options)}`);
@@ -92,7 +92,7 @@ export class PaymentsService {
     const repository = queryRunner ? queryRunner.manager.getRepository(Payment) : this.paymentRepository;
     const payment = await repository.findOne({
       where: { id },
-      relations: ['show', 'recordedBy'],
+      relations: ['show', 'recorded_by_user'],
     });
     if (!payment) {
       this.logger.warn(`Payment with ID "${id}" not found.`);

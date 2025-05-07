@@ -18,6 +18,7 @@ console.log(`[Playwright Config] Set TS_NODE_PROJECT to: ${process.env.TS_NODE_P
  */
 export default defineConfig({
   testDir: './e2e', // Directory where your E2E tests are located
+  outputDir: './playwright-results/', // Added outputDir
   globalSetup: require.resolve('./e2e/global-setup'),
   /* Run tests in files in parallel */
   fullyParallel: true,

@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
-import { RoleName } from '@/modules/roles/entities/role.entity'; // Use alias path for RoleName enum
+import { RoleName } from '@/modules/roles/entities/role-name.enum'; // Sửa đường dẫn import để trỏ đến file enum
 
 export const ROLES_KEY = 'roles';
 /**

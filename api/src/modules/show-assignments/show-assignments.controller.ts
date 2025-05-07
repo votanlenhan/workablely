@@ -27,7 +27,7 @@ import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard';
 import { RolesGuard } from '@/core/guards/roles.guard';
 import { ApiOperation, ApiTags, ApiQuery, ApiParam, ApiResponse } from '@nestjs/swagger';
 import { Roles } from '@/core/decorators/roles.decorator';
-import { RoleName } from '@/modules/roles/entities/role.entity';
+import { RoleName } from '@/modules/roles/entities/role-name.enum';
 import { Request } from 'express';
 import { User } from '@/modules/users/entities/user.entity';
 
@@ -81,6 +81,48 @@ export class ShowAssignmentsController {
     return this.assignmentsService.findOne(id);
   }
 
+  @Get('show/:showId')
+  @ApiOperation({ summary: 'Get all assignments for a specific show with pagination' })
+  @ApiParam({ name: 'showId', type: String, format: 'uuid', description: 'The ID of the show' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiResponse({ status: 200, description: 'Paginated list of assignments for the show.', type: Pagination })
+  @ApiResponse({ status: 404, description: 'Show not found.' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  async findAllByShowId(
+    @Param('showId', ParseUUIDPipe) showId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+  ): Promise<Pagination<ShowAssignment>> {
+    limit = limit > 100 ? 100 : limit; 
+    return this.assignmentsService.findAllByShowId(showId, {
+      page,
+      limit,
+      route: `/show-assignments/show/${showId}` // Set correct route for pagination links
+    });
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({ summary: 'Get all assignments for a specific user with pagination' })
+  @ApiParam({ name: 'userId', type: String, format: 'uuid', description: 'The ID of the user' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number', type: Number })
+  @ApiQuery({ name: 'limit', required: false, description: 'Items per page', type: Number })
+  @ApiResponse({ status: 200, description: 'Paginated list of assignments for the user.', type: Pagination })
+  @ApiResponse({ status: 404, description: 'User not found.' })
+  @Roles(RoleName.ADMIN, RoleName.MANAGER)
+  async findAllByUserId(
+    @Param('userId', ParseUUIDPipe) userId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+  ): Promise<Pagination<ShowAssignment>> {
+    limit = limit > 100 ? 100 : limit; 
+    return this.assignmentsService.findAllByUserId(userId, {
+      page,
+      limit,
+      route: `/show-assignments/user/${userId}` // Set correct route for pagination links
+    });
+  }
+
   @Patch(':id')
   @Roles(RoleName.ADMIN, RoleName.MANAGER)
   @ApiOperation({ summary: 'Update assignment status (confirm/decline) [Admin/Manager Only - For Now]' })
@@ -93,6 +135,38 @@ export class ShowAssignmentsController {
     @Body() updateDto: UpdateShowAssignmentDto,
   ): Promise<ShowAssignment> {
     return this.assignmentsService.update(id, updateDto);
+  }
+
+  @Patch(':id/confirm')
+  @Roles(RoleName.ADMIN, RoleName.MANAGER) // Or potentially the assigned user
+  @ApiOperation({ summary: 'Confirm a show assignment [Admin/Manager or Assigned User]' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Assignment confirmed successfully.', type: ShowAssignment })
+  @ApiResponse({ status: 404, description: 'Assignment not found.' })
+  @ApiResponse({ status: 403, description: 'Forbidden (If permission check is added)' })
+  confirm(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: Request,
+  ): Promise<ShowAssignment> {
+    const user = req.user as User;
+    return this.assignmentsService.confirm(id, user);
+  }
+
+  @Patch(':id/decline')
+  @Roles(RoleName.ADMIN, RoleName.MANAGER) // Or potentially the assigned user
+  @ApiOperation({ summary: 'Decline a show assignment [Admin/Manager or Assigned User]' })
+  @ApiParam({ name: 'id', type: String, format: 'uuid' })
+  @ApiResponse({ status: 200, description: 'Assignment declined successfully.', type: ShowAssignment })
+  @ApiResponse({ status: 400, description: 'Bad Request (Missing decline reason)' })
+  @ApiResponse({ status: 404, description: 'Assignment not found.' })
+  @ApiResponse({ status: 403, description: 'Forbidden (If permission check is added)' })
+  decline(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body('decline_reason') declineReason: string, // Expect reason in body
+    @Req() req: Request,
+  ): Promise<ShowAssignment> {
+    const user = req.user as User;
+    return this.assignmentsService.decline(id, declineReason, user);
   }
 
   @Delete(':id')

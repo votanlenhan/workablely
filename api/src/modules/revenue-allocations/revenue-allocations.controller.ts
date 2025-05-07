@@ -16,7 +16,7 @@ import { RevenueAllocationsService } from './revenue-allocations.service';
 import { RevenueAllocationDto } from './dto/revenue-allocation.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard, ROLES_KEY } from '../../core/guards/roles.guard';
-import { RoleName } from '../roles/entities/role.entity';
+import { RoleName } from '../roles/entities/role-name.enum';
 import { Roles } from '../../core/decorators/roles.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiParam, ApiQuery } from '@nestjs/swagger';
 import { Pagination } from 'nestjs-typeorm-paginate';

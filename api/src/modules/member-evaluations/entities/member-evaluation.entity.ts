@@ -1,36 +1,68 @@
 import {
   Entity,
   Column,
-  Index,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
   ManyToOne,
   JoinColumn,
   Check,
   Unique,
 } from 'typeorm';
-import { BaseEntity } from '../../../core/database/base.entity';
 import { Show } from '../../shows/entities/show.entity';
 import { User } from '../../users/entities/user.entity';
+import { ApiProperty } from '@nestjs/swagger';
 
-@Entity({ name: 'member_evaluations' })
-@Unique(['show_id', 'evaluated_user_id']) // Now refers to explicit columns
+@Entity('member_evaluations')
+@Unique(['show_id', 'evaluated_user_id'])
 @Check(`"rating" >= 1 AND "rating" <= 10`) // Check constraint for rating
-export class MemberEvaluation extends BaseEntity {
-  // Added export
-  @Column({ type: 'uuid', nullable: false })
-  show_id: string; // Explicit column for FK and constraints
+export class MemberEvaluation {
+  @ApiProperty({ description: 'Primary key, UUID format' })
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
-  @ManyToOne(() => Show, { nullable: false, onDelete: 'CASCADE' })
+  @ApiProperty({ description: 'ID of the show being evaluated' })
+  @Column({ type: 'uuid' })
+  show_id: string;
+
+  @ApiProperty({ description: 'ID of the user being evaluated' })
+  @Column({ type: 'uuid' })
+  evaluated_user_id: string;
+
+  @ApiProperty({ description: 'ID of the user performing the evaluation' })
+  @Column({ type: 'uuid' })
+  evaluator_user_id: string;
+
+  @ApiProperty({ description: 'Rating given (e.g., 1-10)', nullable: true, type: 'integer' })
+  @Column({ type: 'smallint', nullable: true })
+  rating: number | null;
+
+  @ApiProperty({ description: 'Detailed comments for the evaluation', nullable: true })
+  @Column({ type: 'text', nullable: true })
+  comments: string | null;
+
+  @ApiProperty({ description: 'Date of the evaluation' })
+  @Column({ type: 'timestamptz', default: () => 'CURRENT_TIMESTAMP' })
+  evaluation_date: Date;
+
+  @ApiProperty({ description: 'Timestamp of creation' })
+  @CreateDateColumn()
+  created_at: Date;
+
+  @ApiProperty({ description: 'Timestamp of last update' })
+  @UpdateDateColumn()
+  updated_at: Date;
+
+  // Relationships
+  @ManyToOne(() => Show, (show) => show.member_evaluations, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'show_id' })
-  @Index()
   show: Show;
 
-  @Column({ type: 'uuid', nullable: false })
-  evaluated_user_id: string; // Explicit column for FK and constraints
-
-  @ManyToOne(() => User, { nullable: false, onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.evaluationsReceived, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'evaluated_user_id' })
-  @Index()
-  evaluated_user: User;
+  evaluatedUser: User;
 
-  // ... rest of entity ...
+  @ManyToOne(() => User, (user) => user.evaluationsGiven, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'evaluator_user_id' })
+  evaluatorUser: User;
 }

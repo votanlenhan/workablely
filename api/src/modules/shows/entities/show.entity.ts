@@ -15,6 +15,7 @@ import { ShowAssignment } from '../../show-assignments/entities/show-assignment.
 import { Payment } from '../../payments/entities/payment.entity';
 import { EquipmentAssignment } from '../../equipment-assignments/entities/equipment-assignment.entity';
 import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
+import { MemberEvaluation } from '../../member-evaluations/entities/member-evaluation.entity';
 // Import related entities later
 // import { MemberEvaluation } from '../../member-evaluations/entities/member-evaluation.entity';
 
@@ -174,6 +175,9 @@ export class Show {
 
   @OneToMany(() => RevenueAllocation, (allocation) => allocation.show)
   revenue_allocations: RevenueAllocation[];
+
+  @OneToMany(() => MemberEvaluation, (evaluation) => evaluation.show)
+  member_evaluations: MemberEvaluation[];
 
   // @OneToMany(() => MemberEvaluation, (evaluation) => evaluation.show) // Uncomment later
   // memberEvaluations: MemberEvaluation[];

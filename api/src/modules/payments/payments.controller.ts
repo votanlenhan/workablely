@@ -6,7 +6,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiQuery, ApiParam }
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
 import { Roles } from '../../core/decorators/roles.decorator';
-import { RoleName } from '../roles/entities/role.entity';
+import { RoleName } from '../roles/entities/role-name.enum';
 import { Payment } from './entities/payment.entity';
 import { Request } from 'express';
 import { Pagination } from 'nestjs-typeorm-paginate';

@@ -52,7 +52,6 @@ test.describe.serial('Shows API CRUD Flows', () => {
       });
       expect(profileResponse.ok(), `Fetching admin profile failed in shows.spec: ${await profileResponse.text()}`).toBeTruthy();
       const profileData = await profileResponse.json();
-      // console.log('[E2E Shows Test] Admin Profile Data (after login):', JSON.stringify(profileData, null, 2));
       const hasAdminRole = profileData.roles?.some((role: any) => role.name === 'Admin');
       expect(hasAdminRole, 'Logged in admin user does not have the Admin role after signup/login in shows.spec.').toBeTruthy();
     } else {
@@ -94,7 +93,6 @@ test.describe.serial('Shows API CRUD Flows', () => {
     });
     expect(response.ok(), `Create show failed: ${await response.text()}`).toBeTruthy();
     const responseBody = await response.json();
-    console.log('[E2E Shows Test] Create Show Response Body:', JSON.stringify(responseBody, null, 2));
     expect(responseBody).toHaveProperty('id');
     createdShowId = responseBody.id;
     expect(responseBody.title).toBe(newShowTitle);
@@ -108,10 +106,6 @@ test.describe.serial('Shows API CRUD Flows', () => {
     const response = await request.get(`${BASE_URL}/shows/${createdShowId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    console.log(`[E2E Shows Test] GET /shows/${createdShowId} status: ${response.status()}`);
-    if(!response.ok()) {
-        console.log(`[E2E Shows Test] GET /shows/${createdShowId} response text: ${await response.text()}`);
-    }
     expect(response.ok()).toBeTruthy();
     const responseBodyGet = await response.json();
     expect(responseBodyGet.id).toBe(createdShowId);
@@ -120,25 +114,36 @@ test.describe.serial('Shows API CRUD Flows', () => {
   });
 
   test('GET /shows - should retrieve a list of shows (and check for created show)', async ({ request }) => {
-    const response = await request.get(`${BASE_URL}/shows`, {
+    // First, try to get the show directly by its ID to confirm it exists at this point
+    expect(createdShowId).not.toBe('');
+    const directGetResponse = await request.get(`${BASE_URL}/shows/${createdShowId}`, {
       headers: { Authorization: `Bearer ${accessToken}` },
-      params: { page: 1, limit: 50 }, 
     });
-    console.log(`[E2E Shows Test] GET /shows status: ${response.status()}`);
-    if(!response.ok()) {
-        console.log(`[E2E Shows Test] GET /shows response text: ${await response.text()}`);
-    }
-    expect(response.ok()).toBeTruthy();
-    const listResponseBody = await response.json();
+    expect(directGetResponse.ok(), 'Failed to get created show by ID within the list test.').toBeTruthy();
+    const foundShowById = await directGetResponse.json();
+    expect(foundShowById.id).toBe(createdShowId);
+    expect(foundShowById.title).toBe(newShowTitle);
+    expect(foundShowById.clientId).toBe(testClientId);
+
+    // If the above passes, we can then proceed to check the list endpoint as before,
+    // but we now have stronger evidence the show *should* be findable.
+    const listResponse = await request.get(`${BASE_URL}/shows`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { page: 1, limit: 200 }, // Keep the original list call for now
+    });
+    expect(listResponse.ok()).toBeTruthy();
+    const listResponseBody = await listResponse.json();
     expect(listResponseBody).toHaveProperty('items');
     expect(listResponseBody).toHaveProperty('meta');
     expect(Array.isArray(listResponseBody.items)).toBeTruthy();
 
-    const foundShow = listResponseBody.items.find(show => show.id === createdShowId);
-    expect(foundShow).toBeDefined();
-    if (foundShow) {
-        expect(foundShow.title).toBe(newShowTitle);
-        expect(foundShow.clientId).toBe(testClientId);
+    const foundShowInList = listResponseBody.items.find(show => show.id === createdShowId);
+    if (!foundShowInList) {
+    }
+    expect(foundShowInList).toBeDefined(); 
+    if (foundShowInList) {
+        expect(foundShowInList.title).toBe(newShowTitle);
+        expect(foundShowInList.clientId).toBe(testClientId);
     }
   });
 
@@ -183,7 +188,6 @@ test.describe.serial('Shows API CRUD Flows', () => {
       await request.delete(`${BASE_URL}/clients/${testClientId}`, {
         headers: { Authorization: `Bearer ${accessToken}` },
       });
-      // console.log(`Cleaned up client: ${testClientId}`);
     }
   });
 }); 

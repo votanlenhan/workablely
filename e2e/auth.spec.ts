@@ -14,28 +14,37 @@ let accessToken = '';
 
 test.describe.serial('Authentication API Flows', () => {
   test('POST /auth/signup - should register a new user successfully', async ({ request }) => {
+    const signupPayload = {
+      email: uniqueEmail,
+      password: userPassword,
+      first_name: 'Test',
+      last_name: 'User',
+      phone_number: '+15551234567' // Assuming a valid phone for user DTO if needed
+    };
+
     const response = await request.post(`${BASE_URL}/auth/signup`, {
-      data: {
-        email: uniqueEmail,
-        password: userPassword,
-        first_name: 'Test',
-        last_name: 'User',
-      },
+      data: signupPayload,
     });
-    expect(response.ok()).toBeTruthy();
+
+    expect(response.ok(), `Signup failed: ${await response.text()}`).toBeTruthy();
+    expect(response.status()).toBe(201);
     const responseBody = await response.json();
-    expect(responseBody).toHaveProperty('id');
-    expect(responseBody.email).toBe(uniqueEmail);
-    expect(responseBody).not.toHaveProperty('password_hash'); // Ensure password hash is not returned
+
+    expect(responseBody).toHaveProperty('access_token');
+    expect(responseBody).toHaveProperty('user');
+    expect(responseBody.user).toHaveProperty('id');
+    expect(responseBody.user.email).toBe(uniqueEmail);
+    expect(responseBody.user).not.toHaveProperty('password_hash');
   });
 
   test('POST /auth/signup - should fail to register with a duplicate email', async ({ request }) => {
     const response = await request.post(`${BASE_URL}/auth/signup`, {
       data: {
         email: uniqueEmail, // Use the same email as the previous test
-        password: 'anotherPassword123',
+        password: 'anotherPassword123', // It's okay for the password to be different for a duplicate attempt
         first_name: 'Duplicate',
         last_name: 'User',
+        phone_number: '+15551234567' // Add phone_number if required by CreateUserDto
       },
     });
     expect(response.status()).toBe(409); // Conflict

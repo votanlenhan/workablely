@@ -14,6 +14,7 @@ import {
 } from 'nestjs-typeorm-paginate';
 import { Client } from '@/modules/clients/entities/client.entity';
 import { RevenueAllocationsService } from '../revenue-allocations/revenue-allocations.service';
+import { Payment } from '../payments/entities/payment.entity'; // Import Payment entity
 
 @Injectable()
 export class ShowsService {
@@ -88,7 +89,7 @@ export class ShowsService {
       .leftJoinAndSelect('show.createdBy', 'createdByUser')
       .leftJoinAndSelect('show.assignments', 'assignments')
       .leftJoinAndSelect('show.payments', 'payments')
-      .orderBy('show.start_datetime', 'DESC');
+      .orderBy('show.createdAt', 'DESC');
     this.logger.log(`Finding all shows with options: ${JSON.stringify(options)}`);
     return paginate<Show>(queryBuilder, options);
   }
@@ -166,42 +167,52 @@ export class ShowsService {
    * @param queryRunner The QueryRunner to use for the database operations.
    */
   async updateShowFinancesAfterPayment(showId: string, queryRunner?: QueryRunner | null): Promise<Show> {
-    this.logger.log(`Updating finances for show ID: ${showId}`);
-    const showRepo = queryRunner
-      ? queryRunner.manager.getRepository(Show)
-      : this.showRepository;
+    this.logger.log(`Updating finances for show ID: ${showId}. QueryRunner used: ${!!queryRunner}`);
     
-    const show = await showRepo.findOne({
-        where: { id: showId },
-        relations: ['payments'],
-    });
+    const entityManager = queryRunner ? queryRunner.manager : this.showRepository.manager;
+
+    const show = await entityManager.findOne(Show, { where: { id: showId } });
 
     if (!show) {
       this.logger.error(`Show with ID "${showId}" not found during finance update.`);
       throw new NotFoundException(`Show with ID "${showId}" not found.`);
     }
 
-    show.total_collected = show.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    const allPaymentsForShow = await entityManager.find(Payment, {
+      where: { show_id: showId },
+    });
+
+    let calculatedTotalCollected = 0;
+    try {
+      calculatedTotalCollected = allPaymentsForShow.reduce((sum, payment) => {
+        const paymentAmount = Number(payment.amount);
+        if (isNaN(paymentAmount)) {
+          this.logger.error(`Invalid amount detected for payment ID ${payment.id}: ${payment.amount}. Treating as 0 for sum.`);
+          return sum;
+        }
+        return sum + paymentAmount;
+      }, 0);
+    } catch (e) {
+      this.logger.error(`Error during reduce operation for total_collected: ${e.message}`, e.stack);
+      throw e; 
+    }
+    
+    show.total_collected = calculatedTotalCollected;
+    
     show.amount_due = this.calculateAmountDue(show.total_price, show.total_collected);
     show.payment_status = this.determinePaymentStatus(show.total_price, show.total_collected);
     
-    const depositPayment = show.payments.find(p => p.is_deposit);
+    const depositPayment = allPaymentsForShow.find(p => p.is_deposit === true);
     if (depositPayment) {
         show.deposit_amount = Number(depositPayment.amount);
         show.deposit_date = depositPayment.payment_date;
-    } else if (show.payments.length > 0 && !show.deposit_amount) {
-        // This logic might need refinement based on business rules for deposits
-        // For now, if no explicit deposit, ensure deposit_amount reflects that, or is null if no payments
-        // show.deposit_amount = show.payments.length > 0 ? Number(show.payments[0].amount) : null; // Example: first payment as deposit
-        // show.deposit_date = show.payments.length > 0 ? show.payments[0].payment_date : null;
-    }
-    if (show.payments.length === 0) {
-        show.deposit_amount = null;
+    } else {
+        show.deposit_amount = 0; 
         show.deposit_date = null;
     }
 
-    this.logger.log(`Recalculated finances for show ${showId}: collected=${show.total_collected}, due=${show.amount_due}, status=${show.payment_status}`);
-    return showRepo.save(show);
+    this.logger.log(`Final financial state for show ${showId}: collected=${show.total_collected}, due=${show.amount_due}, status=${show.payment_status}, deposit_amount=${show.deposit_amount}`);
+    return entityManager.save(Show, show);
   }
 
   async remove(id: string): Promise<void> {

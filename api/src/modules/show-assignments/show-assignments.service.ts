@@ -88,7 +88,7 @@ export class ShowAssignmentsService {
   async findOne(id: string): Promise<ShowAssignment> {
     const options: FindOneOptions<ShowAssignment> = {
       where: { id },
-      relations: ['user', 'show', 'show_role', 'assignedBy'],
+      relations: ['user', 'show', 'show_role', 'assigned_by_user'],
     };
     const assignment = await this.assignmentRepository.findOne(options);
     if (!assignment) {
@@ -141,6 +141,46 @@ export class ShowAssignmentsService {
   }
 
   /**
+   * Confirms a show assignment.
+   * @param id The ID of the assignment to confirm.
+   * @param currentUser The user performing the action (for potential permission checks).
+   * @returns The confirmed show assignment.
+   * @throws NotFoundException if the assignment is not found.
+   */
+  async confirm(id: string, currentUser: User): Promise<ShowAssignment> {
+    const assignment = await this.findOne(id);
+    // Optional: Add permission check here (e.g., only assigned user or admin/manager can confirm)
+    // if (assignment.user_id !== currentUser.id && !currentUser.roles.some(r => r.name === RoleName.ADMIN || r.name === RoleName.MANAGER)) {
+    //   throw new ForbiddenException('You do not have permission to confirm this assignment.');
+    // }
+    assignment.confirmation_status = ConfirmationStatus.CONFIRMED;
+    assignment.confirmed_at = new Date();
+    assignment.decline_reason = undefined; // Clear decline reason if any
+    return this.assignmentRepository.save(assignment);
+  }
+
+  /**
+   * Declines a show assignment.
+   * @param id The ID of the assignment to decline.
+   * @param declineReason The reason for declining.
+   * @param currentUser The user performing the action.
+   * @returns The declined show assignment.
+   * @throws NotFoundException if the assignment is not found.
+   * @throws BadRequestException if the decline reason is empty.
+   */
+  async decline(id: string, declineReason: string | undefined, currentUser: User): Promise<ShowAssignment> {
+    if (!declineReason || declineReason.trim() === '') {
+      throw new BadRequestException('Decline reason is required and cannot be empty.');
+    }
+    const assignment = await this.findOne(id);
+    // Optional: Add permission check here
+    assignment.confirmation_status = ConfirmationStatus.DECLINED;
+    assignment.decline_reason = declineReason;
+    assignment.confirmed_at = undefined; // Clear confirmed date if any
+    return this.assignmentRepository.save(assignment);
+  }
+
+  /**
    * Removes a show assignment.
    * @param id - The ID of the assignment to remove.
    * @throws NotFoundException if the assignment is not found.
@@ -150,5 +190,49 @@ export class ShowAssignmentsService {
     if (result.affected === 0) {
       throw new NotFoundException(`ShowAssignment with ID ${id} not found`);
     }
+  }
+
+  /**
+   * Finds all assignments for a specific show (paginated).
+   * @param showId - The ID of the show.
+   * @param options - Pagination options.
+   * @returns A paginated list of show assignments for the specified show.
+   */
+  async findAllByShowId(showId: string, options: IPaginationOptions): Promise<Pagination<ShowAssignment>> {
+    // Ensure the show actually exists first (optional but good practice)
+    await this.showsService.findOne(showId);
+
+    const queryBuilder = this.assignmentRepository.createQueryBuilder('assignment');
+    queryBuilder
+      .where('assignment.show_id = :showId', { showId })
+      .leftJoinAndSelect('assignment.user', 'user')
+      .leftJoinAndSelect('assignment.show', 'show') // Keep show relation if needed in the response
+      .leftJoinAndSelect('assignment.show_role', 'show_role')
+      .leftJoinAndSelect('assignment.assigned_by_user', 'assignedByUser') // Use correct relation name here too
+      .orderBy('assignment.assigned_at', 'DESC'); // Or sort by role name, etc.
+
+    return paginate<ShowAssignment>(queryBuilder, options);
+  }
+
+  /**
+   * Finds all assignments for a specific user (paginated).
+   * @param userId - The ID of the user.
+   * @param options - Pagination options.
+   * @returns A paginated list of show assignments for the specified user.
+   */
+  async findAllByUserId(userId: string, options: IPaginationOptions): Promise<Pagination<ShowAssignment>> {
+    // Ensure the user actually exists first (optional)
+    await this.usersService.findOneById(userId);
+
+    const queryBuilder = this.assignmentRepository.createQueryBuilder('assignment');
+    queryBuilder
+      .where('assignment.user_id = :userId', { userId })
+      .leftJoinAndSelect('assignment.user', 'user') // Keep user relation if needed
+      .leftJoinAndSelect('assignment.show', 'show') 
+      .leftJoinAndSelect('assignment.show_role', 'show_role')
+      .leftJoinAndSelect('assignment.assigned_by_user', 'assignedByUser')
+      .orderBy('assignment.assigned_at', 'DESC');
+
+    return paginate<ShowAssignment>(queryBuilder, options);
   }
 } 

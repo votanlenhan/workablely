@@ -9,6 +9,7 @@ import { EquipmentAssignment } from '../../equipment-assignments/entities/equipm
 import { Expense } from '../../expenses/entities/expense.entity';
 import { ExternalIncome } from '../../external-incomes/entities/external-income.entity';
 import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
+import { MemberEvaluation } from '../../member-evaluations/entities/member-evaluation.entity';
 
 /**
  * Represents a user in the system.
@@ -75,6 +76,12 @@ export class User extends BaseEntity {
   @OneToMany(() => RevenueAllocation, (allocation) => allocation.user)
   revenue_allocations: RevenueAllocation[];
 
+  @OneToMany(() => MemberEvaluation, (evaluation) => evaluation.evaluatorUser)
+  evaluationsGiven: MemberEvaluation[];
+
+  @OneToMany(() => MemberEvaluation, (evaluation) => evaluation.evaluatedUser)
+  evaluationsReceived: MemberEvaluation[];
+
   @BeforeInsert()
   async hashPasswordBeforeInsert() {
     if (this.password_hash && !this.password_hash.startsWith('$2b$')) {
@@ -114,6 +121,7 @@ export class User extends BaseEntity {
       'created_shows', 'show_assignments', 'assigned_show_assignments',
       'equipment_assignments', 'assigned_equipment_assignments', 'recorded_payments',
       'recorded_expenses', 'recorded_external_incomes', 'revenue_allocations',
+      'evaluationsGiven', 'evaluationsReceived',
       'hashPasswordBeforeInsert', 'hashPassword', 'validatePassword', 'full_name',
       'emailToLowerCase', 'toPlainObject', 'hasId', 'save', 'remove',
       'softRemove', 'recover', 'reload'
@@ -131,5 +139,6 @@ export type PlainUser = Omit<User,
   'softRemove' | 'recover' | 'reload' |
   'created_shows' | 'show_assignments' | 'assigned_show_assignments' | 
   'equipment_assignments' | 'assigned_equipment_assignments' | 'recorded_payments' |
-  'recorded_expenses' | 'recorded_external_incomes' | 'revenue_allocations'
+  'recorded_expenses' | 'recorded_external_incomes' | 'revenue_allocations' |
+  'evaluationsGiven' | 'evaluationsReceived'
 > & { roles: Pick<Role, 'id' | 'name'>[] };

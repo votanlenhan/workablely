@@ -1,45 +1,26 @@
-import { test, expect, APIRequestContext, request as apiRequest } from '@playwright/test';
-import { generateRandomString, generateRandomPhoneNumber } from './utils/random-helpers';
+import { test, expect, APIRequestContext } from '@playwright/test';
+import { createRandomUser, UserData, generateRandomString } from './utils/user-helpers';
+import { RoleName } from '../api/src/modules/roles/entities/role-name.enum';
 
 const BASE_URL = 'http://localhost:3000/api';
 
 let adminRequestContext: APIRequestContext;
+let adminApiUser: UserData;
 let createdClientId: string;
 let createdShowId: string;
 let createdPaymentId: string;
 
 test.describe.configure({ mode: 'serial' });
 
-const adminCredentials = {
-  email: `admin_payments_${generateRandomString(8)}@example.com`,
-  password: 'AdminPassword123',
-  first_name: 'Admin',
-  last_name: 'PaymentsTest',
-  roleNames: ['Admin'],
-};
+test.beforeAll(async ({ playwright }) => {
+  adminApiUser = await createRandomUser(playwright, BASE_URL, RoleName.ADMIN);
+  expect(adminApiUser.token).toBeDefined();
+  console.log('[Payments E2E Setup] Admin Token:', adminApiUser.token);
+  console.log('[Payments E2E Setup] Admin User Roles:', adminApiUser.roles);
 
-test.beforeAll(async ({ request }) => {
-  let adminSignupResponse = await request.post(`${BASE_URL}/auth/signup`, {
-    data: adminCredentials,
-  });
-  if (adminSignupResponse.status() === 409) {
-    // console.log('[Payments E2E Setup] Admin user might already exist, attempting login...'); // Keep this if useful
-  } else {
-    expect(adminSignupResponse.ok(), `Admin Signup Failed: ${await adminSignupResponse.text()}`).toBeTruthy();
-  }
-  const adminLoginResponse = await request.post(`${BASE_URL}/auth/login`, {
-    data: {
-      email: adminCredentials.email,
-      password: adminCredentials.password,
-    },
-  });
-  expect(adminLoginResponse.ok(), `Admin Login Failed: ${await adminLoginResponse.text()}`).toBeTruthy();
-  const { access_token } = await adminLoginResponse.json();
-  expect(access_token).toBeDefined();
-
-  adminRequestContext = await apiRequest.newContext({
+  adminRequestContext = await playwright.request.newContext({
     extraHTTPHeaders: {
-      'Authorization': `Bearer ${access_token}`,
+      'Authorization': `Bearer ${adminApiUser.token}`,
     },
   });
 
@@ -47,7 +28,14 @@ test.beforeAll(async ({ request }) => {
   expect(profileResponse.ok(), `Failed to get admin profile: ${await profileResponse.text()}`).toBeTruthy();
   const profile = await profileResponse.json();
   expect(profile.roles.some((role: any) => role.name === 'Admin')).toBeTruthy();
-  // console.log('[Payments E2E Setup] Admin user logged in successfully.'); // Keep this if useful
+  console.log(`[Payments E2E Setup] Admin user ${adminApiUser.email} logged in successfully after /auth/profile.`);
+
+  // Diagnostic GET for a simple, existing, public resource (if available) or newly created one.
+  // For example, try to get the list of roles, which should be public or accessible to admin.
+  const rolesListResponse = await adminRequestContext.get(`${BASE_URL}/roles?limit=1`);
+  console.log(`[Payments E2E Setup] Diagnostic GET /roles status: ${rolesListResponse.status()}`);
+  expect(rolesListResponse.ok(), `Diagnostic GET /roles failed: ${await rolesListResponse.text()}`).toBeTruthy();
+  console.log('[Payments E2E Setup] Diagnostic GET /roles successful.');
 
   const clientName = `Test Client for Payments ${generateRandomString(5)}`;
   const clientResponse = await adminRequestContext.post(`${BASE_URL}/clients`, {
@@ -61,7 +49,6 @@ test.beforeAll(async ({ request }) => {
   const client = await clientResponse.json();
   createdClientId = client.id;
   expect(createdClientId).toBeDefined();
-  // console.log(`[Payments E2E Setup] Client created with ID: ${createdClientId}`); // Keep this if useful
 
   const initialDepositAmount = 100;
   const showData = {
@@ -78,7 +65,6 @@ test.beforeAll(async ({ request }) => {
   const show = await showResponse.json();
   createdShowId = show.id;
   expect(createdShowId).toBeDefined();
-  // console.log(`[Payments E2E Setup] Show created with ID: ${createdShowId}`); // Keep this if useful
 
   const depositPaymentResponse = await adminRequestContext.post(`${BASE_URL}/payments`, {
     data: {
@@ -91,7 +77,6 @@ test.beforeAll(async ({ request }) => {
     },
   });
   expect(depositPaymentResponse.ok(), `Failed to create initial deposit payment: ${await depositPaymentResponse.text()}`).toBeTruthy();
-  // console.log(`[Payments E2E Setup] Initial deposit of ${initialDepositAmount} recorded for show ${createdShowId}`); // Keep this if useful
 
   const showAfterDepositResponse = await adminRequestContext.get(`${BASE_URL}/shows/${createdShowId}`);
   expect(showAfterDepositResponse.ok()).toBeTruthy();
@@ -101,19 +86,22 @@ test.beforeAll(async ({ request }) => {
 });
 
 test.afterAll(async () => {
-  if (createdShowId && adminRequestContext) {
-    console.log(`[Payments E2E Teardown] Deleting Show ID: ${createdShowId}`);
-    const deleteShowResponse = await adminRequestContext.delete(`${BASE_URL}/shows/${createdShowId}`);
-    if (!deleteShowResponse.ok()) {
-        console.error(`[Payments E2E Teardown] Failed to delete show ${createdShowId}: ${await deleteShowResponse.text()}`);
+  if (adminRequestContext) {
+    if (createdShowId) {
+      console.log(`[Payments E2E Teardown] Deleting Show ID: ${createdShowId}`);
+      const deleteShowResponse = await adminRequestContext.delete(`${BASE_URL}/shows/${createdShowId}`);
+      if (!deleteShowResponse.ok()) {
+          console.error(`[Payments E2E Teardown] Failed to delete show ${createdShowId}: ${await deleteShowResponse.text()}`);
+      }
     }
-  }
-  if (createdClientId && adminRequestContext) {
-    console.log(`[Payments E2E Teardown] Deleting Client ID: ${createdClientId}`);
-    const deleteClientResponse = await adminRequestContext.delete(`${BASE_URL}/clients/${createdClientId}`);
-     if (!deleteClientResponse.ok()) {
-        console.error(`[Payments E2E Teardown] Failed to delete client ${createdClientId}: ${await deleteClientResponse.text()}`);
+    if (createdClientId) {
+      console.log(`[Payments E2E Teardown] Deleting Client ID: ${createdClientId}`);
+      const deleteClientResponse = await adminRequestContext.delete(`${BASE_URL}/clients/${createdClientId}`);
+       if (!deleteClientResponse.ok()) {
+          console.error(`[Payments E2E Teardown] Failed to delete client ${createdClientId}: ${await deleteClientResponse.text()}`);
+      }
     }
+    await adminRequestContext.dispose();
   }
   console.log('[Payments E2E Teardown] Cleanup complete.');
 });

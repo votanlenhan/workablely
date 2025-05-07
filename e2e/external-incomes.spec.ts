@@ -1,6 +1,7 @@
 import 'reflect-metadata'; // For TypeORM decorators, though likely not needed here directly if no API entities imported
 import { test, expect, APIRequestContext } from '@playwright/test';
-import { generateRandomUser, generateRandomString } from './utils/random-helpers';
+import { createRandomUser, UserData, generateRandomString } from './utils/user-helpers'; // Import UserData, generateRandomString
+import { RoleName } from '../api/src/modules/roles/entities/role-name.enum';
 
 const BASE_URL = 'http://localhost:3000/api';
 
@@ -8,13 +9,10 @@ let adminRequestContext: APIRequestContext;
 let managerRequestContext: APIRequestContext;
 let regularUserRequestContext: APIRequestContext; // For testing forbidden access
 
-let adminToken: string;
-let managerToken: string;
-let regularUserToken: string;
-
-let adminUserId: string;
-let managerUserId: string;
-let regularUserId: string;
+// Store UserData objects
+let adminApiUser: UserData;
+let managerApiUser: UserData;
+let regularApiUser: UserData;
 
 let createdExternalIncomeIds: string[] = [];
 
@@ -33,70 +31,48 @@ function getSampleIncomePayload(descriptionSuffix: string = '') {
 }
 
 test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
-  test.beforeAll(async ({ playwright, request }) => {
+  test.beforeAll(async ({ playwright }) => {
     // Admin User Setup
-    const adminUserPayload = generateRandomUser(['Admin']);
-    let response = await request.post(`${BASE_URL}/auth/signup`, { data: adminUserPayload });
-    expect(response.status(), 'Admin Signup Failed').toBe(201);
-    let adminUser = await response.json();
-    adminUserId = adminUser.id;
-    response = await request.post(`${BASE_URL}/auth/login`, { data: { email: adminUserPayload.email, password: adminUserPayload.password } });
-    expect(response.status(), 'Admin Login Failed').toBe(200);
-    adminToken = (await response.json()).access_token;
+    adminApiUser = await createRandomUser(playwright, BASE_URL, RoleName.ADMIN);
     adminRequestContext = await playwright.request.newContext({
-      baseURL: BASE_URL, // Will be prefixed to requests
-      extraHTTPHeaders: { 'Authorization': `Bearer ${adminToken}` },
+      baseURL: BASE_URL,
+      extraHTTPHeaders: { 'Authorization': `Bearer ${adminApiUser.token}` },
     });
-    console.log(`[External Incomes E2E] Admin user ${adminUser.email} (ID: ${adminUserId}) created and logged in.`);
+    console.log(`[External Incomes E2E] Admin user ${adminApiUser.email} (ID: ${adminApiUser.id}) set up.`);
 
-    // Manager User Setup (created by Admin)
-    const managerUserPayload = generateRandomUser(['Manager']);
-    response = await adminRequestContext.post(`${BASE_URL}/users`, { data: managerUserPayload });
-    expect(response.status(), 'Manager User Creation by Admin Failed').toBe(201);
-    let managerUser = await response.json();
-    managerUserId = managerUser.id;
-    response = await request.post(`${BASE_URL}/auth/login`, { data: { email: managerUserPayload.email, password: managerUserPayload.password } });
-    expect(response.status(), 'Manager Login Failed').toBe(200);
-    managerToken = (await response.json()).access_token;
+    // Manager User Setup
+    managerApiUser = await createRandomUser(playwright, BASE_URL, RoleName.MANAGER);
     managerRequestContext = await playwright.request.newContext({
       baseURL: BASE_URL,
-      extraHTTPHeaders: { 'Authorization': `Bearer ${managerToken}` },
+      extraHTTPHeaders: { 'Authorization': `Bearer ${managerApiUser.token}` },
     });
-    console.log(`[External Incomes E2E] Manager user ${managerUser.email} (ID: ${managerUserId}) created and logged in.`);
+    console.log(`[External Incomes E2E] Manager user ${managerApiUser.email} (ID: ${managerApiUser.id}) set up.`);
 
-    // Regular User (Photographer) Setup - for forbidden tests
-    const regularUserPayload = generateRandomUser(['Photographer']); // Assuming Photographer role exists and has no EI rights
-    response = await adminRequestContext.post(`${BASE_URL}/users`, { data: regularUserPayload });
-    expect(response.status(), 'Regular User Creation by Admin Failed').toBe(201);
-    regularUserId = (await response.json()).id;
-    response = await request.post(`${BASE_URL}/auth/login`, { data: { email: regularUserPayload.email, password: regularUserPayload.password } });
-    expect(response.status(), 'Regular User Login Failed').toBe(200);
-    regularUserToken = (await response.json()).access_token;
+    // Regular User (Photographer) Setup
+    regularApiUser = await createRandomUser(playwright, BASE_URL, RoleName.PHOTOGRAPHER);
     regularUserRequestContext = await playwright.request.newContext({
       baseURL: BASE_URL,
-      extraHTTPHeaders: { 'Authorization': `Bearer ${regularUserToken}` },
+      extraHTTPHeaders: { 'Authorization': `Bearer ${regularApiUser.token}` },
     });
-    console.log(`[External Incomes E2E] Regular user ${regularUserPayload.email} (ID: ${regularUserId}) created and logged in.`);
+    console.log(`[External Incomes E2E] Regular user ${regularApiUser.email} (ID: ${regularApiUser.id}) set up.`);
   });
 
   test.afterAll(async () => {
     console.log('[External Incomes E2E] Starting cleanup...');
-    // Delete created external incomes
-    for (const incomeId of createdExternalIncomeIds) {
-      try {
-        const resp = await adminRequestContext.delete(`${BASE_URL}/external-incomes/${incomeId}`);
-        console.log(`[External Incomes E2E] Deleted income ${incomeId}, status: ${resp.status()}`);
-      } catch (err) {
-        console.error(`[External Incomes E2E] Error deleting income ${incomeId}:`, err);
+    if (adminRequestContext) {
+      for (const incomeId of createdExternalIncomeIds) {
+        try {
+          await adminRequestContext.delete(`${BASE_URL}/external-incomes/${incomeId}`);
+        } catch (err) {
+          console.error(`[External Incomes E2E] Error deleting income ${incomeId}:`, err);
+        }
       }
+      await adminRequestContext.dispose();
     }
-    // Delete users (optional, depends on test isolation needs)
-    // For simplicity, we might skip user deletion if IDs are unique enough for test runs
-    // Or, implement deletion if it's critical
-    if (regularUserId) await adminRequestContext.delete(`${BASE_URL}/users/${regularUserId}`).catch(e => console.error('Cleanup error', e));
-    if (managerUserId) await adminRequestContext.delete(`${BASE_URL}/users/${managerUserId}`).catch(e => console.error('Cleanup error', e));
-    if (adminUserId) await adminRequestContext.delete(`${BASE_URL}/users/${adminUserId}`).catch(e => console.error('Cleanup error', e));
+    if (managerRequestContext) await managerRequestContext.dispose();
+    if (regularUserRequestContext) await regularUserRequestContext.dispose();
     console.log('[External Incomes E2E] Cleanup finished.');
+    createdExternalIncomeIds = [];
   });
 
   // --- CRUD Tests --- 
@@ -110,7 +86,7 @@ test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
     const income = await response.json();
     expect(income.description).toBe(payload.description);
     expect(income.amount).toBe(payload.amount);
-    expect(income.recorded_by_user_id).toBe(adminUserId);
+    expect(income.recorded_by_user_id).toBe(adminApiUser.id); // Use updated ID reference
     adminCreatedIncomeId = income.id;
     createdExternalIncomeIds.push(adminCreatedIncomeId);
   });
@@ -122,7 +98,7 @@ test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
     const income = await response.json();
     expect(income.description).toBe(payload.description);
     expect(income.amount).toBe(payload.amount);
-    expect(income.recorded_by_user_id).toBe(managerUserId);
+    expect(income.recorded_by_user_id).toBe(managerApiUser.id); // Use updated ID reference
     managerCreatedIncomeId = income.id;
     createdExternalIncomeIds.push(managerCreatedIncomeId);
   });
@@ -138,7 +114,7 @@ test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
   test('4. Admin: should get an external income by ID (manager created)', async () => {
     expect(managerCreatedIncomeId, 'Manager created income ID is missing for test 4').toBeDefined();
     const response = await adminRequestContext.get(`${BASE_URL}/external-incomes/${managerCreatedIncomeId}`);
-    expect(response.ok(), `Admin Get Other's Failed: ${await response.text()}`).toBe(true);
+    expect(response.ok(), `Admin Get Other\'s Failed: ${await response.text()}`).toBe(true);
     const income = await response.json();
     expect(income.id).toBe(managerCreatedIncomeId);
   });
@@ -149,7 +125,7 @@ test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
     expect(response.ok(), `Manager Get Own Failed: ${await response.text()}`).toBe(true);
     const income = await response.json();
     expect(income.id).toBe(managerCreatedIncomeId);
-    expect(income.recorded_by_user_id).toBe(managerUserId);
+    expect(income.recorded_by_user_id).toBe(managerApiUser.id);
   });
 
   test('6. Manager: should NOT get an external income recorded by Admin (Forbidden)', async () => {
@@ -172,7 +148,7 @@ test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
     expect(managerCreatedIncomeId, 'Manager created income ID is missing for test 8').toBeDefined();
     const updatePayload = { amount: 99.99 };
     const response = await adminRequestContext.patch(`${BASE_URL}/external-incomes/${managerCreatedIncomeId}`, { data: updatePayload });
-    expect(response.ok(), `Admin Update Other's Failed: ${await response.text()}`).toBe(true);
+    expect(response.ok(), `Admin Update Other\'s Failed: ${await response.text()}`).toBe(true);
     const income = await response.json();
     expect(income.amount).toBe(updatePayload.amount);
   });
@@ -219,24 +195,34 @@ test.describe.serial('/external-incomes E2E CRUD and RBAC', () => {
   });
 
   test('14. Pagination: Manager should get paginated list of OWN incomes', async () => {
-    // Manager already created one (managerCreatedIncomeId). Create one more by manager for pagination test.
-    const newManagerIncome = await (await managerRequestContext.post(`${BASE_URL}/external-incomes`, { data: getSampleIncomePayload('_manager_page') })).json();
+    // Ensure managerCreatedIncomeId is set, or create one if not (e.g. if tests run selectively)
+    if (!managerCreatedIncomeId) {
+      const tempPayload = getSampleIncomePayload('_manager_temp_for_page');
+      const tempResp = await managerRequestContext.post(`${BASE_URL}/external-incomes`, { data: tempPayload });
+      expect(tempResp.status()).toBe(201);
+      managerCreatedIncomeId = (await tempResp.json()).id;
+      createdExternalIncomeIds.push(managerCreatedIncomeId); 
+    }
+
+    const newManagerIncomePayload = getSampleIncomePayload('_manager_page');
+    const newManagerIncomeResp = await managerRequestContext.post(`${BASE_URL}/external-incomes`, { data: newManagerIncomePayload });
+    expect(newManagerIncomeResp.status()).toBe(201);
+    const newManagerIncome = await newManagerIncomeResp.json();
     createdExternalIncomeIds.push(newManagerIncome.id);
     
     const response = await managerRequestContext.get(`${BASE_URL}/external-incomes?page=1&limit=1`);
     expect(response.ok(), `Manager Paginate Own Failed: ${await response.text()}`).toBe(true);
     const page = await response.json();
     expect(page.items.length).toBe(1);
-    expect(page.items[0].recorded_by_user_id).toBe(managerUserId);
-    expect(page.meta.totalItems).toBeGreaterThanOrEqual(2); // Manager created at least two
+    expect(page.items[0].recorded_by_user_id).toBe(managerApiUser.id);
+    expect(page.meta.totalItems).toBeGreaterThanOrEqual(2); 
     expect(page.meta.currentPage).toBe(1);
 
-    // Check that if manager tries to query for admin's incomes specifically, it still defaults to their own
-    const responseAdminQuery = await managerRequestContext.get(`${BASE_URL}/external-incomes?page=1&limit=10&recorded_by_user_id=${adminUserId}`);
+    const responseAdminQuery = await managerRequestContext.get(`${BASE_URL}/external-incomes?page=1&limit=10&recorded_by_user_id=${adminApiUser.id}`);
     expect(responseAdminQuery.ok()).toBe(true);
     const pageAdminQuery = await responseAdminQuery.json();
     pageAdminQuery.items.forEach((item: any) => {
-        expect(item.recorded_by_user_id).toBe(managerUserId);
+        expect(item.recorded_by_user_id).toBe(managerApiUser.id);
     });
   });
 

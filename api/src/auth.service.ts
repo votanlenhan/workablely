@@ -75,7 +75,7 @@ export class AuthService {
    * @returns An object containing the access token.
    */
   async login(
-    user: Omit<User, 'password_hash'>,
+    user: PlainUser,
   ): Promise<{ access_token: string }> {
     const payload = { sub: user.id, email: user.email }; // Use 'sub' for user ID as standard practice
     // We can add more claims to the payload if needed, e.g., roles

@@ -1,6 +1,16 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
-import { generateRandomUser, generateRandomString } from './utils/random-helpers';
-import { ConfigurationValueType } from '../api/src/modules/configurations/entities/configuration-value-type.enum'; // Adjust path as needed
+// import { generateRandomUser, generateRandomString } from './utils/random-helpers'; // Corrected to use UserData and RoleName
+import { createRandomUser, UserData } from './utils/user-helpers';
+import { RoleName } from '../api/src/modules/roles/entities/role-name.enum';
+import { ConfigurationValueType } from '../api/src/modules/configurations/entities/configuration-value-type.enum'; 
+import { Chance } from 'chance'; // For generateRandomString if kept local
+
+const chance = new Chance(); // For generateRandomString
+
+// Function to generate random string, if not imported from a common helper
+function generateRandomString(length: number): string {
+  return chance.string({ length });
+}
 
 const BASE_URL = 'http://localhost:3000/api';
 
@@ -8,12 +18,10 @@ let adminRequestContext: APIRequestContext;
 let managerRequestContext: APIRequestContext;
 let photographerRequestContext: APIRequestContext;
 
-let adminToken: string;
-let managerToken: string;
-let photographerToken: string;
-
-let adminUserId: string;
-let managerUserId: string;
+// Store UserData objects to access id, email, token etc.
+let adminApiUser: UserData;
+let managerApiUser: UserData;
+let photographerApiUser: UserData;
 
 let createdConfigIds: string[] = [];
 
@@ -28,62 +36,54 @@ function getSampleConfigPayload(keySuffix: string = '') {
 }
 
 test.describe.serial('/configurations E2E CRUD and RBAC', () => {
-  test.beforeAll(async ({ playwright, request }) => {
+  test.beforeAll(async ({ playwright }) => {
     // Admin User Setup
-    const adminUserPayload = generateRandomUser(['Admin']);
-    let response = await request.post(`${BASE_URL}/auth/signup`, { data: adminUserPayload });
-    expect(response.status(), 'Admin Signup Failed').toBe(201);
-    let adminUser = await response.json();
-    adminUserId = adminUser.id;
-    response = await request.post(`${BASE_URL}/auth/login`, { data: { email: adminUserPayload.email, password: adminUserPayload.password } });
-    expect(response.status(), 'Admin Login Failed').toBe(200);
-    adminToken = (await response.json()).access_token;
+    adminApiUser = await createRandomUser(playwright, BASE_URL, RoleName.ADMIN);
     adminRequestContext = await playwright.request.newContext({
       baseURL: BASE_URL,
-      extraHTTPHeaders: { 'Authorization': `Bearer ${adminToken}` },
+      extraHTTPHeaders: { 'Authorization': `Bearer ${adminApiUser.token}` },
     });
-    console.log(`[Configurations E2E] Admin user ${adminUser.email} (ID: ${adminUserId}) created and logged in.`);
+    console.log(`[Configurations E2E] Admin user ${adminApiUser.email} (ID: ${adminApiUser.id}) set up.`);
 
     // Manager User Setup
-    const managerUserPayload = generateRandomUser(['Manager']);
-    response = await adminRequestContext.post(`${BASE_URL}/users`, { data: managerUserPayload });
-    expect(response.status(), 'Manager User Creation by Admin Failed').toBe(201);
-    managerUserId = (await response.json()).id;
-    response = await request.post(`${BASE_URL}/auth/login`, { data: { email: managerUserPayload.email, password: managerUserPayload.password } });
-    expect(response.status(), 'Manager Login Failed').toBe(200);
-    managerToken = (await response.json()).access_token;
+    // Note: createRandomUser already handles signup and provides a token.
+    // No need to create user via adminRequestContext.post /users unless specific scenarios require it.
+    managerApiUser = await createRandomUser(playwright, BASE_URL, RoleName.MANAGER);
     managerRequestContext = await playwright.request.newContext({
       baseURL: BASE_URL,
-      extraHTTPHeaders: { 'Authorization': `Bearer ${managerToken}` },
+      extraHTTPHeaders: { 'Authorization': `Bearer ${managerApiUser.token}` },
     });
-    console.log(`[Configurations E2E] Manager user ${managerUserPayload.email} (ID: ${managerUserId}) created and logged in.`);
+    console.log(`[Configurations E2E] Manager user ${managerApiUser.email} (ID: ${managerApiUser.id}) set up.`);
 
-    // Photographer User Setup (for no-access tests)
-    const photographerUserPayload = generateRandomUser(['Photographer']);
-    response = await adminRequestContext.post(`${BASE_URL}/users`, { data: photographerUserPayload });
-    expect(response.status(), 'Photographer User Creation by Admin Failed').toBe(201);
-    const photographerUserId = (await response.json()).id;
-    response = await request.post(`${BASE_URL}/auth/login`, { data: { email: photographerUserPayload.email, password: photographerUserPayload.password } });
-    expect(response.status(), 'Photographer Login Failed').toBe(200);
-    photographerToken = (await response.json()).access_token;
+    // Photographer User Setup
+    photographerApiUser = await createRandomUser(playwright, BASE_URL, RoleName.PHOTOGRAPHER); // Or RoleName.USER if Photographer isn't a default role
     photographerRequestContext = await playwright.request.newContext({
       baseURL: BASE_URL,
-      extraHTTPHeaders: { 'Authorization': `Bearer ${photographerToken}` },
+      extraHTTPHeaders: { 'Authorization': `Bearer ${photographerApiUser.token}` },
     });
-    console.log(`[Configurations E2E] Photographer user ${photographerUserPayload.email} (ID: ${photographerUserId}) created.`);
+    console.log(`[Configurations E2E] Photographer user ${photographerApiUser.email} (ID: ${photographerApiUser.id}) set up.`);
   });
 
   test.afterAll(async () => {
     console.log('[Configurations E2E] Starting cleanup...');
-    for (const configId of createdConfigIds) {
-      try {
-        await adminRequestContext.delete(`${BASE_URL}/configurations/${configId}`);
-      } catch (err) {
-        console.error(`[Configurations E2E] Error deleting config ${configId}:`, err);
+    if (adminRequestContext) { // Ensure context exists before using
+      for (const configId of createdConfigIds) {
+        try {
+          await adminRequestContext.delete(`${BASE_URL}/configurations/${configId}`);
+        } catch (err) {
+          console.error(`[Configurations E2E] Error deleting config ${configId}:`, err);
+        }
       }
+      await adminRequestContext.dispose();
     }
-    // User cleanup can be added if necessary, similar to other spec files
+    if (managerRequestContext) await managerRequestContext.dispose();
+    if (photographerRequestContext) await photographerRequestContext.dispose();
+    // User cleanup would typically be handled by a global mechanism or not at all for test users if DB is reset/seeded.
+    // Or individual user deletion calls if necessary, e.g.:
+    // if (adminApiUser && adminRequestContext) await adminRequestContext.delete(`/users/${adminApiUser.id}`).catch(e => {});
+    // etc. for managerApiUser, photographerApiUser if they were created via API by admin/tests
     console.log('[Configurations E2E] Cleanup finished.');
+    createdConfigIds = [];
   });
 
   let testConfigKey = '';
@@ -119,7 +119,14 @@ test.describe.serial('/configurations E2E CRUD and RBAC', () => {
   });
 
   test('4. Admin: should get configuration by Key', async () => {
-    const response = await adminRequestContext.get(`${BASE_URL}/configurations/key/${testConfigKey}`);
+    // Diagnostic: First, try to get by ID to ensure it still exists for Admin
+    const getByIdResponse = await adminRequestContext.get(`${BASE_URL}/configurations/${testConfigId}`);
+    expect(getByIdResponse.ok(), `Admin Get Config by ID (in Test 4 PRE-CHECK) Failed: ${await getByIdResponse.text()}`).toBe(true);
+    const configById = await getByIdResponse.json();
+    expect(configById.key, `Config key mismatch in PRE-CHECK. Expected ${testConfigKey}, got ${configById.key}`).toBe(testConfigKey);
+
+    const encodedKey = encodeURIComponent(testConfigKey);
+    const response = await adminRequestContext.get(`${BASE_URL}/configurations/key/${encodedKey}`);
     expect(response.ok(), `Admin Get Config by Key Failed: ${await response.text()}`).toBe(true);
     const config = await response.json();
     expect(config.id).toBe(testConfigId);
@@ -134,7 +141,8 @@ test.describe.serial('/configurations E2E CRUD and RBAC', () => {
   });
 
   test('6. Manager: should get configuration by Key', async () => {
-    const response = await managerRequestContext.get(`${BASE_URL}/configurations/key/${testConfigKey}`);
+    const encodedKey = encodeURIComponent(testConfigKey);
+    const response = await managerRequestContext.get(`${BASE_URL}/configurations/key/${encodedKey}`);
     expect(response.ok(), `Manager Get Config by Key Failed: ${await response.text()}`).toBe(true);
     const config = await response.json();
     expect(config.key).toBe(testConfigKey);
@@ -194,7 +202,8 @@ test.describe.serial('/configurations E2E CRUD and RBAC', () => {
   });
   
   test('13. Photographer: should NOT be able to GET any configuration by Key (Forbidden)', async () => {
-    const response = await photographerRequestContext.get(`${BASE_URL}/configurations/key/${testConfigKey}`);
+    const encodedKey = encodeURIComponent(testConfigKey);
+    const response = await photographerRequestContext.get(`${BASE_URL}/configurations/key/${encodedKey}`);
     expect(response.status()).toBe(403);
   });
 
