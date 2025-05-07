@@ -179,29 +179,28 @@ describe('ShowAssignmentsService', () => {
 
   // --- Test Cases for findAll() ---
   describe('findAll', () => {
-    const options: IPaginationOptions = { page: 1, limit: 10 };
-    const assignment1 = { id: 'a1', showId: 's1', userId: 'u1' };
-    // const paginatedResult = { // Keep for when pagination is implemented
-    //   items: [assignment1],
-    //   meta: { itemCount: 1, totalItems: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
-    //   links: { first: '', previous: '', next: '', last: '' },
-    // };
+    const options: IPaginationOptions = { page: 1, limit: 10, route: '/show-assignments' };
+    const assignment1 = { id: 'a1', show_id: 's1', user_id: 'u1', show_role_id: 'sr1', assigned_by_user_id: 'au1' };
+    const paginatedResult: Pagination<ShowAssignment> = {
+      items: [assignment1 as ShowAssignment],
+      meta: { itemCount: 1, totalItems: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
+      links: { first: '', previous: '', next: '', last: '' },
+    };
 
-    it('should return an array of assignments (no pagination yet)', async () => {
-      const assignments = [assignment1];
-      // mockPaginate.mockResolvedValue(paginatedResult); // No pagination mock needed yet
-      repository.find.mockResolvedValue(assignments); // Mock repository.find directly
-      // repository.createQueryBuilder!.mockReturnValue(mockQueryBuilder); // Not needed if not using query builder for basic find
+    it('should return a paginated list of assignments with relations', async () => {
+      repository.createQueryBuilder!.mockReturnValue(mockQueryBuilder as any);
+      mockPaginate.mockResolvedValue(paginatedResult);
 
-      const result = await service.findAll(/* options */); // Remove/comment options
+      const result = await service.findAll(options);
 
-      expect(result).toEqual(assignments);
-      expect(repository.find).toHaveBeenCalledWith({ relations: ['user', 'show', 'showRole', 'assignedBy'] });
-      // expect(repository.createQueryBuilder).toHaveBeenCalledWith('assignment');
-      // expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledTimes(4);
-      // expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('assignment.createdAt', 'DESC');
-      // expect(mockPaginate).toHaveBeenCalledWith(mockQueryBuilder, options);
-      // expect(mockQueryBuilder.andWhere).not.toHaveBeenCalled();
+      expect(repository.createQueryBuilder).toHaveBeenCalledWith('assignment');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.user', 'user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.show', 'show');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.showRole', 'showRole');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.assignedBy', 'assignedBy');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('assignment.assigned_at', 'DESC');
+      expect(mockPaginate).toHaveBeenCalledWith(mockQueryBuilder, options);
+      expect(result).toEqual(paginatedResult);
     });
 
     // Comment out tests related to filtering/pagination until implemented in service

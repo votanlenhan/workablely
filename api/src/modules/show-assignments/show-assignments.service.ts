@@ -64,13 +64,19 @@ export class ShowAssignmentsService {
    * Finds all show assignments (potentially paginated).
    * @returns A list of show assignments.
    */
-  async findAll(/* options: IPaginationOptions */): Promise<ShowAssignment[]> {
+  async findAll(options: IPaginationOptions): Promise<Pagination<ShowAssignment>> {
     // Basic find for now
-    return this.assignmentRepository.find({ relations: ['user', 'show', 'showRole', 'assignedBy'] });
+    // return this.assignmentRepository.find({ relations: ['user', 'show', 'showRole', 'assignedBy'] }); // Old code
     // Example pagination:
-    // return paginate<ShowAssignment>(this.assignmentRepository, options, {
-    //   relations: ['user', 'show', 'showRole', 'assignedBy'], // Load relations
-    // });
+    const queryBuilder = this.assignmentRepository.createQueryBuilder('assignment');
+    queryBuilder
+      .leftJoinAndSelect('assignment.user', 'user')
+      .leftJoinAndSelect('assignment.show', 'show')
+      .leftJoinAndSelect('assignment.showRole', 'showRole')
+      .leftJoinAndSelect('assignment.assignedBy', 'assignedBy')
+      .orderBy('assignment.assigned_at', 'DESC'); // Default sort order
+
+    return paginate<ShowAssignment>(queryBuilder, options);
   }
 
   /**

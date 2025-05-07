@@ -8,6 +8,8 @@ async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   console.log('[main.ts] Nest application created.'); // LOG AFTER CREATE
 
+  app.setGlobalPrefix('api'); // Add global prefix
+
   // Global Validation Pipe
   app.useGlobalPipes(
     new ValidationPipe({

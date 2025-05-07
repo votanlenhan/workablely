@@ -1,60 +1,63 @@
 import { Entity, Column, Index, ManyToOne, JoinColumn } from 'typeorm';
 import { BaseEntity } from '../../../core/database/base.entity';
-import { Equipment } from '../../equipment/entities/equipment.entity';
-import { Show } from '../../shows/entities/show.entity';
-import { User } from '../../users/entities/user.entity';
+import { Equipment } from '@/modules/equipment/entities/equipment.entity';
+import { Show } from '@/modules/shows/entities/show.entity';
+import { User } from '@/modules/users/entities/user.entity';
+
+export enum AssignmentStatus {
+  ASSIGNED = 'Assigned',
+  RETURNED = 'Returned',
+  OVERDUE = 'Overdue',
+  LOST = 'Lost',
+  DAMAGED = 'Damaged',
+}
 
 @Entity({ name: 'equipment_assignments' })
 export class EquipmentAssignment extends BaseEntity {
-  @Column({ type: 'uuid', nullable: false })
+  @Column({ type: 'uuid' })
   equipment_id: string;
 
-  @ManyToOne(() => Equipment, { nullable: false, onDelete: 'CASCADE' }) // Cascade if equipment deleted?
+  @ManyToOne(() => Equipment, (equipment) => equipment.assignments, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'equipment_id' })
-  @Index()
   equipment: Equipment;
 
   @Column({ type: 'uuid', nullable: true })
   show_id?: string;
 
-  @ManyToOne(() => Show, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => Show, { nullable: true, onDelete: 'SET NULL' }) // An assignment might not be for a show
   @JoinColumn({ name: 'show_id' })
-  @Index()
   show?: Show;
 
   @Column({ type: 'uuid', nullable: true })
-  assigned_to_user_id?: string;
+  user_id?: string; // User to whom the equipment is assigned, could be for a show or personal use
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
-  @JoinColumn({ name: 'assigned_to_user_id' })
-  @Index()
-  assigned_to?: User;
+  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' }) // User who is assigned the equipment
+  @JoinColumn({ name: 'user_id' })
+  assigned_to_user?: User;
 
-  @Column({ type: 'uuid', nullable: true })
-  assigned_by_user_id?: string;
+  @Column({ type: 'uuid' })
+  assigned_by_user_id: string; // User who created the assignment
 
-  @ManyToOne(() => User, { nullable: true, onDelete: 'SET NULL' })
+  @ManyToOne(() => User, { onDelete: 'SET NULL' }) // User who performed the assignment action
   @JoinColumn({ name: 'assigned_by_user_id' })
-  @Index()
-  assigned_by?: User;
+  assigned_by_user: User;
+
+  @Column({ type: 'timestamp with time zone' })
+  assignment_date: Date;
+
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  expected_return_date?: Date;
+
+  @Column({ type: 'timestamp with time zone', nullable: true })
+  actual_return_date?: Date;
 
   @Column({
-    type: 'timestamp with time zone',
-    nullable: false,
-    default: () => 'CURRENT_TIMESTAMP',
+    type: 'enum',
+    enum: AssignmentStatus,
+    default: AssignmentStatus.ASSIGNED,
   })
-  assigned_at: Date;
-
-  @Column({ type: 'timestamp with time zone', nullable: true })
-  expected_return_datetime?: Date;
-
-  @Column({ type: 'timestamp with time zone', nullable: true })
-  @Index()
-  actual_return_datetime?: Date;
+  status: AssignmentStatus;
 
   @Column({ type: 'text', nullable: true })
-  assignment_notes?: string;
-
-  @Column({ type: 'text', nullable: true })
-  return_notes?: string;
+  notes?: string;
 }

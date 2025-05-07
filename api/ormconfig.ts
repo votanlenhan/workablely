@@ -21,6 +21,9 @@ const options: DataSourceOptions = {
     'src/modules/show-roles/entities/show-role.entity.ts',
     'src/modules/shows/entities/show.entity.ts',
     'src/modules/show-assignments/entities/show-assignment.entity.ts',
+    'src/modules/payments/entities/payment.entity.ts',
+    'src/modules/equipment/entities/equipment.entity.ts',
+    'src/modules/equipment-assignments/entities/equipment-assignment.entity.ts',
     // TODO: Add ALL other entities used by migrations below
     // Example: 'src/modules/equipment/entities/equipment.entity.ts',
     // Example: 'src/modules/payments/entities/payment.entity.ts',

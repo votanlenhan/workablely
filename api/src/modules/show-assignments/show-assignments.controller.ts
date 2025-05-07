@@ -54,12 +54,21 @@ export class ShowAssignmentsController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all show assignments (basic, no pagination yet)' })
-  @ApiResponse({ status: 200, description: 'List of show assignments retrieved.', type: [ShowAssignment] })
+  @ApiOperation({ summary: 'Get all show assignments with pagination' })
+  @ApiQuery({ name: 'page', required: false, description: 'Page number for pagination', type: Number })
+  @ApiQuery({ name: 'limit', required: false, description: 'Number of items per page', type: Number })
+  @ApiResponse({ status: 200, description: 'Paginated list of show assignments retrieved.', type: Pagination })
   @Roles(RoleName.ADMIN, RoleName.MANAGER)
   async findAll(
-  ): Promise<ShowAssignment[]> {
-    return this.assignmentsService.findAll(/* Remove pagination options and filters */);
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number = 1,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number = 10,
+  ): Promise<Pagination<ShowAssignment>> {
+    limit = limit > 100 ? 100 : limit; // Cap limit
+    return this.assignmentsService.findAll({
+      page,
+      limit,
+      route: '/show-assignments', // Adjust if your base route is different
+    });
   }
 
   @Get(':id')

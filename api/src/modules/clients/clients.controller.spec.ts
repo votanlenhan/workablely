@@ -59,20 +59,22 @@ describe('ClientsController', () => {
   describe('create', () => {
     const createDto: CreateClientDto = { name: 'New Client', phone_number: '123' };
     const createdClient: Partial<Client> = { id: 'c1', name: 'New Client' };
+    const mockUserId = 'user-id-for-client-create';
+    const mockRequest = { user: { id: mockUserId } } as any; // Mock Express Request object
 
-    it('should call service.create and return the result', async () => {
+    it('should call service.create with DTO and userId, and return the result', async () => {
       service.create.mockResolvedValue(createdClient);
 
-      const result = await controller.create(createDto);
+      const result = await controller.create(createDto, mockRequest);
 
-      expect(service.create).toHaveBeenCalledWith(createDto);
+      expect(service.create).toHaveBeenCalledWith(createDto, mockUserId);
       expect(result).toEqual(createdClient);
     });
 
     it('should forward errors from the service', async () => {
       service.create.mockRejectedValue(new ForbiddenException('Create error'));
 
-      await expect(controller.create(createDto)).rejects.toThrow(ForbiddenException);
+      await expect(controller.create(createDto, mockRequest)).rejects.toThrow(ForbiddenException);
     });
   });
 

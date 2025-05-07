@@ -1,6 +1,6 @@
-import { Injectable, NotFoundException, Inject, forwardRef } from '@nestjs/common';
+import { Injectable, NotFoundException, Inject, forwardRef, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, QueryRunner } from 'typeorm';
 import { Show, ShowStatus, ShowPaymentStatus } from './entities/show.entity';
 import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
@@ -16,6 +16,8 @@ import { Client } from '@/modules/clients/entities/client.entity';
 
 @Injectable()
 export class ShowsService {
+  private readonly logger = new Logger(ShowsService.name);
+
   constructor(
     @InjectRepository(Show)
     private readonly showRepository: Repository<Show>,
@@ -54,80 +56,79 @@ export class ShowsService {
 
   async create(
       createShowDto: CreateShowDto,
-      creatorUserId: string | null // Pass creatorUserId explicitly for now
+      creatorUserId: string | null
     ): Promise<Show> {
-    // Validate client_id exists
     await this.clientsService.findOne(createShowDto.clientId);
-
     const show = this.showRepository.create({
         ...createShowDto,
         createdByUserId: creatorUserId,
-        total_collected: createShowDto.deposit_amount ?? 0, // Initial collection is the deposit
-        status: ShowStatus.PENDING, // Default status
+        total_collected: createShowDto.deposit_amount ?? 0,
+        status: ShowStatus.PENDING,
+        start_datetime: new Date(createShowDto.start_datetime),
+        deposit_date: createShowDto.deposit_date ? new Date(createShowDto.deposit_date) : null,
     });
-
-    // Calculate initial amount_due and payment_status
+    show.deposit_amount = createShowDto.deposit_amount ?? null;
     show.amount_due = this.calculateAmountDue(show.total_price, show.total_collected);
     show.payment_status = this.determinePaymentStatus(show.total_price, show.total_collected);
-
+    this.logger.log(`Creating new show with title: ${show.title || 'Untitled'}`);
     return this.showRepository.save(show);
   }
 
   async findAll(options: IPaginationOptions): Promise<Pagination<Show>> {
     const queryBuilder = this.showRepository.createQueryBuilder('show');
     queryBuilder
-      .leftJoinAndSelect('show.client', 'client') // Join and select client
-      // .leftJoinAndSelect('show.created_by_user', 'createdByUser') // Temporarily remove this join
+      .leftJoinAndSelect('show.client', 'client')
+      .leftJoinAndSelect('show.createdBy', 'createdByUser')
+      .leftJoinAndSelect('show.assignments', 'assignments')
+      .leftJoinAndSelect('show.payments', 'payments')
       .orderBy('show.start_datetime', 'DESC');
-
-    // Add filtering/searching capabilities later based on query params
-
+    this.logger.log(`Finding all shows with options: ${JSON.stringify(options)}`);
     return paginate<Show>(queryBuilder, options);
   }
 
   async findOne(id: string): Promise<Show> {
+    this.logger.log(`Finding show with ID: ${id}`);
     const show = await this.showRepository.findOne({
       where: { id },
-      relations: ['client'], // Simplified relations for debugging
+      relations: ['client', 'createdBy', 'assignments', 'payments'],
     });
     if (!show) {
+      this.logger.warn(`Show with ID "${id}" not found`);
       throw new NotFoundException(`Show with ID "${id}" not found`);
     }
     return show;
   }
 
   async update(id: string, updateShowDto: UpdateShowDto): Promise<Show> {
-    // Fetch existing show first to recalculate dependent fields if needed
-    const existingShow = await this.findOne(id); // Use findOne to ensure it exists
-
-    // Check if client needs to be updated
-    let clientRelation: Client | undefined = undefined;
+    this.logger.log(`Updating show with ID: ${id}`);
+    const existingShow = await this.findOne(id);
     if (updateShowDto.clientId && updateShowDto.clientId !== existingShow.clientId) {
-        // Validate new client exists
-        clientRelation = await this.clientsService.findOne(updateShowDto.clientId);
-        // The preload step below will handle setting the new clientId
+        await this.clientsService.findOne(updateShowDto.clientId);
     }
 
-    // Use preload to merge data - careful not to overwrite calculated fields unintentionally
     const showToUpdate = await this.showRepository.preload({
         id: id,
         ...updateShowDto,
+        start_datetime: updateShowDto.start_datetime ? new Date(updateShowDto.start_datetime) : undefined,
+        end_datetime: updateShowDto.end_datetime ? new Date(updateShowDto.end_datetime) : undefined,
+        deposit_date: updateShowDto.deposit_date ? new Date(updateShowDto.deposit_date) : undefined,
+        post_processing_deadline: updateShowDto.post_processing_deadline ? new Date(updateShowDto.post_processing_deadline) : undefined,
+        delivered_at: updateShowDto.delivered_at ? new Date(updateShowDto.delivered_at) : undefined,
+        completed_at: updateShowDto.completed_at ? new Date(updateShowDto.completed_at) : undefined,
+        cancelled_at: updateShowDto.cancelled_at ? new Date(updateShowDto.cancelled_at) : undefined,
     });
 
     if (!showToUpdate) {
-      // This should ideally not happen if findOne succeeded, but safety check
+      this.logger.warn(`Show with ID "${id}" could not be preloaded for update`);
       throw new NotFoundException(`Show with ID "${id}" could not be preloaded for update`);
     }
 
-    // Recalculate dependent fields if relevant inputs changed
-    // Note: total_collected should ideally be updated via a separate payment recording mechanism
     const totalPrice = showToUpdate.total_price ?? existingShow.total_price;
-    const totalCollected = showToUpdate.total_collected ?? existingShow.total_collected;
+    const totalCollected = existingShow.total_collected; 
 
     showToUpdate.amount_due = this.calculateAmountDue(totalPrice, totalCollected);
     showToUpdate.payment_status = this.determinePaymentStatus(totalPrice, totalCollected);
 
-    // Ensure status-related date fields are handled logically
     if (updateShowDto.status === ShowStatus.CANCELLED && !showToUpdate.cancelled_at) {
         showToUpdate.cancelled_at = new Date();
     } else if (updateShowDto.status === ShowStatus.DELIVERED && !showToUpdate.delivered_at) {
@@ -135,28 +136,60 @@ export class ShowsService {
     } else if (updateShowDto.status === ShowStatus.COMPLETED && !showToUpdate.completed_at) {
         showToUpdate.completed_at = new Date();
     }
-    // Add more logic here if status transitions should reset certain dates
-
     return this.showRepository.save(showToUpdate);
   }
 
-  // Add method to update total_collected when a payment is recorded later
-  async recordPayment(showId: string, paymentAmount: number): Promise<Show> {
-      const show = await this.findOne(showId);
-      show.total_collected += paymentAmount;
-      show.amount_due = this.calculateAmountDue(show.total_price, show.total_collected);
-      show.payment_status = this.determinePaymentStatus(show.total_price, show.total_collected);
-      // Potentially update Show status if payment completes the total
-      if (show.payment_status === ShowPaymentStatus.PAID && show.status !== ShowStatus.COMPLETED && show.status !== ShowStatus.CANCELLED) {
-          // Optionally transition to completed or another status if fully paid
-          // show.status = ShowStatus.COMPLETED; // Example
-      }
-      return this.showRepository.save(show);
+  /**
+   * Updates the financial fields of a show (total_collected, amount_due, payment_status)
+   * based on its current payments. This method should be called within a transaction
+   * when payments are created, updated, or deleted.
+   * @param showId The ID of the show to update.
+   * @param queryRunner The QueryRunner to use for the database operations.
+   */
+  async updateShowFinancesAfterPayment(showId: string, queryRunner?: QueryRunner | null): Promise<Show> {
+    this.logger.log(`Updating finances for show ID: ${showId}`);
+    const showRepo = queryRunner
+      ? queryRunner.manager.getRepository(Show)
+      : this.showRepository;
+    
+    const show = await showRepo.findOne({
+        where: { id: showId },
+        relations: ['payments'],
+    });
+
+    if (!show) {
+      this.logger.error(`Show with ID "${showId}" not found during finance update.`);
+      throw new NotFoundException(`Show with ID "${showId}" not found.`);
+    }
+
+    show.total_collected = show.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    show.amount_due = this.calculateAmountDue(show.total_price, show.total_collected);
+    show.payment_status = this.determinePaymentStatus(show.total_price, show.total_collected);
+    
+    const depositPayment = show.payments.find(p => p.is_deposit);
+    if (depositPayment) {
+        show.deposit_amount = Number(depositPayment.amount);
+        show.deposit_date = depositPayment.payment_date;
+    } else if (show.payments.length > 0 && !show.deposit_amount) {
+        // This logic might need refinement based on business rules for deposits
+        // For now, if no explicit deposit, ensure deposit_amount reflects that, or is null if no payments
+        // show.deposit_amount = show.payments.length > 0 ? Number(show.payments[0].amount) : null; // Example: first payment as deposit
+        // show.deposit_date = show.payments.length > 0 ? show.payments[0].payment_date : null;
+    }
+    if (show.payments.length === 0) {
+        show.deposit_amount = null;
+        show.deposit_date = null;
+    }
+
+    this.logger.log(`Recalculated finances for show ${showId}: collected=${show.total_collected}, due=${show.amount_due}, status=${show.payment_status}`);
+    return showRepo.save(show);
   }
 
   async remove(id: string): Promise<void> {
+    this.logger.log(`Removing show with ID: ${id}`);
     const result = await this.showRepository.delete(id);
     if (result.affected === 0) {
+      this.logger.warn(`Show with ID "${id}" not found for deletion`);
       throw new NotFoundException(`Show with ID "${id}" not found`);
     }
   }

@@ -12,6 +12,9 @@ import { ClientsModule } from './modules/clients/clients.module';
 import { ShowRolesModule } from './modules/show-roles/show-roles.module';
 import { ShowsModule } from './modules/shows/shows.module';
 import { ShowAssignmentsModule } from './modules/show-assignments/show-assignments.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { EquipmentModule } from './modules/equipment/equipment.module';
+import { EquipmentAssignmentsModule } from './modules/equipment-assignments/equipment-assignments.module';
 // ... other future modules
 
 // Explicitly import entities
@@ -22,6 +25,9 @@ import { Client } from './modules/clients/entities/client.entity';
 import { ShowRole } from './modules/show-roles/entities/show-role.entity';
 import { Show } from './modules/shows/entities/show.entity';
 import { ShowAssignment } from './modules/show-assignments/entities/show-assignment.entity';
+import { Payment } from './modules/payments/entities/payment.entity';
+import { Equipment } from './modules/equipment/entities/equipment.entity';
+import { EquipmentAssignment } from './modules/equipment-assignments/entities/equipment-assignment.entity';
 
 @Module({
   imports: [
@@ -51,6 +57,9 @@ import { ShowAssignment } from './modules/show-assignments/entities/show-assignm
             ShowRole,
             Show,
             ShowAssignment,
+            Payment,
+            Equipment,
+            EquipmentAssignment,
           ],
           synchronize: false,
           logging: configService.get<string>('NODE_ENV') === 'development',
@@ -74,7 +83,9 @@ import { ShowAssignment } from './modules/show-assignments/entities/show-assignm
     ShowRolesModule,
     ShowsModule,
     ShowAssignmentsModule,
-    // EquipmentModule, // Add later
+    PaymentsModule,
+    EquipmentModule,
+    EquipmentAssignmentsModule,
     // ConfigurationsModule, // Add later
     // ExternalIncomesModule, // Add later
     // ExpensesModule, // Add later

@@ -11,9 +11,9 @@ import {
 import { Client } from '../../clients/entities/client.entity';
 import { User } from '../../users/entities/user.entity';
 import { ShowAssignment } from '../../show-assignments/entities/show-assignment.entity';
+import { Payment } from '../../payments/entities/payment.entity';
+import { EquipmentAssignment } from '../../equipment-assignments/entities/equipment-assignment.entity';
 // Import related entities later
-// import { EquipmentAssignment } from '../../equipment-assignments/entities/equipment-assignment.entity';
-// import { Payment } from '../../payments/entities/payment.entity';
 // import { RevenueAllocation } from '../../revenue-allocations/entities/revenue-allocation.entity';
 // import { MemberEvaluation } from '../../member-evaluations/entities/member-evaluation.entity';
 
@@ -98,7 +98,7 @@ export class Show {
   deposit_amount: number | null;
 
   @Column({ type: 'date', nullable: true })
-  deposit_date: string | null; // Stored as string YYYY-MM-DD
+  deposit_date: Date | null; // Changed to Date | null
 
   @Column({
     type: 'decimal',
@@ -132,7 +132,7 @@ export class Show {
   payment_status: ShowPaymentStatus;
 
   @Column({ type: 'date', nullable: true })
-  post_processing_deadline: string | null; // Stored as string YYYY-MM-DD
+  post_processing_deadline: Date | null; // Changed to Date | null
 
   @Column({ type: 'timestamptz', nullable: true })
   delivered_at: Date | null;
@@ -164,11 +164,11 @@ export class Show {
   @OneToMany(() => ShowAssignment, (assignment) => assignment.show)
   assignments: ShowAssignment[];
 
-  // @OneToMany(() => EquipmentAssignment, (assignment) => assignment.show) // Uncomment later
-  // equipmentAssignments: EquipmentAssignment[];
+  @OneToMany(() => Payment, (payment) => payment.show)
+  payments: Payment[];
 
-  // @OneToMany(() => Payment, (payment) => payment.show) // Uncomment later
-  // payments: Payment[];
+  @OneToMany(() => EquipmentAssignment, (assignment) => assignment.show)
+  equipmentAssignments: EquipmentAssignment[];
 
   // @OneToMany(() => RevenueAllocation, (allocation) => allocation.show) // Uncomment later
   // revenueAllocations: RevenueAllocation[];

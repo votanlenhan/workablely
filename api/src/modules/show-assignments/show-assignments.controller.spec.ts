@@ -9,6 +9,7 @@ import { RolesGuard } from '@/core/guards/roles.guard';
 import { RoleName } from '@/modules/roles/entities/role.entity';
 import { User } from '@/modules/users/entities/user.entity';
 import { ShowAssignment, ShowAssignmentConfirmationStatus } from './entities/show-assignment.entity';
+import { Pagination, IPaginationOptions } from 'nestjs-typeorm-paginate';
 
 // Mock Service Type Helper (Explicit definition)
 type MockShowAssignmentsService = {
@@ -79,19 +80,41 @@ describe('ShowAssignmentsController', () => {
   // --- Test Cases for findAll() ---
   describe('findAll', () => {
     const assignment1: Partial<ShowAssignment> = { id: 'a1', show_id: 's1', user_id: 'u1' };
-    const assignment2: Partial<ShowAssignment> = { id: 'a2', show_id: 's2', user_id: 'u2' };
+    const paginatedResult: Pagination<ShowAssignment> = {
+        items: [assignment1 as ShowAssignment],
+        meta: { itemCount: 1, totalItems: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
+        links: { first: '', previous: '', next: '', last: '' }
+      };
 
-    it('should call service.findAll and return the result (no pagination yet)', async () => {
-      const assignments = [assignment1, assignment2];
-      service.findAll.mockResolvedValue(assignments);
+    it('should call service.findAll with pagination options and return the result', async () => {
+      service.findAll.mockResolvedValue(paginatedResult);
+      const page = 1;
+      const limit = 10;
+      const expectedOptions: IPaginationOptions = { page, limit, route: '/show-assignments' };
 
-      const result = await controller.findAll(/* No pagination params yet */);
+      const result = await controller.findAll(page, limit);
 
-      expect(service.findAll).toHaveBeenCalled(); // Add specific args check when pagination implemented
-      expect(result).toEqual(assignments);
+      expect(service.findAll).toHaveBeenCalledWith(expectedOptions);
+      expect(result).toEqual(paginatedResult);
     });
 
-    // Add tests for pagination/filtering params once implemented in controller/service
+    it('should handle default pagination values', async () => {
+        service.findAll.mockResolvedValue(paginatedResult); // Result doesn't matter for this check
+        const expectedOptions: IPaginationOptions = { page: 1, limit: 10, route: '/show-assignments' };
+
+        await controller.findAll(); // Call with no arguments to test defaults
+
+        expect(service.findAll).toHaveBeenCalledWith(expectedOptions);
+    });
+
+    it('should cap limit at 100', async () => {
+        service.findAll.mockResolvedValue(paginatedResult);
+        const expectedOptions: IPaginationOptions = { page: 1, limit: 100, route: '/show-assignments' };
+
+        await controller.findAll(1, 200); // Call with limit > 100
+
+        expect(service.findAll).toHaveBeenCalledWith(expectedOptions);
+    });
   });
 
   // --- Test Cases for findOne() ---

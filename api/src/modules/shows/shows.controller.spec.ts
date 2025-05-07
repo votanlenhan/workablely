@@ -4,11 +4,11 @@ import { ShowsService } from './shows.service';
 import { CreateShowDto } from './dto/create-show.dto';
 import { UpdateShowDto } from './dto/update-show.dto';
 import { NotFoundException, ForbiddenException } from '@nestjs/common';
-import { JwtAuthGuard } from '@/auth/guards/jwt-auth.guard'; // Use alias
-import { RolesGuard } from '@/core/guards/roles.guard'; // Use alias
-import { RoleName } from '@/modules/roles/entities/role.entity'; // Use alias
-import { User } from '@/modules/users/entities/user.entity'; // Use alias
-import { Show, ShowStatus, ShowPaymentStatus } from './entities/show.entity';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../../core/guards/roles.guard';
+import { RoleName } from '../roles/entities/role.entity';
+import { User } from '../users/entities/user.entity';
+import { Show, ShowStatus } from './entities/show.entity';
 import { Pagination } from 'nestjs-typeorm-paginate';
 
 // Mock Service Type Helper (Explicit definition)
@@ -18,7 +18,6 @@ type MockShowsService = {
   findOne: jest.Mock;
   update: jest.Mock;
   remove: jest.Mock;
-  recordPayment: jest.Mock; // Added recordPayment
 };
 
 // Function to create the mock service instance
@@ -28,15 +27,14 @@ const createMockShowsService = (): MockShowsService => ({
   findOne: jest.fn(),
   update: jest.fn(),
   remove: jest.fn(),
-  recordPayment: jest.fn(),
 });
 
 describe('ShowsController', () => {
   let controller: ShowsController;
   let service: MockShowsService;
 
-  const mockUser = { id: 'user-shows-test-id', roles: [{ name: RoleName.MANAGER }] } as User; // Mock user with Manager role
-  const mockReq = { user: mockUser }; // Mock request object
+  const mockUser = { id: 'user-shows-test-id', roles: [{ name: RoleName.MANAGER }] } as User;
+  const mockReq = { user: mockUser, path: '/shows' };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
@@ -45,7 +43,6 @@ describe('ShowsController', () => {
         { provide: ShowsService, useFactory: createMockShowsService },
       ],
     })
-    // Mock guards
     .overrideGuard(JwtAuthGuard).useValue({ canActivate: jest.fn(() => true) })
     .overrideGuard(RolesGuard).useValue({ canActivate: jest.fn(() => true) })
     .compile();
@@ -67,15 +64,16 @@ describe('ShowsController', () => {
         show_type: createDto.show_type,
         start_datetime: new Date(createDto.start_datetime),
         total_price: createDto.total_price,
-        status: ShowStatus.PENDING 
+        status: ShowStatus.PENDING,
+        payments: [], equipmentAssignments: [], assignments: []
     };
 
     it('should call service.create and return the result', async () => {
-      service.create.mockResolvedValue(createdShow);
+      service.create.mockResolvedValue(createdShow as Show);
 
       const result = await controller.create(createDto, mockReq as any);
 
-      expect(service.create).toHaveBeenCalledWith(createDto, mockUser.id); // Pass user ID
+      expect(service.create).toHaveBeenCalledWith(createDto, mockUser.id);
       expect(result).toEqual(createdShow);
     });
 
@@ -88,7 +86,7 @@ describe('ShowsController', () => {
 
   // --- Test Cases for findAll() ---
   describe('findAll', () => {
-    const show1: Partial<Show> = { id: 's1', clientId: 'c1' };
+    const show1: Partial<Show> = { id: 's1', clientId: 'c1', payments: [], equipmentAssignments: [], assignments: [] };
     const paginatedResult: Pagination<Show> = {
       items: [show1 as Show],
       meta: { itemCount: 1, totalItems: 1, itemsPerPage: 10, totalPages: 1, currentPage: 1 },
@@ -99,38 +97,38 @@ describe('ShowsController', () => {
       service.findAll.mockResolvedValue(paginatedResult);
       const options = { page: 1, limit: 10, route: '/shows' };
 
-      const result = await controller.findAll(options.page, options.limit);
+      const result = await controller.findAll(mockReq as any, options.page, options.limit);
 
-      expect(service.findAll).toHaveBeenCalledWith(options);
+      expect(service.findAll).toHaveBeenCalledWith(expect.objectContaining(options));
       expect(result).toEqual(paginatedResult);
     });
 
      it('should handle default pagination values', async () => {
-      service.findAll.mockResolvedValue(paginatedResult); // Result doesn't matter here
+      service.findAll.mockResolvedValue(paginatedResult);
       const expectedOptions = { page: 1, limit: 10, route: '/shows' };
 
-      await controller.findAll(); // Call without params
+      await controller.findAll(mockReq as any, undefined, undefined);
 
-      expect(service.findAll).toHaveBeenCalledWith(expectedOptions);
+      expect(service.findAll).toHaveBeenCalledWith(expect.objectContaining(expectedOptions));
     });
 
      it('should cap limit at 100', async () => {
       service.findAll.mockResolvedValue(paginatedResult);
       const expectedOptions = { page: 1, limit: 100, route: '/shows' };
 
-      await controller.findAll(1, 200); // Call with limit > 100
+      await controller.findAll(mockReq as any, 1, 200);
 
-      expect(service.findAll).toHaveBeenCalledWith(expectedOptions);
+      expect(service.findAll).toHaveBeenCalledWith(expect.objectContaining(expectedOptions));
     });
   });
 
   // --- Test Cases for findOne() ---
   describe('findOne', () => {
     const showId = 'find-s1';
-    const foundShow: Partial<Show> = { id: showId, clientId: 'c1' };
+    const foundShow: Partial<Show> = { id: showId, clientId: 'c1', payments: [], equipmentAssignments: [], assignments: [] };
 
     it('should call service.findOne and return the result', async () => {
-      service.findOne.mockResolvedValue(foundShow);
+      service.findOne.mockResolvedValue(foundShow as Show);
 
       const result = await controller.findOne(showId);
 
@@ -149,10 +147,10 @@ describe('ShowsController', () => {
   describe('update', () => {
     const showId = 'update-s1';
     const updateDto: UpdateShowDto = { title: 'Updated Show' };
-    const updatedShow: Partial<Show> = { id: showId, title: 'Updated Show' };
+    const updatedShow: Partial<Show> = { id: showId, title: 'Updated Show', payments: [], equipmentAssignments: [], assignments: [] };
 
     it('should call service.update and return the result', async () => {
-      service.update.mockResolvedValue(updatedShow);
+      service.update.mockResolvedValue(updatedShow as Show);
 
       const result = await controller.update(showId, updateDto);
 
@@ -167,38 +165,12 @@ describe('ShowsController', () => {
     });
   });
 
-  // --- Test Cases for recordPayment() ---
-  describe('recordPayment', () => {
-    const showId = 'payment-s1';
-    const paymentAmount = 100;
-    const paymentDto = { amount: paymentAmount }; // DTO received by the endpoint conceptually
-    const showAfterPayment: Partial<Show> = { id: showId, total_collected: 100 };
-
-    it('should call service.recordPayment with the correct arguments and return the result', async () => {
-      service.recordPayment.mockResolvedValue(showAfterPayment);
-
-      // Simulate decorator extracting the 'amount' property and pass it to the method
-      const result = await controller.recordPayment(showId, paymentDto.amount); 
-
-      // Expect service to be called with extracted amount
-      expect(service.recordPayment).toHaveBeenCalledWith(showId, paymentAmount);
-      expect(result).toEqual(showAfterPayment);
-    });
-
-    it('should forward NotFoundException from the service', async () => {
-      service.recordPayment.mockRejectedValue(new NotFoundException());
-
-      // Simulate decorator extracting the 'amount' property and pass it to the method
-      await expect(controller.recordPayment(showId, paymentDto.amount)).rejects.toThrow(NotFoundException); 
-    });
-  });
-
   // --- Test Cases for remove() ---
   describe('remove', () => {
     const showId = 'delete-s1';
 
     it('should call service.remove successfully', async () => {
-      service.remove.mockResolvedValue(undefined); // remove returns void
+      service.remove.mockResolvedValue(undefined);
 
       await controller.remove(showId);
 
