@@ -23,6 +23,8 @@ export class ShowsService {
   constructor(
     @InjectRepository(Show)
     private readonly showRepository: Repository<Show>,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
 
     // Inject ClientsService to validate client_id
     @Inject(forwardRef(() => ClientsService))
@@ -169,16 +171,26 @@ export class ShowsService {
   async updateShowFinancesAfterPayment(showId: string, queryRunner?: QueryRunner | null): Promise<Show> {
     this.logger.log(`Updating finances for show ID: ${showId}. QueryRunner used: ${!!queryRunner}`);
     
-    const entityManager = queryRunner ? queryRunner.manager : this.showRepository.manager;
+    let showRepositoryRef: Repository<Show>;
+    let paymentRepositoryRef: Repository<Payment>;
 
-    const show = await entityManager.findOne(Show, { where: { id: showId } });
+    if (queryRunner) {
+      const entityManager = queryRunner.manager;
+      showRepositoryRef = entityManager.getRepository(Show);
+      paymentRepositoryRef = entityManager.getRepository(Payment);
+    } else {
+      showRepositoryRef = this.showRepository;
+      paymentRepositoryRef = this.paymentRepository;
+    }
+
+    const show = await showRepositoryRef.findOne({ where: { id: showId } });
 
     if (!show) {
       this.logger.error(`Show with ID "${showId}" not found during finance update.`);
       throw new NotFoundException(`Show with ID "${showId}" not found.`);
     }
 
-    const allPaymentsForShow = await entityManager.find(Payment, {
+    const allPaymentsForShow = await paymentRepositoryRef.find({
       where: { show_id: showId },
     });
 
@@ -212,7 +224,7 @@ export class ShowsService {
     }
 
     this.logger.log(`Final financial state for show ${showId}: collected=${show.total_collected}, due=${show.amount_due}, status=${show.payment_status}, deposit_amount=${show.deposit_amount}`);
-    return entityManager.save(Show, show);
+    return showRepositoryRef.save(show);
   }
 
   async remove(id: string): Promise<void> {

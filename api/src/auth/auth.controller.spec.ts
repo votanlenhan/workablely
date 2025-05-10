@@ -70,14 +70,20 @@ describe('AuthController', () => {
       last_name: 'User',
     };
     const signedUpUser: PlainUser = { ...mockUser, email: createUserDto.email, id: 'new-id' };
+    const mockLoginResult = { access_token: 'mock-signup-token' }; // Token for signup flow
 
-    it('should call authService.signup and return the created user', async () => {
+    it('should call authService.signup, authService.login and return token and user', async () => {
       mockAuthService.signup.mockResolvedValue(signedUpUser);
+      mockAuthService.login.mockResolvedValue(mockLoginResult); // Mock login for the signup flow
 
       const result = await controller.signup(createUserDto);
 
       expect(mockAuthService.signup).toHaveBeenCalledWith(createUserDto);
-      expect(result).toEqual(signedUpUser);
+      expect(mockAuthService.login).toHaveBeenCalledWith(signedUpUser); // Ensure login was called with the signed-up user
+      expect(result).toEqual({
+        access_token: mockLoginResult.access_token,
+        user: signedUpUser,
+      });
     });
 
     it('should forward ConflictException from authService.signup', async () => {

@@ -73,7 +73,7 @@ export class ShowAssignmentsService {
       .leftJoinAndSelect('assignment.user', 'user')
       .leftJoinAndSelect('assignment.show', 'show')
       .leftJoinAndSelect('assignment.show_role', 'show_role')
-      .leftJoinAndSelect('assignment.assignedBy', 'assignedBy')
+      .leftJoinAndSelect('assignment.assigned_by_user', 'assignedBy')
       .orderBy('assignment.assigned_at', 'DESC'); // Default sort order
 
     return paginate<ShowAssignment>(queryBuilder, options);

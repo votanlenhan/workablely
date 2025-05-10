@@ -150,7 +150,7 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
     - **Cập nhật sau khi thêm `Configurations` module:**
       - Viết và PASS E2E tests (15 tests) cho module `Configurations`, bao gồm các kịch bản CRUD và RBAC.
       - Sửa lỗi `TypeError: Assignment to constant variable` trong `configurations.spec.ts` bằng cách đổi `const` thành `let` cho `createdConfigIds`.
-    - **Kết quả hiện tại:** Tất cả 116 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai (bao gồm `ExternalIncomes` và `Configurations`) đều đang PASS.
+      - **Kết quả hiện tại:** Tất cả 116 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai (bao gồm `ExternalIncomes` và `Configurations`) đều đang PASS.
 
 ## 6. Trạng thái Hiện tại:
 
@@ -199,7 +199,7 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
   - Tạo và chạy thành công migration cho `MemberEvaluations` (`CreateMemberEvaluationsTableAndRelations`).
 - **Kiểm thử Unit Test cho `MemberEvaluations`:**
   - Viết và PASS 20 unit tests cho `MemberEvaluationsService`.
-  - Viết và PASS các unit tests cho `MemberEvaluationsController` (các test kiểm tra validation DTO (UUID) tạm thời được bỏ qua do gặp `BadRequestException` không mong muốn khi mock, các test khác đã pass).
+  - Viết và PASS tất cả các unit tests cho `MemberEvaluationsController`, bao gồm cả các bài test kiểm tra validation DTO.
 - **Kiểm thử End-to-End (E2E) Toàn Diện và Gỡ lỗi:**
   - **Thiết lập và Sửa lỗi Ban đầu:**
     - Tạo file spec `e2e/member-evaluations.spec.ts`.
@@ -230,13 +230,12 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
 - Tất cả các API endpoints hỗ trợ phân trang và có các biện pháp bảo vệ (Guards, Roles) phù hợp.
 - **Migrations:** Tất cả các migration, bao gồm cả cho `MemberEvaluations`, đã chạy thành công.
 - **Server backend (`npx nest start --watch` trong thư mục `api`) đang chạy ổn định.**
-- **Unit Tests:** Đa số unit tests đều PASS. Một vài test cho `MemberEvaluationsController` liên quan đến validation DTO đang tạm thời skip. (Tổng số tests: 32 suites, 366 tests + tests cho MemberEvaluations).
+- **Unit Tests:** Tất cả unit tests (34 suites, 398 tests) đều PASS.
 - **E2E Tests:** **Tất cả 145 E2E tests đều PASS.**
 - Các tài liệu yêu cầu (`specs.md`) và kiến trúc (`architecture.md`) cơ bản vẫn giữ nguyên, với các chi tiết triển khai tuân thủ các nguyên tắc đã đặt ra. `project_progress.md` được cập nhật.
 
 ## 10. Bước Tiếp theo Đề xuất:
 
-- **Hoàn thiện Unit Tests:** Xem xét lại và sửa các unit test còn đang skip cho `MemberEvaluationsController`.
 - **Triển khai module `AuditLogs`.**
 - **Review lại các TODOs** trong code.
 - **Bắt đầu tích hợp Frontend.**

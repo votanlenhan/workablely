@@ -112,14 +112,30 @@ const createFullMockShow = (id: string, title: string, partialShow?: Partial<Sho
 };
 
 // Mock QueryRunner for updateShowFinancesAfterPayment
-const mockFinanceQueryRunnerManagerRepo = {
+const mockFinanceQueryRunnerManagerShowRepo = { // Specific mock for Show
     findOne: jest.fn(),
     save: jest.fn(),
 };
+const mockFinanceQueryRunnerManagerPaymentRepo = { // Specific mock for Payment
+    find: jest.fn(), // Added find method
+    save: jest.fn(), // Assuming save might be used on Payment repo through QR
+};
+
 const mockFinanceQueryRunner = {
     manager: {
-        getRepository: jest.fn().mockReturnValue(mockFinanceQueryRunnerManagerRepo),
-        // findOne and save are now on the returned repo mock above
+        getRepository: jest.fn().mockImplementation((entity) => {
+            if (entity === Show) {
+                return mockFinanceQueryRunnerManagerShowRepo;
+            }
+            if (entity === Payment) {
+                return mockFinanceQueryRunnerManagerPaymentRepo;
+            }
+            return { // Default mock for any other entity
+                findOne: jest.fn(),
+                find: jest.fn(),
+                save: jest.fn(),
+            };
+        }),
     },
     connect: jest.fn(),
     startTransaction: jest.fn(),
@@ -127,6 +143,15 @@ const mockFinanceQueryRunner = {
     rollbackTransaction: jest.fn(),
     release: jest.fn(),
 } as unknown as QueryRunner;
+
+// MOCK FOR INJECTED PAYMENT REPOSITORY
+const mockPaymentRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+    save: jest.fn(),
+    create: jest.fn(),
+    // Add other methods if they are used by ShowsService through this.paymentRepository
+};
 
 describe('ShowsService', () => {
   let service: ShowsService;
@@ -144,8 +169,19 @@ describe('ShowsService', () => {
     });
 
     // Clear finance query runner mocks
-    Object.values(mockFinanceQueryRunnerManagerRepo).forEach(mockFn => mockFn.mockClear());
-    (mockFinanceQueryRunner.manager.getRepository as jest.Mock).mockClear().mockReturnValue(mockFinanceQueryRunnerManagerRepo);
+    Object.values(mockFinanceQueryRunnerManagerShowRepo).forEach(mockFn => mockFn.mockClear());
+    Object.values(mockFinanceQueryRunnerManagerPaymentRepo).forEach(mockFn => mockFn.mockClear());
+    (mockFinanceQueryRunner.manager.getRepository as jest.Mock).mockClear().mockImplementation((entity) => {
+        if (entity === Show) {
+            return mockFinanceQueryRunnerManagerShowRepo;
+        }
+        if (entity === Payment) {
+            return mockFinanceQueryRunnerManagerPaymentRepo;
+        }
+        return { findOne: jest.fn(), find: jest.fn(), save: jest.fn() };
+    });
+    // Clear injected payment repository mock
+    Object.values(mockPaymentRepository).forEach(mockFn => mockFn.mockClear());
     
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -153,6 +189,10 @@ describe('ShowsService', () => {
         {
           provide: getRepositoryToken(Show),
           useValue: mockShowRepository,
+        },
+        {
+          provide: getRepositoryToken(Payment), // ADDED PROVIDER FOR PAYMENT REPOSITORY
+          useValue: mockPaymentRepository,      // Use the new mock
         },
         {
           provide: ClientsService,
@@ -282,7 +322,7 @@ describe('ShowsService', () => {
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('show.createdBy', 'createdByUser');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('show.assignments', 'assignments');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('show.payments', 'payments');
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('show.start_datetime', 'DESC');
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('show.createdAt', 'DESC');
       expect(result).toEqual(paginatedResult);
     });
   });
@@ -394,40 +434,52 @@ describe('ShowsService', () => {
         { id: 'p1', amount: 100, is_deposit: true, payment_date: new Date('2024-01-01T10:00:00Z') } as Payment,
       ];
       const showWithPayments = { ...baseShowForFinance, payments: mockPayments };
-      (mockFinanceQueryRunner.manager.getRepository(Show).findOne as jest.Mock).mockResolvedValue(showWithPayments);
-      (mockFinanceQueryRunnerManagerRepo.save as jest.Mock).mockImplementation(async (entity) => entity as Show);
+      
+      // Mock what the Show repository would return
+      mockFinanceQueryRunnerManagerShowRepo.findOne.mockResolvedValue(baseShowForFinance); 
+      // Mock what the Payment repository would return
+      mockFinanceQueryRunnerManagerPaymentRepo.find.mockResolvedValue(mockPayments);
+      
+      mockFinanceQueryRunnerManagerShowRepo.save.mockImplementation(async (entity) => entity as Show);
 
       const result = await service.updateShowFinancesAfterPayment(showId, mockFinanceQueryRunner);
       expect(mockFinanceQueryRunner.manager.getRepository).toHaveBeenCalledWith(Show);
-      expect(mockFinanceQueryRunner.manager.getRepository(Show).findOne).toHaveBeenCalledWith({ where: { id: showId }, relations: ['payments'] });
+      expect(mockFinanceQueryRunner.manager.getRepository).toHaveBeenCalledWith(Payment);
+      expect(mockFinanceQueryRunnerManagerShowRepo.findOne).toHaveBeenCalledWith({ where: { id: showId } });
+      expect(mockFinanceQueryRunnerManagerPaymentRepo.find).toHaveBeenCalledWith({ where: { show_id: showId } });
       expect(result.total_collected).toBe(100);
-      expect(mockFinanceQueryRunnerManagerRepo.save).toHaveBeenCalledWith(expect.objectContaining({ total_collected: 100 }));
+      expect(mockFinanceQueryRunnerManagerShowRepo.save).toHaveBeenCalledWith(expect.objectContaining({ total_collected: 100 }));
     });
 
     it('should use main repository if queryRunner is null', async () => {
       const mockPayments = [
-        { id: 'p1', amount: 100, is_deposit: true, payment_date: new Date('2024-01-01T10:00:00Z') } as Payment,
+        { id: 'p1', amount: 50, is_deposit: false, payment_date: new Date() } as Payment,
+        { id: 'p2', amount: 75, is_deposit: true, payment_date: new Date() } as Payment, // This will be the deposit
       ];
-      const showWithPayments = { ...baseShowForFinance, payments: mockPayments };
-      mockShowRepository.findOne.mockResolvedValue(showWithPayments); // Mock main repo's findOne
-      mockShowRepository.save.mockImplementation(async (entity) => entity as Show); // Mock main repo's save
+      const showData = createFullMockShow(showId, 'Test Show');
 
-      const result = await service.updateShowFinancesAfterPayment(showId, null); // Pass null for queryRunner
-      expect(mockShowRepository.findOne).toHaveBeenCalledWith({ where: { id: showId }, relations: ['payments'] });
-      expect(result.total_collected).toBe(100);
-      expect(mockShowRepository.save).toHaveBeenCalledWith(expect.objectContaining({ total_collected: 100 }));
-      // Ensure queryRunner's repo was not used
-      expect(mockFinanceQueryRunner.manager.getRepository(Show).findOne as jest.Mock).not.toHaveBeenCalled();
+      mockShowRepository.findOne.mockResolvedValue(showData);
+      mockPaymentRepository.find.mockResolvedValue(mockPayments); // Mock injected payment repo
+      mockShowRepository.save.mockImplementation(async (entity) => entity as Show);
+
+      const result = await service.updateShowFinancesAfterPayment(showId, null);
+
+      expect(mockShowRepository.findOne).toHaveBeenCalledWith({ where: { id: showId } });
+      expect(mockPaymentRepository.find).toHaveBeenCalledWith({ where: { show_id: showId } });
+      expect(result.total_collected).toBe(125); // 50 + 75
+      expect(result.deposit_amount).toBe(75);
+      expect(mockShowRepository.save).toHaveBeenCalledWith(expect.objectContaining({ total_collected: 125, deposit_amount: 75 }));
     });
     
     it('should throw NotFoundException if show not found (with queryRunner)', async () => {
-        (mockFinanceQueryRunner.manager.getRepository(Show).findOne as jest.Mock).mockResolvedValue(null);
+        mockFinanceQueryRunnerManagerShowRepo.findOne.mockResolvedValue(null);
         await expect(service.updateShowFinancesAfterPayment(showId, mockFinanceQueryRunner)).rejects.toThrow(NotFoundException);
     });
 
     it('should throw NotFoundException if show not found (without queryRunner)', async () => {
-        mockShowRepository.findOne.mockResolvedValue(null); // Mock main repo's findOne to return null
-        await expect(service.updateShowFinancesAfterPayment(showId, null)).rejects.toThrow(NotFoundException); // Pass null for queryRunner
+        mockShowRepository.findOne.mockResolvedValue(null);
+        await expect(service.updateShowFinancesAfterPayment(showId, null)).rejects.toThrow(NotFoundException);
+        expect(mockShowRepository.findOne).toHaveBeenCalledWith({ where: { id: showId } });
     });
   });
 }); 

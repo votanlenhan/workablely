@@ -7,7 +7,7 @@ import { User } from '../users/entities/user.entity';
 import { MemberEvaluation } from './entities/member-evaluation.entity';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../core/guards/roles.guard';
-import { ArgumentMetadata, ValidationPipe } from '@nestjs/common';
+import { ArgumentMetadata, ValidationPipe, BadRequestException } from '@nestjs/common';
 
 // Mock service
 const mockMemberEvaluationsService = {
@@ -34,12 +34,15 @@ describe('MemberEvaluationsController', () => {
         { provide: MemberEvaluationsService, useValue: mockMemberEvaluationsService },
       ],
     })
-    .overrideGuard(JwtAuthGuard).useValue({ canActivate: jest.fn(() => true) }) // Mock JwtAuthGuard
-    .overrideGuard(RolesGuard).useValue({ canActivate: jest.fn(() => true) }) // Mock RolesGuard
+    .overrideGuard(JwtAuthGuard).useValue({ canActivate: jest.fn(() => true) })
+    .overrideGuard(RolesGuard).useValue({ canActivate: jest.fn(() => true) })
     .compile();
 
     controller = module.get<MemberEvaluationsController>(MemberEvaluationsController);
     service = module.get<MemberEvaluationsService>(MemberEvaluationsService);
+    
+    // Clear mocks before each test in this describe block
+    Object.values(mockMemberEvaluationsService).forEach(mockFn => mockFn.mockClear());
   });
 
   it('should be defined', () => {
@@ -62,22 +65,21 @@ describe('MemberEvaluationsController', () => {
     });
   });
   
-  // ValidationPipe for DTOs (example for one DTO, apply to others as needed)
   describe('DTO Validation', () => {
     let validationPipe: ValidationPipe;
 
     beforeEach(() => {
       validationPipe = new ValidationPipe({
         transform: true,
-        whitelist: true, // Strips properties that do not have any decorators
-        forbidNonWhitelisted: true, // Throw an error if non-whitelisted values are provided
+        whitelist: true,
+        enableDebugMessages: true,
       });
     });
 
     it('CreateMemberEvaluationDto should pass validation with valid data', async () => {
       const validDto: CreateMemberEvaluationDto = {
-        show_id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-        evaluated_user_id: 'b2c3d4e5-f678-9012-3456-7890abcdef01',
+        show_id: '123e4567-e89b-12d3-a456-426614174000',
+        evaluated_user_id: '123e4567-e89b-12d3-a456-426614174001',
         rating: 8,
         comments: 'Valid comment'
       };
@@ -86,43 +88,72 @@ describe('MemberEvaluationsController', () => {
     });
 
     it('CreateMemberEvaluationDto should pass with only mandatory fields', async () => {
-      const validDtoMinimal: CreateMemberEvaluationDto = {
-        show_id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-        evaluated_user_id: 'b2c3d4e5-f678-9012-3456-7890abcdef01',
+      const validDtoMinimal: Partial<CreateMemberEvaluationDto> = {
+        show_id: '123e4567-e89b-12d3-a456-426614174002',
+        evaluated_user_id: '123e4567-e89b-12d3-a456-426614174003',
       };
       const metadata: ArgumentMetadata = { type: 'body', metatype: CreateMemberEvaluationDto };
-      await expect(validationPipe.transform(validDtoMinimal, metadata)).resolves.toEqual(validDtoMinimal);
+      const result = await validationPipe.transform(validDtoMinimal as CreateMemberEvaluationDto, metadata);
+      expect(result.show_id).toBe(validDtoMinimal.show_id);
+      expect(result.evaluated_user_id).toBe(validDtoMinimal.evaluated_user_id);
+      expect(result.hasOwnProperty('rating') ? result.rating : undefined).toBeUndefined();
+      expect(result.hasOwnProperty('comments') ? result.comments : undefined).toBeUndefined();
     });
 
-    it.skip('CreateMemberEvaluationDto should pass with rating and comments as null', async () => {
+    it('CreateMemberEvaluationDto should pass with rating and comments as null (if DTO allows)', async () => {
       const validDtoWithNulls: CreateMemberEvaluationDto = {
-        show_id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-        evaluated_user_id: 'b2c3d4e5-f678-9012-3456-7890abcdef01',
+        show_id: '123e4567-e89b-12d3-a456-426614174004',
+        evaluated_user_id: '123e4567-e89b-12d3-a456-426614174005',
         rating: null,
         comments: null,
       };
       const metadata: ArgumentMetadata = { type: 'body', metatype: CreateMemberEvaluationDto };
-      await expect(validationPipe.transform(validDtoWithNulls, metadata)).resolves.toEqual(validDtoWithNulls);
+      try {
+        const result = await validationPipe.transform(validDtoWithNulls, metadata);
+        expect(result.show_id).toEqual(validDtoWithNulls.show_id);
+        expect(result.evaluated_user_id).toEqual(validDtoWithNulls.evaluated_user_id);
+        expect(result.rating === null || result.rating === undefined).toBe(true);
+        expect(result.comments === null || result.comments === undefined).toBe(true);
+      } catch (errorCaught) {
+        console.error('Error in test: CreateMemberEvaluationDto should pass with rating and comments as null', errorCaught);
+        throw errorCaught;
+      }
     });
 
-    it('CreateMemberEvaluationDto should fail validation with invalid UUID for show_id', async () => {
+    it('CreateMemberEvaluationDto should fail validation with invalid UUID for show_id and provide details', async () => {
       const invalidDto = {
         show_id: 'invalid-uuid',
-        evaluated_user_id: 'b2c3d4e5-f678-9012-3456-7890abcdef01',
+        evaluated_user_id: '123e4567-e89b-12d3-a456-426614174006',
         rating: 8,
+        comments: 'A comment'
       };
       const metadata: ArgumentMetadata = { type: 'body', metatype: CreateMemberEvaluationDto };
-      await expect(validationPipe.transform(invalidDto, metadata)).rejects.toThrow();
+      try {
+        await validationPipe.transform(invalidDto, metadata);
+        throw new Error('ValidationPipe.transform did not throw an error as expected.');
+      } catch (errorCaught) {
+        expect(errorCaught).toBeInstanceOf(BadRequestException);
+        const response = (errorCaught as BadRequestException).getResponse() as { message: string[] };
+        expect(response.message).toContain('show_id must be a UUID');
+      }
     });
 
-     it('CreateMemberEvaluationDto should fail validation with rating out of range', async () => {
+    it('CreateMemberEvaluationDto should fail validation with rating out of range and provide details', async () => {
       const invalidDto: CreateMemberEvaluationDto = {
-        show_id: 'a1b2c3d4-e5f6-7890-1234-567890abcdef',
-        evaluated_user_id: 'b2c3d4e5-f678-9012-3456-7890abcdef01',
-        rating: 11, // Invalid rating
+        show_id: '123e4567-e89b-12d3-a456-426614174007',
+        evaluated_user_id: '123e4567-e89b-12d3-a456-426614174008',
+        rating: 11,
+        comments: "Valid comment"
       };
       const metadata: ArgumentMetadata = { type: 'body', metatype: CreateMemberEvaluationDto };
-      await expect(validationPipe.transform(invalidDto, metadata)).rejects.toThrow();
+      try {
+        await validationPipe.transform(invalidDto, metadata);
+        throw new Error('ValidationPipe.transform did not throw an error as expected for out-of-range rating.');
+      } catch (errorCaught) {
+        expect(errorCaught).toBeInstanceOf(BadRequestException);
+        const response = (errorCaught as BadRequestException).getResponse() as { message: string[] };
+        expect(response.message).toEqual(expect.arrayContaining([expect.stringMatching(/rating must not be greater than 10|rating must be an integer number/i)]));
+      }
     });
   });
 
@@ -154,8 +185,8 @@ describe('MemberEvaluationsController', () => {
       const expectedResult = { id: evalId, comments: 'Test findOne' } as MemberEvaluation;
       mockMemberEvaluationsService.findOne.mockResolvedValue(expectedResult);
 
-      expect(await controller.findOne(evalId)).toBe(expectedResult);
-      expect(service.findOne).toHaveBeenCalledWith(evalId);
+      expect(await controller.findOne(evalId, mockRequest as any)).toBe(expectedResult);
+      expect(service.findOne).toHaveBeenCalledWith(evalId, mockUser);
     });
   });
 
@@ -174,7 +205,6 @@ describe('MemberEvaluationsController', () => {
   describe('remove', () => {
     it('should remove an evaluation', async () => {
       const evalIdToRemove = 'eval-uuid-to-remove';
-      // remove service method doesn't return anything, so mockResolvedValue(undefined)
       mockMemberEvaluationsService.remove.mockResolvedValue(undefined);
 
       await controller.remove(evalIdToRemove, mockRequest as any);

@@ -35,6 +35,8 @@ const mockUser: User = {
   recorded_expenses: [],
   recorded_external_incomes: [],
   revenue_allocations: [],
+  evaluationsGiven: [],
+  evaluationsReceived: [],
   get full_name() { return `${this.first_name} ${this.last_name}`; },
   validatePassword: jest.fn(),
   hashPassword: jest.fn(),

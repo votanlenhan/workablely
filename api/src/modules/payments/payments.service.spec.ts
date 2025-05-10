@@ -227,7 +227,7 @@ describe('PaymentsService', () => {
 
       expect(mockPaymentRepository.createQueryBuilder).toHaveBeenCalledWith('payment');
       expect(mockPaymentRepository.createQueryBuilder().leftJoinAndSelect).toHaveBeenCalledWith('payment.show', 'show');
-      expect(mockPaymentRepository.createQueryBuilder().leftJoinAndSelect).toHaveBeenCalledWith('payment.recordedBy', 'recordedBy');
+      expect(mockPaymentRepository.createQueryBuilder().leftJoinAndSelect).toHaveBeenCalledWith('payment.recorded_by_user', 'recordedBy');
       expect(mockPaymentRepository.createQueryBuilder().orderBy).toHaveBeenCalledWith('payment.payment_date', 'DESC');
       expect(mockPaginate).toHaveBeenCalledWith(mockPaymentRepository.createQueryBuilder(), options);
       expect(result).toEqual(paginatedResult);
@@ -242,7 +242,7 @@ describe('PaymentsService', () => {
     it('should return a payment if found', async () => {
       mockPaymentRepository.findOne.mockResolvedValue(paymentData as any);
       const result = await service.findOne(paymentId);
-      expect(mockPaymentRepository.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recordedBy'] });
+      expect(mockPaymentRepository.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recorded_by_user'] });
       expect(result).toEqual(paymentData);
     });
 
@@ -255,7 +255,7 @@ describe('PaymentsService', () => {
         mockPaymentRepoInQR.findOne.mockResolvedValue(paymentData as any);
         const result = await service.findOne(paymentId, mockQueryRunner as unknown as QueryRunner);
         expect(mockQueryRunner.manager.getRepository).toHaveBeenCalledWith(Payment);
-        expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recordedBy'] });
+        expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recorded_by_user'] });
         expect(mockPaymentRepository.findOne).not.toHaveBeenCalled(); // Ensure default repo is not called
         expect(result).toEqual(paymentData);
     });
@@ -292,7 +292,7 @@ describe('PaymentsService', () => {
       // Check that findOne using queryRunner was called to fetch existing payment
       expect(mockQueryRunner.manager.getRepository).toHaveBeenCalledWith(Payment);
       expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledTimes(1); 
-      expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recordedBy'] });
+      expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recorded_by_user'] });
       
       // Check that save using queryRunner was called
       expect(mockQueryRunner.manager.save).toHaveBeenCalledWith(Payment, expect.objectContaining(updateDto));
@@ -301,7 +301,7 @@ describe('PaymentsService', () => {
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);
       
       // Check that the final findOne (outside transaction, on main repo) was called
-      expect(mockPaymentRepository.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recordedBy'] });
+      expect(mockPaymentRepository.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recorded_by_user'] });
 
       expect(mockQueryRunner.rollbackTransaction).not.toHaveBeenCalled();
       expect(mockQueryRunner.release).toHaveBeenCalledTimes(1);
@@ -327,7 +327,7 @@ describe('PaymentsService', () => {
 
       expect(dataSource.createQueryRunner).toHaveBeenCalledTimes(1);
       expect(mockQueryRunner.startTransaction).toHaveBeenCalledTimes(1);
-      expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recordedBy'] }); // Corrected assertion
+      expect(mockPaymentRepoInQR.findOne).toHaveBeenCalledWith({ where: { id: paymentId }, relations: ['show', 'recorded_by_user'] }); // Corrected assertion
       expect(mockQueryRunner.manager.delete).toHaveBeenCalledWith(Payment, paymentId);
       expect(showsService.updateShowFinancesAfterPayment).toHaveBeenCalledWith(mockPayment.show_id, mockQueryRunner);
       expect(mockQueryRunner.commitTransaction).toHaveBeenCalledTimes(1);

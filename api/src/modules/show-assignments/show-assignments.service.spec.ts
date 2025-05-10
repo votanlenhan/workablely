@@ -200,7 +200,7 @@ describe('ShowAssignmentsService', () => {
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.user', 'user');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.show', 'show');
       expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.show_role', 'show_role');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.assignedBy', 'assignedBy');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('assignment.assigned_by_user', 'assignedBy');
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('assignment.assigned_at', 'DESC');
       expect(mockPaginate).toHaveBeenCalledWith(mockQueryBuilder, options);
       expect(result).toEqual(paginatedResult);
@@ -269,12 +269,12 @@ describe('ShowAssignmentsService', () => {
     };
 
     it('should return a single assignment if found', async () => {
-      repository.findOne!.mockResolvedValue(mockAssignment);
+      repository.findOne!.mockResolvedValue(mockAssignment as any);
       const result = await service.findOne(assignmentId);
       expect(result).toEqual(mockAssignment);
       expect(repository.findOne).toHaveBeenCalledWith({
         where: { id: assignmentId },
-        relations: ['user', 'show', 'show_role', 'assignedBy'],
+        relations: ['user', 'show', 'show_role', 'assigned_by_user'],
       });
     });
 
@@ -325,12 +325,12 @@ describe('ShowAssignmentsService', () => {
         assigned_by_user: existingAssignment.assigned_by_user,
       };
 
-      repository.findOne.mockResolvedValue(existingAssignment);
-      repository.save.mockResolvedValue(updatedAssignmentData);
+      repository.findOne.mockResolvedValue(existingAssignment as any);
+      repository.save.mockResolvedValue(updatedAssignmentData as any);
 
       const result = await service.update(idConfirm, updateDto);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idConfirm }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idConfirm }, relations: ['user', 'show', 'show_role', 'assigned_by_user'] });
       expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
       expect(result).toEqual(updatedAssignmentData);
     });
@@ -367,12 +367,12 @@ describe('ShowAssignmentsService', () => {
         updated_at: expect.any(Date),
       };
 
-      repository.findOne.mockResolvedValue(existingAssignmentDeclined);
-      repository.save.mockResolvedValue(updatedAssignmentData);
+      repository.findOne.mockResolvedValue(existingAssignmentDeclined as any);
+      repository.save.mockResolvedValue(updatedAssignmentData as any);
 
       const result = await service.update(idDecline, updateDtoDecline);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDecline }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDecline }, relations: ['user', 'show', 'show_role', 'assigned_by_user'] });
       expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
       expect(result).toEqual(updatedAssignmentData);
     });
@@ -387,10 +387,10 @@ describe('ShowAssignmentsService', () => {
       };
       const updateDto: UpdateShowAssignmentDto = { confirmationStatus: ConfirmationStatus.DECLINED };
       
-      repository.findOne.mockResolvedValue(existingAssignment);
+      repository.findOne.mockResolvedValue(existingAssignment as any);
 
       await expect(service.update(idDeclineNoReason, updateDto)).rejects.toThrow(BadRequestException);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDeclineNoReason }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idDeclineNoReason }, relations: ['user', 'show', 'show_role', 'assigned_by_user'] });
       expect(repository.save).not.toHaveBeenCalled();
     });
 
@@ -416,12 +416,12 @@ describe('ShowAssignmentsService', () => {
         updated_at: expect.any(Date),
       };
 
-      repository.findOne.mockResolvedValue(existingAssignment); 
-      repository.save.mockResolvedValue(updatedAssignmentData); 
+      repository.findOne.mockResolvedValue(existingAssignment as any); 
+      repository.save.mockResolvedValue(updatedAssignmentData as any); 
 
       const result = await service.update(idOnlyReason, updateDto);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idOnlyReason }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idOnlyReason }, relations: ['user', 'show', 'show_role', 'assigned_by_user'] });
       expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
       expect(result).toEqual(updatedAssignmentData);
     });
@@ -450,12 +450,12 @@ describe('ShowAssignmentsService', () => {
         updated_at: expect.any(Date),
       };
 
-      repository.findOne.mockResolvedValue(existingAssignment);
-      repository.save.mockResolvedValue(updatedAssignmentData);
+      repository.findOne.mockResolvedValue(existingAssignment as any);
+      repository.save.mockResolvedValue(updatedAssignmentData as any);
 
       const result = await service.update(idClearReason, updateDtoToPending);
 
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idClearReason }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idClearReason }, relations: ['user', 'show', 'show_role', 'assigned_by_user'] });
       expect(repository.save).toHaveBeenCalledWith(expect.objectContaining(updatedAssignmentData));
       expect(result).toEqual(updatedAssignmentData);
     });
@@ -467,7 +467,7 @@ describe('ShowAssignmentsService', () => {
       repository.findOne.mockResolvedValue(null);
 
       await expect(service.update(idNotFound, updateDto)).rejects.toThrow(NotFoundException);
-      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idNotFound }, relations: ['user', 'show', 'show_role', 'assignedBy'] });
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { id: idNotFound }, relations: ['user', 'show', 'show_role', 'assigned_by_user'] });
       expect(repository.save).not.toHaveBeenCalled();
     });
   });

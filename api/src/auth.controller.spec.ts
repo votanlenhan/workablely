@@ -1,12 +1,17 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { JwtService } from '@nestjs/jwt';
 import { LoginDto } from './auth/dto/login.dto';
 import { CreateUserDto } from './modules/users/dto/create-user.dto';
-import { User } from './modules/users/entities/user.entity';
+import { User, PlainUser } from './modules/users/entities/user.entity';
 import { LocalAuthGuard } from './auth/guards/local-auth.guard';
 import { JwtAuthGuard } from './auth/guards/jwt-auth.guard';
 import { ExecutionContext } from '@nestjs/common';
+import { UsersService } from './modules/users/users.service';
+import { ConfigService } from '@nestjs/config';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { Role } from './modules/roles/entities/role.entity';
 
 // Mock User entity structure for testing
 const mockUser: any = {
@@ -82,24 +87,39 @@ describe('AuthController', () => {
   describe('signup', () => {
     const createUserDto: CreateUserDto = {
       email: 'new@example.com',
-      password: 'new_password',
-      first_name: 'New',
+      password: 'password123',
+      first_name: 'Test',
       last_name: 'User',
     };
-    const createdUserMock: any = {
-      ...mockUser,
+    // This mock represents the plain user object returned by authService.signup
+    const createdUserMock: PlainUser = {
       id: 'new-uuid',
       email: 'new@example.com',
-    } as Omit<User, 'password_hash'>;
+      first_name: 'Test',
+      last_name: 'User',
+      is_active: true,
+      created_at: new Date(), // Consider consistent date mocking if needed
+      updated_at: new Date(),
+      roles: [],
+    };
+    const mockSignupLoginResult = { access_token: 'mock-jwt-token' }; // Token for signup flow
 
-    it('should call authService.signup and return the created user', async () => {
+    it('should call authService.signup and authService.login, then return token and user', async () => {
       mockAuthService.signup.mockResolvedValue(createdUserMock);
+      mockAuthService.login.mockResolvedValue(mockSignupLoginResult); // Mock login for the signup flow
 
       const result = await controller.signup(createUserDto);
 
-      expect(result).toEqual(createdUserMock);
       expect(authService.signup).toHaveBeenCalledWith(createUserDto);
+      expect(authService.login).toHaveBeenCalledWith(createdUserMock);
+      expect(result).toEqual({
+        access_token: mockSignupLoginResult.access_token,
+        user: createdUserMock,
+      });
     });
+
+    // Test for ConflictException from signup
+    // ... existing code ...
   });
 
   // --- Test getProfile endpoint ---
