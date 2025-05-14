@@ -57,7 +57,17 @@ export async function createRandomUser(
     }
   }
 
-  const signupResponse = await requestContext.post(`${baseUrl}/auth/signup`, {
+  let signupUrl = baseUrl;
+  if (!signupUrl.endsWith('/api') && !signupUrl.includes('/api/')) {
+    signupUrl = signupUrl.replace(/\/+$/, '');
+    signupUrl += '/api';
+  }
+  signupUrl = signupUrl.replace(/\/+$/, '');
+  signupUrl += '/auth/signup';
+
+  signupUrl = signupUrl.replace(/\/\/+/g, '/').replace(/http:\//, 'http://').replace(/https:\//, 'https://');
+
+  const signupResponse = await requestContext.post(signupUrl, {
     data: signupPayload,
   });
 
@@ -85,13 +95,13 @@ export async function createRandomUser(
 
 export function generateRandomUser(roleNames: string[] = []): any {
   const randomSuffix = generateRandomString(8);
-  const timestamp = Date.now(); // Add timestamp for more uniqueness
+  const timestamp = Date.now();
   return {
-    email: `testuser_${randomSuffix}_${timestamp}@example.com`, // Incorporate timestamp
+    email: `testuser_${randomSuffix}_${timestamp}@example.com`,
     password: `Password${randomSuffix}!`,
     first_name: `Test`,
     last_name: `User_${randomSuffix}`,
-    roleNames: roleNames, // This was correctly being passed for signup
-    phone_number: generateRandomPhoneNumber(), // Ensure this uses the correct helper
+    roleNames: roleNames,
+    phone_number: generateRandomPhoneNumber(),
   };
 } 

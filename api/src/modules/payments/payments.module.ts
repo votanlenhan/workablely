@@ -12,6 +12,6 @@ import { ShowsModule } from '@/modules/shows/shows.module';
   ],
   controllers: [PaymentsController],
   providers: [PaymentsService],
-  exports: [PaymentsService],
+  exports: [PaymentsService, TypeOrmModule.forFeature([Payment])],
 })
 export class PaymentsModule {}

@@ -45,8 +45,8 @@ test.describe('MemberEvaluations API', () => {
       extraHTTPHeaders: { 'Authorization': `Bearer ${regularUser.token}` },
     });
 
-    testClient = await createRandomClient(adminContext, BASE_URL);
-    testShow = await createRandomShow(adminContext, BASE_URL, testClient.id, adminUser.id);
+    testClient = await createRandomClient(adminContext);
+    testShow = await createRandomShow(adminContext, testClient.id);
   });
 
   test.afterAll(async () => {
@@ -224,8 +224,8 @@ test.describe('MemberEvaluations API', () => {
     });
 
     test('[GET] /member-evaluations/user/:userId - Should retrieve evaluations for an evaluated user', async ({ playwright }) => {
-      const anotherClient = await createRandomClient(adminContext, BASE_URL);
-      const anotherShowForUser = await createRandomShow(adminContext, BASE_URL, anotherClient.id, adminUser.id);
+      const anotherClient = await createRandomClient(adminContext);
+      const anotherShowForUser = await createRandomShow(adminContext, anotherClient.id);
       const evalForSameUserData: CreateMemberEvaluationDto = {
         show_id: anotherShowForUser.id,
         evaluated_user_id: userToEvaluate.id,
@@ -248,8 +248,8 @@ test.describe('MemberEvaluations API', () => {
 
     test('[GET] /member-evaluations/:id - Manager who created it should get the evaluation', async ({ playwright }) => {
       // Isolate this test: Create a new show and a new user specifically for this manager's evaluation
-      const uniqueClientForTest6 = await createRandomClient(managerContext, BASE_URL);
-      const uniqueShowForTest6 = await createRandomShow(managerContext, BASE_URL, uniqueClientForTest6.id, managerUser.id);
+      const uniqueClientForTest6 = await createRandomClient(managerContext);
+      const uniqueShowForTest6 = await createRandomShow(managerContext, uniqueClientForTest6.id);
       const uniqueUserToEvaluateForTest6 = await createRandomUser(playwright, BASE_URL, RoleName.USER);
       
       const evalDataByManager: CreateMemberEvaluationDto = {

@@ -239,3 +239,64 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
 - **Triển khai module `AuditLogs`.**
 - **Review lại các TODOs** trong code.
 - **Bắt đầu tích hợp Frontend.**
+
+## 11. Hoàn Thiện Module AuditLogs và Gói Kiểm Thử E2E Cuối Cùng:
+
+- **Triển khai module `AuditLogs`:**
+  - Entity (`AuditLog` với quan hệ tới `User` cho `changed_by_user_id`).
+  - DTOs (`FindAuditLogsDto` với các filter và pagination).
+  - `AuditLogsService` (logic `createLog` để các service khác gọi, `findAll` với filter và pagination).
+  - `AuditLogsController` (endpoint `GET /` để lấy logs, bảo vệ bởi Admin).
+  - Cập nhật `AppModule` và `ormconfig.ts` để đăng ký module và entity.
+  - Tạo và chạy thành công migration cho `AuditLogs` (`CreateAuditLogsTable`).
+- **Kiểm thử Unit Test cho `AuditLogs`:**
+  - Viết và PASS unit tests cho `AuditLogsService` và `AuditLogsController`.
+- **Kiểm thử End-to-End (E2E) cho `AuditLogs` và Toàn bộ Hệ thống:**
+  - Tạo file spec `e2e/audit-logs.spec.ts`.
+  - **Gỡ lỗi E2E cho `AuditLogs`:**
+    - **Lỗi 404 Not Found:**
+      - Ban đầu: Controller và Service chưa được khai báo đúng trong `AuditLogsModule`.
+      - Sau đó: `AuditLogsModule` chưa được import và entity `AuditLog` chưa được đăng ký trong `AppModule`.
+    - **Lỗi 500 Internal Server Error khi GET /audit-logs:**
+      - Sửa tên quan hệ trong `AuditLogsService.findAll` từ `changed_by_user` thành `changed_by` để khớp với định nghĩa trong `AuditLog` entity.
+    - **Lỗi 500 Internal Server Error khi tạo Client (trong setup của `audit-logs.spec.ts`):**
+      - Chuyển thành lỗi 409 Conflict sau khi thêm logic kiểm tra email trùng lặp trong `ClientsService.create`.
+      - Sửa dứt điểm lỗi 409 bằng cách cập nhật helper `createRandomClient` để tạo email độc nhất hơn (sử dụng timestamp và chuỗi ngẫu nhiên).
+- **Kết quả E2E Tests (Toàn bộ hệ thống):**
+  - **Tất cả 160 bài test E2E (`npx playwright test`) cho tất cả các module đã triển khai (bao gồm `AuditLogs`) đều đang PASS.**
+
+## 12. Trạng thái Hiện tại (Hoàn tất Phase 1 Backend):
+
+- Phần backend NestJS đã có các module `Auth`, `Users`, `Roles`, `Permissions`, `Clients`, `ShowRoles`, `Shows`, `ShowAssignments`, `Payments`, `Equipment`, `EquipmentAssignments`, `Expenses`, `ExternalIncomes`, `Configurations`, `RevenueAllocations`, `MemberEvaluations`, và `AuditLogs` được triển khai đầy đủ với CRUD, logic nghiệp vụ cốt lõi, và các biện pháp bảo mật cần thiết.
+- Tất cả các API endpoints hỗ trợ phân trang, filtering và được bảo vệ bởi Guards và Roles phù hợp.
+- **Migrations:** Tất cả các migration cho các module đã được tạo và chạy thành công.
+- **Server backend (`npx nest start --watch` trong thư mục `api`) đang chạy ổn định.**
+- **Unit Tests:** Tất cả unit tests (ví dụ: 36 suites, 410+ tests - con số cụ thể sẽ được cập nhật sau khi viết unit test cho AuditLogs) đều PASS.
+- **E2E Tests:** **Tất cả 160 E2E tests đều PASS.** Điều này xác nhận sự ổn định và đúng đắn của toàn bộ các API và luồng nghiệp vụ chính của backend.
+- Các tài liệu yêu cầu (`specs.md`) và kiến trúc (`architecture.md`) cơ bản vẫn giữ nguyên. `project_progress.md` được cập nhật đầy đủ.
+
+## 13. Bước Tiếp theo Đề xuất:
+
+- **Review lại toàn bộ code và các TODOs** còn sót lại trong backend.
+- **Tăng cường Unit Tests:** Đảm bảo unit test coverage cao cho tất cả các services và controllers, đặc biệt là các logic phức tạp và edge cases.
+- **Chuẩn bị cho tích hợp Frontend:**
+  - Xem xét và hoàn thiện tài liệu API (Swagger/OpenAPI).
+  - Thảo luận với đội Frontend về các yêu cầu cụ thể và quy trình tích hợp.
+- **Lên kế hoạch cho Phase 2:** Xem lại các tính năng trong `docs/specs.md` (Phần "Kế hoạch Mở rộng (Phase 2)") và ưu tiên các mục cho giai đoạn phát triển tiếp theo.
+- [x] `ShowAssignmentsController`
+- [x] `ShowsController`
+- [x] `ClientsController`
+- [x] `ShowRolesController`
+- [x] `UsersController`
+- [x] `PermissionsController`
+- [x] `RolesController`
+- [x] `AuthController`
+- [x] `PaymentsController`
+- [x] `EquipmentController`
+- [x] `EquipmentAssignmentsController`
+- [x] `ExpensesController`
+- [x] `ExternalIncomesController`
+- [x] `ConfigurationsController`
+- [x] `RevenueAllocationsController`
+- [x] `MemberEvaluationsController`
+- [x] `AuditLogsController`

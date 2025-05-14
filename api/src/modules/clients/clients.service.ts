@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Client } from './entities/client.entity';
@@ -31,8 +31,7 @@ export class ClientsService {
         where: { email: createClientDto.email },
       });
       if (existingClient) {
-        // Consider throwing a BadRequestException instead if this is a hard rule
-        console.warn(
+        throw new ConflictException(
           `Client with email ${createClientDto.email} already exists.`,
         );
       }

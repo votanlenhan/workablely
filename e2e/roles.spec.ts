@@ -105,9 +105,9 @@ test.describe.serial('Roles API CRUD Flows', () => {
   test('GET /roles - should retrieve a list of roles (basic check)', async ({ request }) => {
     const response = await request.get(`${BASE_URL}/roles`, {
       headers: { Authorization: `Bearer ${accessToken}` },
-      // params: { page: 1, limit: 10 } // Optional: add pagination params if testing pagination
+      params: { page: 1, limit: 500 } // Attempt to fetch a large number of roles
     });
-    expect(response.ok()).toBeTruthy();
+    expect(response.ok(), `Failed to GET /roles with pagination: ${await response.text()}`).toBeTruthy();
     const responseBody = await response.json();
     expect(responseBody).toHaveProperty('items');
     expect(responseBody).toHaveProperty('meta');

@@ -14,19 +14,20 @@ export interface ClientData {
 
 export async function createRandomClient(
   requestContext: APIRequestContext, 
-  baseUrl: string
 ): Promise<ClientData> {
+  const randomSuffix = chance.string({ length: 8, pool: 'abcdefghijklmnopqrstuvwxyz0123456789' });
+  const timestamp = Date.now();
   const clientData = {
     name: chance.company(),
     phone_number: '+14155550101', // Changed to a known working number for diagnostics
-    email: chance.email({domain: 'client.com'}),
+    email: `e2e_client_${timestamp}_${randomSuffix}@client.com`,
     address: chance.address(),
     source: 'E2E Test',
   };
 
   console.log('[ClientHelpers] Creating client with phone:', clientData.phone_number);
 
-  const response = await requestContext.post(`${baseUrl}/clients`, {
+  const response = await requestContext.post(`/api/clients`, {
     data: clientData,
   });
 
