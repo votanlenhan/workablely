@@ -5,7 +5,7 @@ import { ClientsService } from './clients.service';
 import { Client } from './entities/client.entity';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
-import { NotFoundException } from '@nestjs/common';
+import { NotFoundException, ConflictException } from '@nestjs/common';
 import { IPaginationOptions, Pagination } from 'nestjs-typeorm-paginate';
 
 // Mock the entire module - simplified
@@ -117,27 +117,18 @@ describe('ClientsService', () => {
         expect(result).toEqual(expectedClient);
     });
 
-    it('should warn and create client if email already exists', async () => {
-      const createClientDto: CreateClientDto = { name: 'Warn Client', phone_number: '789', email: 'exists@example.com' };
+    it('should throw ConflictException if email already exists', async () => {
+      const createClientDto: CreateClientDto = { name: 'Conflict Client', phone_number: '789', email: 'exists@example.com' };
       const existingClient: Partial<Client> = { id: 'uuid-existing', email: 'exists@example.com' };
-      const expectedNewClient: Client = {
-          id: 'uuid-new', name: 'Warn Client', phone_number: '789', email: 'exists@example.com',
-          address: null, source: null, notes: null, created_at: new Date(), updated_at: new Date(),
-          shows: [],
-      };
-      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation();
 
       repository.findOne.mockResolvedValue(existingClient);
-      repository.create.mockReturnValue(expectedNewClient);
-      repository.save.mockResolvedValue(expectedNewClient);
 
-      await service.create(createClientDto);
+      await expect(service.create(createClientDto)).rejects.toThrow(ConflictException);
+      await expect(service.create(createClientDto)).rejects.toThrow(`Client with email ${createClientDto.email} already exists.`);
 
       expect(repository.findOne).toHaveBeenCalledWith({ where: { email: createClientDto.email } });
-      expect(consoleWarnSpy).toHaveBeenCalledWith(`Client with email ${createClientDto.email} already exists.`);
-      expect(repository.create).toHaveBeenCalledWith(createClientDto);
-      expect(repository.save).toHaveBeenCalledWith(expectedNewClient);
-      consoleWarnSpy.mockRestore(); // Restore console.warn
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.save).not.toHaveBeenCalled();
     });
   });
 
