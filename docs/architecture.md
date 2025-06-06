@@ -4,10 +4,11 @@ Phần này mô tả các công nghệ và nguyên tắc thiết kế kiến tr�
 
 ## Công nghệ sử dụng
 
-- Flutter
+- React Native
 - NextJS
 - NestJS
 - PostgreSQL
+- Google BigQuery (cho Phân tích Dữ liệu và Business Intelligence)
 - Cucumber Test
 - Playwright (cho Kiểm thử End-to-End)
 - AWS Cloud services
@@ -21,15 +22,24 @@ Phần này mô tả các công nghệ và nguyên tắc thiết kế kiến tr�
   - **API & Phân trang:** **Bắt buộc** triển khai phân trang (pagination) cho tất cả các API endpoints trả về danh sách.
   - **Caching:** Áp dụng chiến lược caching (ví dụ: Redis/Elasticache) cho dữ liệu thường xuyên truy cập và ít thay đổi (cấu hình, vai trò...).
 
+- **Phân tích dữ liệu và Business Intelligence (BI):**
+
+  - **Tích hợp Google BigQuery:** Dữ liệu vận hành từ PostgreSQL sẽ được đồng bộ định kỳ (ví dụ: hàng đêm) sang Google BigQuery.
+  - **Mục đích:**
+    - Tách biệt tải công việc phân tích (analytical workloads) khỏi cơ sở dữ liệu giao dịch (transactional database - OLTP), đảm bảo hiệu năng cho các hoạt động hàng ngày của ứng dụng.
+    - Cho phép thực hiện các truy vấn phức tạp, tổng hợp trên một lượng lớn dữ liệu lịch sử để có cái nhìn tổng thể về hiệu quả kinh doanh, xu hướng tài chính, hiệu suất nhân sự...
+    - Xây dựng các báo cáo và dashboard quản trị nâng cao bằng các công cụ BI (như Google Data Studio, Looker) kết nối tới BigQuery.
+  - **Luồng dữ liệu:** PostgreSQL -> Dịch vụ ETL (ví dụ: AWS Glue, hoặc một script tùy chỉnh) -> Google BigQuery.
+
 - **Database (PostgreSQL):**
 
   - **Indexing:** Thiết kế và áp dụng Indexing hiệu quả cho các bảng lớn (users, shows, assignments, payments, ratings, logs) dựa trên các mẫu truy vấn phổ biến.
   - **Query Optimization:** Viết truy vấn SQL tối ưu, tránh N+1, sử dụng JOIN hiệu quả.
   - **Connection Pooling:** Sử dụng connection pooling để quản lý kết nối CSDL hiệu quả.
 
-- **Frontend (Flutter & NextJS):**
+- **Frontend (React Native & NextJS):**
 
-  - **Nền tảng:** Sử dụng **Flutter** cho ứng dụng di động (iOS/Android) và **NextJS** cho giao diện web/desktop.
+  - **Nền tảng:** Sử dụng **React Native** cho ứng dụng di động (iOS/Android) và **NextJS** cho giao diện web/desktop.
   - **Tìm kiếm & Lọc Nâng cao:** Giao diện quản lý (đặc biệt là quản lý Thành viên và Show) phải cung cấp công cụ tìm kiếm và lọc mạnh mẽ, đa tiêu chí để xử lý hiệu quả hàng trăm bản ghi.
   - **Hiển thị Danh sách Lớn:** Áp dụng các kỹ thuật lazy loading, infinite scrolling, hoặc virtual lists để tải và hiển thị danh sách lớn một cách mượt mà.
   - **Tác vụ Hàng loạt (Bulk Actions):** Xem xét triển khai các tác vụ hàng loạt cho Admin/Manager nếu phù hợp (ví dụ: cập nhật trạng thái nhiều Show).

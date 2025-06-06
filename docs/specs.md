@@ -232,10 +232,15 @@ Hệ thống phân biệt các vai trò với quyền hạn khác nhau:
 - Báo cáo công nợ khách hàng (`amount_due`).
 - **Quản lý Chi tiêu Wishlist:**
   - Cần có bảng/module riêng để **Manager** nhập các khoản chi tiêu từ Quỹ Wishlist (Ví dụ: chi phí vận hành, mua sắm thiết bị, chi phí cố định...).
+  - Mỗi khoản chi cần được gán vào một **Thể loại Chi** (Ví dụ: Chi tiền đồ, Chi tiền ăn, Chi tiền xe...).
   - Báo cáo chi tiết các khoản chi từ Wishlist và số dư quỹ.
-- **Quản lý Thu nhập Ngoài luồng:**
-  - Cần có bảng/module riêng để **Manager** nhập các khoản thu nhập không đến từ Show (Ví dụ: cho thuê thiết bị, bán vật tư, **vốn góp thêm từ chủ sở hữu**...).
-  - Báo cáo chi tiết các khoản Thu ngoài.
+- **Quản lý Thu nhập/Chi tiêu Ngoài luồng:**
+  - Cần có bảng/module riêng để **Manager** nhập các khoản thu nhập không đến từ Show (Ví dụ: cho thuê thiết bị, bán vật tư, **vốn góp thêm từ chủ sở hữu**...) và các khoản chi không thuộc quỹ Wishlist.
+  - Mỗi khoản thu/chi cần được gán vào một **Thể loại** tương ứng.
+  - Báo cáo chi tiết các khoản Thu/Chi ngoài.
+- **Quản lý Thể loại Thu/Chi (CRUD bởi Admin):**
+  - **Admin** có quyền quản lý (thêm, sửa, xóa) danh sách các **Thể loại Chi tiêu Wishlist** và **Thể loại Thu/Chi ngoài**.
+  - Điều này giúp cho việc báo cáo và thống kê tài chính được chi tiết và dễ quản lý hơn.
 
 ### Dashboard Thống kê Tổng quan (Dành cho Admin/Manager - Thường xem theo Tháng/Quý/Năm):
 

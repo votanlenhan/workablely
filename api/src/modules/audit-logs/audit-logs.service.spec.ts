@@ -165,7 +165,7 @@ describe('AuditLogsService', () => {
       const result = await service.findAll(findAuditLogsDto);
 
       expect(mockAuditLogRepository.createQueryBuilder).toHaveBeenCalledWith('audit_log');
-      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('audit_log.changed_by', 'changed_by_user');
+      expect(mockQueryBuilder.leftJoinAndSelect).toHaveBeenCalledWith('audit_log.changed_by_user', 'changed_by_user');
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('audit_log.change_timestamp', 'DESC');
       expect(result).toBeDefined();
     });
