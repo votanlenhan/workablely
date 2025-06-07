@@ -99,11 +99,7 @@ export default function RevenuePage() {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      notation: 'compact'
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN').format(amount);
   };
 
   const formatFullCurrency = (amount: number) => {

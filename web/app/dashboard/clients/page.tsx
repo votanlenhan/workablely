@@ -137,12 +137,23 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('all');
 
+  // Filter clients based on search term and status
+  const filteredClients = clientsData.filter(client => {
+    const matchesSearch = searchTerm === '' || 
+      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.phone.includes(searchTerm) ||
+      client.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.preferredServices.some(service => service.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesStatus = selectedStatus === 'all' || client.status === selectedStatus;
+    
+    return matchesSearch && matchesStatus;
+  });
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      notation: 'compact'
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN').format(amount);
   };
 
   const getStatusIcon = (status: string) => {
@@ -250,12 +261,15 @@ export default function ClientsPage() {
             {/* Filters */}
             <div className="flex gap-2">
               <div className="flex-1">
-                <Input
-                  placeholder="Tìm kiếm khách hàng..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-8 text-sm"
-                />
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm theo tên, email, SĐT, địa chỉ..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-8 text-sm pl-7"
+                  />
+                </div>
               </div>
               <select
                 value={selectedStatus}
@@ -274,32 +288,41 @@ export default function ClientsPage() {
             </div>
 
             {/* Clients Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {clientsData.map((client) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {filteredClients.map((client) => (
                 <Card key={client.id} className="hover:shadow-sm transition-shadow">
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
+                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
                           {client.name.charAt(0)}
                         </div>
                         <div>
-                          <CardTitle className="text-sm font-medium">{client.name}</CardTitle>
+                          <CardTitle className="text-xs font-medium">{client.name}</CardTitle>
                           <p className="text-xs text-muted-foreground">{client.id}</p>
                         </div>
                       </div>
-                      <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(client.status)}`}>
-                        {getStatusIcon(client.status)}
-                        {client.status}
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {client.status === 'VIP' && (
+                          <div className="flex">
+                            {[...Array(3)].map((_, i) => (
+                              <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                            ))}
+                          </div>
+                        )}
+                        <span className={`inline-flex items-center gap-1 text-xs px-1 py-0.5 rounded-full ${getStatusColor(client.status)}`}>
+                          {getStatusIcon(client.status)}
+                          {client.status}
+                        </span>
+                      </div>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-1">
-                    <div className="space-y-2">
-                      <div className="space-y-1 text-xs">
+                  <CardContent className="pt-0">
+                    <div className="space-y-1">
+                      <div className="space-y-0.5 text-xs">
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Mail className="h-3 w-3" />
-                          <span>{client.email}</span>
+                          <span className="truncate">{client.email}</span>
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Phone className="h-3 w-3" />
@@ -307,64 +330,43 @@ export default function ClientsPage() {
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <MapPin className="h-3 w-3" />
-                          <span>{client.address}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          <span>Gia nhập: {new Date(client.joinDate).toLocaleDateString('vi-VN')}</span>
+                          <span className="truncate">{client.address}</span>
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-border text-xs">
-                        <div>
-                          <span className="text-muted-foreground">Shows: </span>
-                          <span className="font-medium">{client.totalShows}</span>
-                        </div>
-                        <div>
+                      <div className="flex items-center justify-between pt-1 border-t border-border">
+                        <div className="text-xs">
                           <span className="text-muted-foreground">Tổng chi: </span>
                           <span className="font-medium text-green-600">{formatCurrency(client.totalSpent)}</span>
                         </div>
-                      </div>
-
-                      <div className="text-xs">
-                        <span className="text-muted-foreground">Show cuối: </span>
-                        <span className="font-medium">{new Date(client.lastShowDate).toLocaleDateString('vi-VN')}</span>
+                        <div className="text-xs text-muted-foreground">
+                          {client.totalShows} shows
+                        </div>
                       </div>
 
                       <div className="flex flex-wrap gap-1">
                         {client.preferredServices.slice(0, 2).map((service, index) => (
-                          <span key={index} className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 bg-muted rounded-full">
+                          <span key={index} className="inline-flex items-center gap-1 text-xs px-1 py-0.5 bg-muted rounded-full">
                             {getServiceIcon(service)}
                             {service}
                           </span>
                         ))}
                         {client.preferredServices.length > 2 && (
-                          <span className="text-xs px-1.5 py-0.5 bg-muted rounded-full">
+                          <span className="text-xs px-1 py-0.5 bg-muted rounded-full">
                             +{client.preferredServices.length - 2}
                           </span>
                         )}
                       </div>
 
-                      {client.notes && (
-                        <p className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
-                          {client.notes}
-                        </p>
-                      )}
-
-                      <div className="flex items-center justify-between pt-2">
-                        <div className="flex items-center gap-1">
-                          {client.status === 'VIP' && (
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                          )}
-                          <span className="text-xs font-medium">
-                            {client.status === 'VIP' ? 'Khách VIP' : 'Khách thường'}
-                          </span>
-                        </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          Tham gia: {new Date(client.joinDate).toLocaleDateString('vi-VN')}
+                        </span>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                             <Edit className="h-3 w-3" />
                           </Button>
                         </div>

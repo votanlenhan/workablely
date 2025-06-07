@@ -8,3 +8,4 @@ alwaysApply: true
 - **Update Context:** The `docs/project_progress.md` document MUST be updated to reflect the latest project context and status when significant changes occur.
 - Giao tiếp với tôi bằng tiếng việt.
 - Cập nhật tiến độ project progress bằng thời gian thật.
+- Ứng dụng được xây dựng theo nền tảng tiếng việt, chỉ sử dụng tiếng anh cho các từ chuyên dụng (dashboard, shows, admin,... )

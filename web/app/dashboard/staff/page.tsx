@@ -132,12 +132,23 @@ export default function StaffPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('all');
 
+  // Filter staff based on search term and department
+  const filteredStaff = staffData.filter(staff => {
+    const matchesSearch = searchTerm === '' || 
+      staff.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.phone.includes(searchTerm) ||
+      staff.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      staff.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesDepartment = selectedDepartment === 'all' || staff.department === selectedDepartment;
+    
+    return matchesSearch && matchesDepartment;
+  });
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      notation: 'compact'
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN').format(amount);
   };
 
   const getStatusIcon = (status: string) => {
@@ -250,12 +261,15 @@ export default function StaffPage() {
             {/* Filters */}
             <div className="flex gap-2">
               <div className="flex-1">
-                <Input
-                  placeholder="Tìm kiếm nhân viên..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-8 text-sm"
-                />
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm theo tên, email, SĐT, kỹ năng..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-8 text-sm pl-7"
+                  />
+                </div>
               </div>
               <select
                 value={selectedDepartment}
@@ -275,50 +289,46 @@ export default function StaffPage() {
             </div>
 
             {/* Staff Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {staffData.map((staff) => (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+              {filteredStaff.map((staff) => (
                 <Card key={staff.id} className="hover:shadow-sm transition-shadow">
-                  <CardHeader className="pb-2">
+                  <CardHeader className="pb-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
+                        <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
                           {staff.name.charAt(0)}
                         </div>
                         <div>
-                          <CardTitle className="text-sm font-medium">{staff.name}</CardTitle>
+                          <CardTitle className="text-xs font-medium">{staff.name}</CardTitle>
                           <p className="text-xs text-muted-foreground">{staff.id}</p>
                         </div>
                       </div>
-                      <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(staff.status)}`}>
+                      <span className={`inline-flex items-center gap-1 text-xs px-1 py-0.5 rounded-full ${getStatusColor(staff.status)}`}>
                         {getStatusIcon(staff.status)}
                         {staff.status}
                       </span>
                     </div>
                   </CardHeader>
-                  <CardContent className="pt-1">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-xs">
+                  <CardContent className="pt-0">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-1 text-xs">
                         {getRoleIcon(staff.role)}
                         <span className="font-medium">{staff.role}</span>
                         <span className="text-muted-foreground">• {staff.department}</span>
                       </div>
 
-                      <div className="space-y-1 text-xs">
+                      <div className="space-y-0.5 text-xs">
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Mail className="h-3 w-3" />
-                          <span>{staff.email}</span>
+                          <span className="truncate">{staff.email}</span>
                         </div>
                         <div className="flex items-center gap-1 text-muted-foreground">
                           <Phone className="h-3 w-3" />
                           <span>{staff.phone}</span>
                         </div>
-                        <div className="flex items-center gap-1 text-muted-foreground">
-                          <Calendar className="h-3 w-3" />
-                          <span>Gia nhập: {new Date(staff.joinDate).toLocaleDateString('vi-VN')}</span>
-                        </div>
                       </div>
 
-                      <div className="flex items-center justify-between pt-2 border-t border-border">
+                      <div className="flex items-center justify-between pt-1 border-t border-border">
                         <div className="flex items-center gap-1">
                           {renderStars(staff.rating)}
                           <span className="text-xs font-medium ml-1">{staff.rating}</span>
@@ -330,12 +340,12 @@ export default function StaffPage() {
 
                       <div className="flex flex-wrap gap-1">
                         {staff.skills.slice(0, 2).map((skill, index) => (
-                          <span key={index} className="text-xs px-1.5 py-0.5 bg-muted rounded-full">
+                          <span key={index} className="text-xs px-1 py-0.5 bg-muted rounded-full">
                             {skill}
                           </span>
                         ))}
                         {staff.skills.length > 2 && (
-                          <span className="text-xs px-1.5 py-0.5 bg-muted rounded-full">
+                          <span className="text-xs px-1 py-0.5 bg-muted rounded-full">
                             +{staff.skills.length - 2}
                           </span>
                         )}
@@ -346,10 +356,10 @@ export default function StaffPage() {
                           {formatCurrency(staff.baseSalary)}/tháng
                         </span>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                             <Eye className="h-3 w-3" />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                             <Edit className="h-3 w-3" />
                           </Button>
                         </div>

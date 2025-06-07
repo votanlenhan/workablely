@@ -138,12 +138,33 @@ export default function RentalsPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
 
+  // Filter rental items based on search term and category
+  const filteredItems = rentalItems.filter(item => {
+    const matchesSearch = searchTerm === '' || 
+      item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.size.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.color.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      item.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = selectedCategory === 'all' || item.category === selectedCategory;
+    
+    return matchesSearch && matchesCategory;
+  });
+
+  // Filter rental orders based on search term
+  const filteredOrders = rentalOrders.filter(order => {
+    return searchTerm === '' || 
+      order.client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.client.phone.includes(searchTerm) ||
+      order.client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.items.some(item => item.itemName.toLowerCase().includes(searchTerm.toLowerCase()));
+  });
+
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-      notation: 'compact'
-    }).format(amount);
+    return new Intl.NumberFormat('vi-VN').format(amount);
   };
 
   const getStatusIcon = (status: string) => {
@@ -248,12 +269,15 @@ export default function RentalsPage() {
             {/* Filters */}
             <div className="flex gap-2">
               <div className="flex-1">
-                <Input
-                  placeholder="Tìm kiếm trang phục..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="h-8 text-sm"
-                />
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm theo tên, ID, danh mục, size, màu..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-8 text-sm pl-7"
+                  />
+                </div>
               </div>
               <select
                 value={selectedCategory}
@@ -274,7 +298,7 @@ export default function RentalsPage() {
 
             {/* Items Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {rentalItems.map((item) => (
+              {filteredItems.map((item) => (
                 <Card key={item.id} className="hover:shadow-sm transition-shadow">
                   <CardHeader className="pb-2">
                     <div className="flex items-center justify-between">
@@ -344,8 +368,27 @@ export default function RentalsPage() {
               </Button>
             </div>
 
+            {/* Search for Orders */}
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm theo tên khách hàng, ID đơn, SĐT, email..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="h-8 text-sm pl-7"
+                  />
+                </div>
+              </div>
+              <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                <Filter className="h-3 w-3" />
+                Lọc
+              </Button>
+            </div>
+
             <div className="space-y-3">
-              {rentalOrders.map((order) => (
+              {filteredOrders.map((order) => (
                 <Card key={order.id} className="hover:shadow-sm transition-shadow">
                   <CardContent className="p-3">
                     <div className="space-y-3">
