@@ -98,10 +98,10 @@ export class RevenueAllocationsService {
     const selectivePercent = await this.getConfigurationValueAsNumber(ConfigurationKey.ROLE_SELECTIVE_PERCENT, 0);
     const blendPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.ROLE_BLEND_PERCENT, 0);
     const retouchPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.ROLE_RETOUCH_PERCENT, 0);
+    const leadPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_LEAD_PERCENT, 0);
     const marketingPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_MARKETING_PERCENT, 0);
-    const artLeadPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_ART_LEAD_PERCENT, 0);
-    const pmPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_PM_PERCENT, 0);
-    const securityPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_SECURITY_PERCENT, 0);
+    const artDirectorPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_ART_DIRECTOR_PERCENT, 0);
+    const managerPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_MANAGER_PERCENT, 0);
     const wishlistPercent = await this.getConfigurationValueAsNumber(ConfigurationKey.FUND_WISHLIST_PERCENT, 0);
 
     // If photographerBudgetPercent itself resolved to 0 due to missing critical config and default was 0, 
@@ -198,12 +198,12 @@ export class RevenueAllocationsService {
       }
     });
 
-    // 3. Fixed Fund Allocations (Marketing, Art Lead, PM, Security, Wishlist)
+    // 3. Fixed Fund Allocations (Lead, Marketing, Art Director, Manager, Wishlist)
     const funds = [
+      { name: 'Lead Fund', percent: leadPercent, key_notes: 'Lead' },
       { name: 'Marketing Fund', percent: marketingPercent, key_notes: 'Marketing' },
-      { name: 'Art Lead Fund', percent: artLeadPercent, key_notes: 'Art Lead' },
-      { name: 'PM Fund', percent: pmPercent, key_notes: 'PM' },
-      { name: 'Security Fund', percent: securityPercent, key_notes: 'Security' },
+      { name: 'Art Director Fund', percent: artDirectorPercent, key_notes: 'Art Director' },
+      { name: 'Manager Fund', percent: managerPercent, key_notes: 'Manager' },
       { name: 'Wishlist Fund', percent: wishlistPercent, key_notes: 'Wishlist' },
     ];
 

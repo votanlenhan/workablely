@@ -13,27 +13,54 @@ import {
   Menu, 
   X,
   BarChart3,
-  Shirt
+  Shirt,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { YearProvider, useYear } from '@/lib/year-context';
 
 const navigation = [
   { name: 'Tổng quan', href: '/dashboard', icon: BarChart3 },
   { name: 'Shows', href: '/dashboard/shows', icon: Camera },
+  { name: 'Thuê đồ', href: '/dashboard/rentals', icon: Shirt },
   { name: 'Doanh thu', href: '/dashboard/revenue', icon: DollarSign },
-  { name: 'Tài chính', href: '/dashboard/finance', icon: CreditCard },
+      { name: 'Quyết Toán', href: '/dashboard/finance', icon: CreditCard },
   { name: 'Nhân viên', href: '/dashboard/staff', icon: UserCheck },
   { name: 'Khách hàng', href: '/dashboard/clients', icon: Users },
-  { name: 'Thuê đồ', href: '/dashboard/rentals', icon: Shirt },
   { name: 'Cài đặt', href: '/dashboard/settings', icon: Settings },
 ];
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function YearSelector() {
+  const { currentYear, nextYear, previousYear } = useYear();
+  
+  return (
+    <div className="flex items-center gap-1 bg-muted/50 rounded-md px-2 py-1">
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 w-6 p-0 hover:bg-muted"
+        onClick={previousYear}
+      >
+        <ChevronLeft className="h-3 w-3" />
+      </Button>
+      <span className="text-sm font-medium min-w-[50px] text-center">
+        {currentYear}
+      </span>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="h-6 w-6 p-0 hover:bg-muted"
+        onClick={nextYear}
+      >
+        <ChevronRight className="h-3 w-3" />
+      </Button>
+    </div>
+  );
+}
+
+function DashboardContent({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const pathname = usePathname();
@@ -144,7 +171,8 @@ export default function DashboardLayout({
             <h1 className="text-base font-semibold">App Quản lý</h1>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <YearSelector />
             <ThemeToggle />
             <Button variant="ghost" size="sm" className="text-sm h-8">
               Admin
@@ -166,5 +194,19 @@ export default function DashboardLayout({
         />
       )}
     </div>
+  );
+}
+
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <YearProvider>
+      <DashboardContent>
+        {children}
+      </DashboardContent>
+    </YearProvider>
   );
 } 

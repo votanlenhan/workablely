@@ -35,11 +35,8 @@ interface Staff {
   role: string;
   department: string;
   joinDate: string;
-  status: 'Hoạt động' | 'Nghỉ phép' | 'Tạm nghỉ';
-  skills: string[];
   rating: number;
   totalShows: number;
-  baseSalary: number;
 }
 
 interface Performance {
@@ -61,11 +58,8 @@ const staffData: Staff[] = [
     role: 'Photographer',
     department: 'Photography',
     joinDate: '2023-01-15',
-    status: 'Hoạt động',
-    skills: ['Wedding Photography', 'Portrait', 'Event'],
     rating: 4.8,
-    totalShows: 45,
-    baseSalary: 15000000
+    totalShows: 45
   },
   {
     id: 'ST002',
@@ -75,11 +69,8 @@ const staffData: Staff[] = [
     role: 'Editor',
     department: 'Post-Production',
     joinDate: '2023-03-20',
-    status: 'Hoạt động',
-    skills: ['Photoshop', 'Lightroom', 'Color Grading'],
     rating: 4.6,
-    totalShows: 38,
-    baseSalary: 12000000
+    totalShows: 38
   },
   {
     id: 'ST003',
@@ -89,11 +80,8 @@ const staffData: Staff[] = [
     role: 'Assistant',
     department: 'Photography',
     joinDate: '2023-06-10',
-    status: 'Nghỉ phép',
-    skills: ['Equipment Setup', 'Client Support', 'Lighting'],
     rating: 4.3,
-    totalShows: 22,
-    baseSalary: 8000000
+    totalShows: 22
   }
 ];
 
@@ -139,8 +127,7 @@ export default function StaffPage() {
       staff.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       staff.phone.includes(searchTerm) ||
-      staff.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      staff.skills.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+      staff.role.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesDepartment = selectedDepartment === 'all' || staff.department === selectedDepartment;
     
@@ -264,7 +251,7 @@ export default function StaffPage() {
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                   <Input
-                    placeholder="Tìm kiếm theo tên, email, SĐT, kỹ năng..."
+                    placeholder="Tìm kiếm theo tên, email, SĐT, chức vụ..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="h-8 text-sm pl-7"
@@ -303,10 +290,6 @@ export default function StaffPage() {
                           <p className="text-xs text-muted-foreground">{staff.id}</p>
                         </div>
                       </div>
-                      <span className={`inline-flex items-center gap-1 text-xs px-1 py-0.5 rounded-full ${getStatusColor(staff.status)}`}>
-                        {getStatusIcon(staff.status)}
-                        {staff.status}
-                      </span>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -338,27 +321,8 @@ export default function StaffPage() {
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1">
-                        {staff.skills.slice(0, 2).map((skill, index) => (
-                          <span key={index} className="text-xs px-1 py-0.5 bg-muted rounded-full">
-                            {skill}
-                          </span>
-                        ))}
-                        {staff.skills.length > 2 && (
-                          <span className="text-xs px-1 py-0.5 bg-muted rounded-full">
-                            +{staff.skills.length - 2}
-                          </span>
-                        )}
-                      </div>
-
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-medium text-green-600">
-                          {formatCurrency(staff.baseSalary)}/tháng
-                        </span>
                         <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                            <Eye className="h-3 w-3" />
-                          </Button>
                           <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
                             <Edit className="h-3 w-3" />
                           </Button>

@@ -158,10 +158,10 @@ Hệ thống phân biệt các vai trò với quyền hạn khác nhau:
       - Retouch: **3.50%**
       - _(Có thể có các vai trò khác với % riêng do Admin cấu hình)_
     - **Vai trò/Quỹ Cố định:**
-      - Marketing: **7%**
-      - Art Lead: **5%**
-      - PM (Manager): **5%**
-      - Security: **2%**
+      - Lead: **2%** (được gán cho nhân viên trụ cột)
+      - Marketing: **5%** (được gán cho nhân viên trụ cột)
+      - Art Director: **5%** (được gán cho nhân viên trụ cột)
+      - Manager: **5%** (được gán cho nhân viên trụ cột)
       - Wishlist: **20%**
     - **Bonus cho Key (Tính thêm vào lương Key):**
       - Bonus 1: **4%** (Áp dụng khi Show có gán 1 Support)
@@ -192,12 +192,13 @@ Hệ thống phân biệt các vai trò với quyền hạn khác nhau:
       - _(Tính tương tự cho các vai trò khác nếu có)_
     - **Tổng Chi lương Show:** = Tổng lương Key + Lương Support 1 (nếu có) + Lương Support 2 (nếu có) + Lương Selective + Lương Blend + Lương Retouch + ...
     - **Tính Tiền cho Vai trò/Quỹ Cố định:**
-      - Marketing: = `Tổng giá tiền` \* 7%
-      - Art Lead: = `Tổng giá tiền` \* 5%
-      - PM: = `Tổng giá tiền` \* 5%
-      - Security: = `Tổng giá tiền` \* 2%
+      - Lead: = `Tổng giá tiền` \* 2% (được gán cho nhân viên trụ cột)
+      - Marketing: = `Tổng giá tiền` \* 5% (được gán cho nhân viên trụ cột)
+      - Art Director: = `Tổng giá tiền` \* 5% (được gán cho nhân viên trụ cột)
+      - Manager: = `Tổng giá tiền` \* 5% (được gán cho nhân viên trụ cột)
       - Wishlist: = `Tổng giá tiền` \* 20%
-    - **Tổng Chi cố định:** = Tổng tiền của tất cả các vai trò/quỹ cố định (Marketing + Art Lead + PM + Security + Wishlist)
+    - **Tổng Chi cố định:** = Tổng tiền của tất cả các vai trò/quỹ cố định (Lead + Marketing + Art Director + Manager + Wishlist)
+    - **Gán vai trò Founder:** Admin có thể gán các vai trò Lead, Marketing, Art Director, Manager cho 3 nhân viên trụ cột. Hiện tại: Đạt (Lead + Marketing = 7%), Huy (Art Director = 5%), An (Manager = 5%)
     - **Lợi nhuận ròng (Operation) của Show:** = `Tổng giá tiền` - Tổng Chi lương Show - Tổng Chi cố định.
     - **Xuất Hóa đơn:** Cho phép tạo và xuất hóa đơn cho khách hàng dựa trên thông tin Show.
 

@@ -25,7 +25,13 @@ import {
   Lock,
   Key,
   Trash2,
-  RefreshCw
+  RefreshCw,
+  Camera,
+  Users,
+  Plus,
+  Clock,
+  Star,
+  GripVertical
 } from 'lucide-react';
 
 interface StudioSettings {
@@ -105,7 +111,8 @@ export default function SettingsPage() {
     { id: 'security', label: 'Bảo mật', icon: Shield },
     { id: 'notifications', label: 'Thông báo', icon: Bell },
     { id: 'system', label: 'Hệ thống', icon: Settings },
-    { id: 'backup', label: 'Sao lưu', icon: Database },
+    { id: 'variables', label: 'Biến số', icon: Palette },
+    { id: 'backup', label:'Sao lưu', icon: Database },
   ];
 
   return (
@@ -462,6 +469,401 @@ export default function SettingsPage() {
               </form>
             </CardContent>
           </Card>
+        )}
+
+        {activeTab === 'variables' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div>
+              <h3 className="text-lg font-semibold flex items-center gap-2">
+                <Palette className="h-5 w-5" />
+                Biến số Hệ thống
+              </h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                Quản lý tất cả các trường dữ liệu, trạng thái và danh mục trong hệ thống
+              </p>
+            </div>
+
+            {/* Variable Categories - 4 Columns x 2 Rows Layout */}
+            <div className="space-y-4">
+              
+              {/* First Row - 4 Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+                
+                {/* 1. Loại hình Shows */}
+                <Card className="border-l-4 border-l-blue-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded flex items-center justify-center">
+                        <Camera className="h-3 w-3 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Loại hình Shows</h4>
+                        <p className="text-xs text-muted-foreground">Quản lý các loại hình chụp ảnh</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {[
+                        { name: 'Chụp TT', days: 30 },
+                        { name: 'Event', days: 7 },
+                        { name: 'Chụp K.Y', days: 14 },
+                        { name: 'Quay K.Y', days: 21 },
+                        { name: 'Quay PSC', days: 45 },
+                        { name: 'Chụp PSC', days: 30 },
+                        { name: 'Makeup', days: 1 },
+                        { name: 'Ảnh Thẻ', days: 3 }
+                      ].map((type, index) => (
+                        <div key={index} className="group space-y-1 p-1.5 rounded hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-2">
+                            <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                            <Input 
+                              defaultValue={type.name} 
+                              className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs"
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                            >
+                              <Trash2 className="h-2.5 w-2.5" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-2 ml-6">
+                            <span className="text-xs text-muted-foreground min-w-[60px]">Deadline:</span>
+                            <Input 
+                              type="number"
+                              defaultValue={type.days} 
+                              className="w-16 border-0 bg-transparent focus:bg-background focus:border-input h-6 text-xs text-center"
+                              min="1"
+                              max="365"
+                            />
+                            <span className="text-xs text-muted-foreground">ngày</span>
+                          </div>
+                        </div>
+                      ))}
+                      <Button variant="ghost" className="w-full justify-start h-7 text-xs text-muted-foreground">
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Thêm loại hình
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 2. Khu vực */}
+                <Card className="border-l-4 border-l-green-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-green-100 dark:bg-green-900/30 rounded flex items-center justify-center">
+                        <MapPin className="h-3 w-3 text-green-600 dark:text-green-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Khu vực</h4>
+                        <p className="text-xs text-muted-foreground">Các khu vực hoạt động</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {['Huyện Eakar', 'TP. Buôn Ma Thuột', 'Huyện Krông Pak', 'Huyện Cư M\'gar', 'Huyện Ea H\'leo'].map((area, index) => (
+                        <div key={index} className="group flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                          <Input 
+                            defaultValue={area} 
+                            className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="ghost" className="w-full justify-start h-7 text-xs text-muted-foreground">
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Thêm khu vực
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 3. Số thợ */}
+                <Card className="border-l-4 border-l-purple-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded flex items-center justify-center">
+                        <Users className="h-3 w-3 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Số thợ</h4>
+                        <p className="text-xs text-muted-foreground">Cấu hình số lượng thợ</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8].map((num) => (
+                        <div key={num} className="group flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="w-1.5 h-1.5 bg-purple-500 rounded-full"></div>
+                          <Input 
+                            defaultValue={num.toString()} 
+                            className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="ghost" className="w-full justify-start h-7 text-xs text-muted-foreground">
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Thêm số thợ
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 4. Trạng thái Shows */}
+                <Card className="border-l-4 border-l-orange-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-orange-100 dark:bg-orange-900/30 rounded flex items-center justify-center">
+                        <Clock className="h-3 w-3 text-orange-600 dark:text-orange-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Trạng thái Shows</h4>
+                        <p className="text-xs text-muted-foreground">Quản lý trạng thái và màu sắc</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {[
+                        { name: 'Chờ tới ngày chụp', color: '#6b7280' },
+                        { name: 'Chờ design', color: '#1f2937' },
+                        { name: 'Đang design', color: '#3b82f6' },
+                        { name: 'Hoàn thành', color: '#10b981' }
+                      ].map((status, index) => (
+                        <div key={index} className="group flex items-center gap-2 p-1.5 rounded border hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div 
+                            className="w-3 h-3 rounded-full border border-white shadow-sm"
+                            style={{ backgroundColor: status.color }}
+                          ></div>
+                          <Input 
+                            defaultValue={status.name} 
+                            className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs font-medium"
+                          />
+                          <Input 
+                            type="color" 
+                            defaultValue={status.color}
+                            className="w-7 h-7 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+              </div>
+
+              {/* Second Row - 4 Columns */}
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+
+                {/* 5. Trạng thái Design */}
+                <Card className="border-l-4 border-l-pink-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-pink-100 dark:bg-pink-900/30 rounded flex items-center justify-center">
+                        <Palette className="h-3 w-3 text-pink-600 dark:text-pink-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Trạng thái Design</h4>
+                        <p className="text-xs text-muted-foreground">Quản lý workflow design</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {[
+                        { name: 'Not Started', display: 'Chưa bắt đầu', color: '#6b7280' },
+                        { name: 'Waiting', display: 'Chờ xử lý', color: '#ef4444' },
+                        { name: 'Blend: Work in Progress', display: 'Blend', color: '#f97316' },
+                        { name: 'Retouch: Work in Progress', display: 'Retouch', color: '#eab308' },
+                        { name: 'Video: Work in Progress', display: 'Video', color: '#8b5cf6' },
+                        { name: 'Done/Archived', display: 'Hoàn thành', color: '#10b981' }
+                      ].map((status, index) => (
+                        <div key={index} className="group flex items-center gap-2 p-1.5 rounded border hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div 
+                            className="w-3 h-3 rounded-full border border-white shadow-sm"
+                            style={{ backgroundColor: status.color }}
+                          ></div>
+                          <div className="flex-1">
+                            <Input 
+                              defaultValue={status.display} 
+                              className="border-0 bg-transparent focus:bg-background focus:border-input h-6 text-xs font-medium"
+                            />
+                            <p className="text-xs text-muted-foreground leading-none">{status.name}</p>
+                          </div>
+                          <Input 
+                            type="color" 
+                            defaultValue={status.color}
+                            className="w-7 h-7 p-0 border-0 rounded cursor-pointer"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 6. Chi cố định */}
+                <Card className="border-l-4 border-l-red-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-red-100 dark:bg-red-900/30 rounded flex items-center justify-center">
+                        <Database className="h-3 w-3 text-red-600 dark:text-red-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Chi cố định</h4>
+                        <p className="text-xs text-muted-foreground">Danh mục chi phí</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {['Thuê mặt bằng', 'Điện nước', 'Internet', 'Bảo hiểm', 'Thuế'].map((expense, index) => (
+                        <div key={index} className="group flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
+                          <Input 
+                            defaultValue={expense} 
+                            className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="ghost" className="w-full justify-start h-7 text-xs text-muted-foreground">
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Thêm danh mục
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 7. Chi Wishlist */}
+                <Card className="border-l-4 border-l-yellow-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-yellow-100 dark:bg-yellow-900/30 rounded flex items-center justify-center">
+                        <Star className="h-3 w-3 text-yellow-600 dark:text-yellow-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Chi Wishlist</h4>
+                        <p className="text-xs text-muted-foreground">Danh mục mong muốn</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {['Thiết bị mới', 'Nâng cấp studio', 'Khóa học', 'Marketing', 'Du lịch'].map((wishlist, index) => (
+                        <div key={index} className="group flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                          <Input 
+                            defaultValue={wishlist} 
+                            className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="ghost" className="w-full justify-start h-7 text-xs text-muted-foreground">
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Thêm mục mong muốn
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 8. Thu ngoài */}
+                <Card className="border-l-4 border-l-emerald-500">
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded flex items-center justify-center">
+                        <Plus className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-medium">Thu ngoài</h4>
+                        <p className="text-xs text-muted-foreground">Danh mục thu nhập</p>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    <div className="space-y-1">
+                      {['Cho thuê thiết bị', 'Khóa học', 'Tư vấn', 'Hợp tác', 'Bán ảnh'].map((income, index) => (
+                        <div key={index} className="group flex items-center gap-2 p-1.5 rounded hover:bg-muted/50 transition-colors">
+                          <GripVertical className="h-3 w-3 text-muted-foreground cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-100 transition-opacity" />
+                          <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full"></div>
+                          <Input 
+                            defaultValue={income} 
+                            className="flex-1 border-0 bg-transparent focus:bg-background focus:border-input h-7 text-xs"
+                          />
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity h-6 w-6 p-0"
+                          >
+                            <Trash2 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      ))}
+                      <Button variant="ghost" className="w-full justify-start h-7 text-xs text-muted-foreground">
+                        <Plus className="h-2.5 w-2.5 mr-1" />
+                        Thêm danh mục thu
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+              </div>
+
+            </div>
+          </div>
         )}
 
         {activeTab === 'backup' && (

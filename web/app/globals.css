@@ -251,22 +251,25 @@
   .shows-table-grid {
     display: grid;
     grid-template-columns: 
+      60px                   /* STT - fixed */
       100px                  /* Ngày chụp - fixed */
-      100px                  /* Ngày giao - fixed */
+              100px                  /* Deadline - fixed */
       100px                  /* Thời gian - fixed */
       minmax(280px, 1fr)     /* Khách hàng - flexible, ưu tiên mở rộng */
-      110px                  /* SĐT - fixed */
       110px                  /* Giá - fixed */
+      90px                   /* % Discount - fixed */
       120px                  /* Loại - fixed */
+      120px                  /* Khu vực - fixed */
+      80px                   /* Số thợ - fixed */
       100px                  /* Key - fixed */
       100px                  /* SP1 - fixed */
       100px                  /* SP2 - fixed */
-      100px                  /* Culling - fixed */
+      100px                  /* Pick - fixed */
       100px                  /* Blend - fixed */
       100px                  /* Retouch - fixed */
       140px;                 /* Trạng thái - fixed */
     gap: 0;
-    min-width: 1560px;       /* Tổng width tối thiểu */
+    min-width: 1800px;       /* Tổng width tối thiểu */
   }
 
   .shows-table-grid > div {
@@ -291,8 +294,8 @@
   @media (max-width: 1200px) {
     .shows-table-grid {
       grid-template-columns: 
-        90px 90px 90px minmax(250px, 1fr) 100px 100px 110px 90px 90px 90px 90px 90px 90px 120px;
-      min-width: 1390px;
+        50px 90px 90px 90px minmax(250px, 1fr) 100px 80px 110px 110px 70px 90px 90px 90px 90px 90px 90px 120px;
+      min-width: 1620px;
     }
   }
 
@@ -300,8 +303,8 @@
   @media (min-width: 1025px) and (max-width: 1200px) {
     .shows-table-grid {
       grid-template-columns: 
-        80px 80px 80px minmax(220px, 1fr) 90px 90px 100px 80px 80px 80px 80px 80px 80px 110px;
-      min-width: 1200px;
+        40px 80px 80px 80px minmax(220px, 1fr) 90px 70px 100px 100px 60px 80px 80px 80px 80px 80px 80px 110px;
+      min-width: 1420px;
     }
   }
 
@@ -576,6 +579,52 @@
       grid-template-columns: 
         100px 100px 100px minmax(250px, 1fr) 100px;
       min-width: 650px;
+    }
+  }
+
+  /* Salary Table Grid - Wide table for many staff columns */
+  .salary-table-grid {
+    display: grid;
+    grid-template-columns: 
+      60px                   /* Tháng */
+      repeat(16, 90px)       /* 16 staff columns */
+      120px;                 /* Tổng */
+    gap: 0;
+    min-width: 1620px;       /* Total minimum width */
+  }
+
+  .salary-table-grid > div {
+    @apply px-1 py-1 border-r border-border last:border-r-0 flex items-center justify-center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
+    line-height: 1.3;
+    min-height: 32px;
+    font-size: 11px;         /* Smaller font for many columns */
+  }
+
+  /* Responsive adjustments for salary table */
+  @media (max-width: 1400px) {
+    .salary-table-grid {
+      grid-template-columns: 
+        50px repeat(16, 80px) 100px;
+      min-width: 1430px;
+    }
+  }
+
+  @media (max-width: 1200px) {
+    .salary-table-grid {
+      grid-template-columns: 
+        45px repeat(16, 70px) 90px;
+      min-width: 1255px;
+    }
+  }
+
+  @media (max-width: 1024px) {
+    /* Hide salary table on mobile, show mobile cards instead */
+    .salary-table-grid {
+      display: none !important;
     }
   }
 }

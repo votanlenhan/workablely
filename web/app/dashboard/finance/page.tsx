@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,9 +26,14 @@ import {
   Calendar,
   TrendingUp,
   Search,
-  Filter
+  Filter,
+  Users,
+  BookOpen,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { DatePickerInput } from '@/components/ui/date-picker';
+import { useYear } from '@/lib/year-context';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('vi-VN').format(amount);
@@ -41,7 +46,7 @@ const getIconForCategory = (category: string) => {
     'Điện': Zap,
     'Nước': Droplets,
     'Thuế': Receipt,
-    'Bảo hiểm': FileText,
+    'Bù lương thợ': Users,
     'Internet': Wifi,
     'Bảo trì': Wrench,
     'Khác': MoreHorizontal
@@ -60,12 +65,115 @@ const predictExpenseFromHistory = (category: string, historicalData: any[]) => {
 };
 
 export default function FinancePage() {
+  const { currentYear } = useYear();
+  const currentDate = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1); // 1-12
   const [activeTab, setActiveTab] = useState('budget');
   
+  const monthNames = [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+  ];
+
+  const nextMonth = () => {
+    setSelectedMonth(prev => prev === 12 ? 1 : prev + 1);
+  };
+
+  const previousMonth = () => {
+    setSelectedMonth(prev => prev === 1 ? 12 : prev - 1);
+  };
+
   // Search states for different tables
   const [expenseSearchTerm, setExpenseSearchTerm] = useState('');
   const [wishlistSearchTerm, setWishlistSearchTerm] = useState('');
   const [incomeSearchTerm, setIncomeSearchTerm] = useState('');
+  const [salarySearchTerm, setSalarySearchTerm] = useState('');
+  const [staffPaymentStatus, setStaffPaymentStatus] = useState<{[key: string]: boolean}>({});
+
+  // Staff data with roles and salary details - ordered by priority
+  const staffData = [
+    // Founder roles (highest priority) - nhận % doanh thu
+    {
+      id: 'ST003',
+      name: 'Đạt',
+      role: 'Lead + Marketing',
+      department: 'Đội ngũ quản lý',
+      status: 'Hoạt động',
+      avatar: 'Đ',
+      priority: 1,
+      founderRoles: ['Lead', 'Marketing'], // Lead: 2%, Marketing: 5%
+      revenuePercentage: 7 // 2% + 5%
+    },
+    {
+      id: 'ST002', 
+      name: 'Huy',
+      role: 'Art Director',
+      department: 'Đội ngũ quản lý',
+      status: 'Hoạt động',
+      avatar: 'H',
+      priority: 1,
+      founderRoles: ['Art'],
+      revenuePercentage: 5 // 5%
+    },
+    {
+      id: 'ST001',
+      name: 'An',
+      role: 'Manager',
+      department: 'Đội ngũ quản lý',
+      status: 'Hoạt động',
+      avatar: 'A',
+      priority: 1,
+      founderRoles: ['Manager'],
+      revenuePercentage: 5 // 5%
+    },
+    // Photographer team
+    {
+      id: 'ST004',
+      name: 'Minh',
+      role: 'Key Photographer',
+      department: 'Photographer',
+      status: 'Hoạt động',
+      avatar: 'M',
+      priority: 2
+    },
+    {
+      id: 'ST008',
+      name: 'Tùng',
+      role: 'Support Photographer',
+      department: 'Photographer',
+      status: 'Hoạt động',
+      avatar: 'T',
+      priority: 2
+    },
+    // Design team (remaining staff)
+    {
+      id: 'ST005',
+      name: 'A Phúc',
+      role: 'Pick',
+      department: 'Design',
+      status: 'Hoạt động',
+      avatar: 'AP',
+      priority: 2
+    },
+    {
+      id: 'ST006',
+      name: 'Long',
+      role: 'Blend',
+      department: 'Design',
+      status: 'Hoạt động',
+      avatar: 'L',
+      priority: 2
+    },
+    {
+      id: 'ST007',
+      name: 'Lai',
+      role: 'Retouch',
+      department: 'Design',
+      status: 'Hoạt động',
+      avatar: 'La',
+      priority: 2
+    }
+  ];
 
   // Historical data for prediction
   const historicalFixedExpenses = [
@@ -86,66 +194,227 @@ export default function FinancePage() {
     { month: '2023-12', category: 'Bảo trì', actual: 1500000 },
   ];
 
-  // Fixed expenses state - Tháng hiện tại với ngày chi
-  const [fixedExpenses, setFixedExpenses] = useState([
-    {
-      id: 1,
-      category: 'Tiền nhà',
-      predicted: predictExpenseFromHistory('Tiền nhà', historicalFixedExpenses),
-      actual: 25000000,
-      status: 'Đã chi',
-      date: '2024-01-01',
-      description: 'Tiền thuê mặt bằng studio tháng 1'
-    },
-    {
-      id: 2,
-      category: 'Điện',
-      predicted: predictExpenseFromHistory('Điện', historicalFixedExpenses),
-      actual: 3800000,
-      status: 'Đã chi',
-      date: '2024-01-15',
-      description: 'Hóa đơn điện tháng 12/2023'
-    },
-    {
-      id: 3,
-      category: 'Nước',
-      predicted: predictExpenseFromHistory('Nước', historicalFixedExpenses),
-      actual: 0,
-      status: 'Chưa chi',
-      date: '',
-      description: 'Hóa đơn nước tháng 12/2023'
-    },
-    {
-      id: 4,
-      category: 'Thuế',
-      predicted: predictExpenseFromHistory('Thuế', historicalFixedExpenses),
-      actual: 5000000,
-      status: 'Đã chi',
-      date: '2024-01-10',
-      description: 'Thuế VAT quý 4/2023'
-    },
-    {
-      id: 5,
-      category: 'Bảo hiểm',
-      predicted: predictExpenseFromHistory('Bảo hiểm', historicalFixedExpenses),
-      actual: 2000000,
-      status: 'Đã chi',
-      date: '2024-01-05',
-      description: 'Bảo hiểm thiết bị studio'
-    },
-    {
-      id: 6,
-      category: 'Internet',
-      predicted: predictExpenseFromHistory('Internet', historicalFixedExpenses),
-      actual: 500000,
-      status: 'Đã chi',
-      date: '2024-01-03',
-      description: 'Cước internet tháng 1'
-    }
-  ]);
+  // Fixed expenses state - Theo tháng được chọn
+  const getFixedExpensesData = (year: number, month: number) => {
+    const monthStr = month.toString().padStart(2, '0');
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    
+    return [
+      {
+        id: 1,
+        category: 'Tiền nhà',
+        predicted: predictExpenseFromHistory('Tiền nhà', historicalFixedExpenses),
+        actual: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 25000000 : 0,
+        status: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
+        date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-01` : '',
+        description: `Tiền thuê mặt bằng studio tháng ${month}`
+      },
+      {
+        id: 2,
+        category: 'Điện',
+        predicted: predictExpenseFromHistory('Điện', historicalFixedExpenses),
+        actual: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 3800000 : 0,
+        status: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
+        date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-15` : '',
+        description: `Hóa đơn điện tháng ${prevMonth}/${prevYear}`
+      },
+      {
+        id: 3,
+        category: 'Nước',
+        predicted: predictExpenseFromHistory('Nước', historicalFixedExpenses),
+        actual: month < currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 850000 : 0,
+        status: month < currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
+        date: month < currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-20` : '',
+        description: `Hóa đơn nước tháng ${prevMonth}/${prevYear}`
+      },
+      {
+        id: 4,
+        category: 'Thuế',
+        predicted: predictExpenseFromHistory('Thuế', historicalFixedExpenses),
+        actual: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 5000000 : 0,
+        status: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
+        date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-10` : '',
+        description: `Thuế VAT tháng ${month}/${year}`
+      },
+      {
+        id: 5,
+        category: 'Bù lương thợ',
+        predicted: predictExpenseFromHistory('Bù lương thợ', historicalFixedExpenses),
+        actual: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 2500000 : 0,
+        status: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
+        date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-05` : '',
+        description: 'Bù lương thợ do discount show'
+      },
+      {
+        id: 6,
+        category: 'Internet',
+        predicted: predictExpenseFromHistory('Internet', historicalFixedExpenses),
+        actual: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 500000 : 0,
+        status: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
+        date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-03` : '',
+        description: `Cước internet tháng ${month}`
+      }
+    ];
+  };
+
+  const [fixedExpenses, setFixedExpenses] = useState(getFixedExpensesData(currentYear, selectedMonth));
+
+  // Function to calculate detailed salary for each staff member
+  const getStaffSalaryDetails = (staffId: string, year: number, month: number) => {
+    // Doanh thu tháng để tính % founder
+    const monthlyRevenue = 450000000; // Doanh thu tháng hiện tại
+    
+    // Mock data for salary calculation - in real app this would come from shows and assignments
+    const salaryBreakdown = {
+      'ST001': { // An - Manager (Founder)
+        showEarnings: [
+          { showId: 'SH001', showName: 'Wedding Nguyễn - Trần', role: 'Key Photographer', amount: 2500000, date: '2025-01-05' },
+          { showId: 'SH002', showName: 'Prewedding Lê - Phạm', role: 'Key Photographer', amount: 1800000, date: '2025-01-12' },
+          { showId: 'SH003', showName: 'Event ABC Company', role: 'Key Photographer', amount: 1200000, date: '2025-01-18' }
+        ],
+        additionalCosts: [
+          { type: 'Manager (5% doanh thu)', amount: monthlyRevenue * 0.05, description: 'Phí quản lý 5% doanh thu tháng' },
+          { type: 'Xăng xe', amount: 300000, description: 'Chi phí di chuyển tháng 1' },
+          { type: 'Ăn uống', amount: 200000, description: 'Chi phí ăn uống khi chụp' }
+        ],
+        advances: [
+          { type: 'Tạm ứng lương', amount: 1000000, description: 'Ứng trước ngày 15/01', wishlistId: 'WL001' }
+        ]
+      },
+      'ST002': { // Huy - Art Director (Founder)
+        showEarnings: [
+          { showId: 'SH004', showName: 'Wedding Hoàng - Mai', role: 'Support Photographer 1', amount: 1600000, date: '2025-01-08' },
+          { showId: 'SH005', showName: 'Birthday Party VIP', role: 'Support Photographer 1', amount: 1050000, date: '2025-01-15' }
+        ],
+        additionalCosts: [
+          { type: 'Art Director (5% doanh thu)', amount: monthlyRevenue * 0.05, description: 'Phí art direction 5% doanh thu tháng' },
+          { type: 'Thiết bị', amount: 400000, description: 'Mua thêm thẻ nhớ' }
+        ],
+        advances: []
+      },
+      'ST003': { // Đạt - Lead + Marketing (Founder)
+        showEarnings: [
+          { showId: 'SH001', showName: 'Wedding Nguyễn - Trần', role: 'Support Photographer 2', amount: 1500000, date: '2025-01-05' },
+          { showId: 'SH006', showName: 'Corporate Event', role: 'Support Photographer 2', amount: 900000, date: '2025-01-20' }
+        ],
+        additionalCosts: [
+          { type: 'Lead (2% doanh thu)', amount: monthlyRevenue * 0.02, description: 'Phí lead 2% doanh thu tháng' },
+          { type: 'Marketing (5% doanh thu)', amount: monthlyRevenue * 0.05, description: 'Phí marketing 5% doanh thu tháng' }
+        ],
+        advances: [
+          { type: 'Ứng cá nhân', amount: 500000, description: 'Ứng tiền cá nhân', wishlistId: 'WL002' }
+        ]
+      },
+      'ST005': { // A Phúc - Pick
+        showEarnings: [
+          { showId: 'SH001', showName: 'Wedding Nguyễn - Trần', role: 'Pick', amount: 400000, date: '2025-01-07' },
+          { showId: 'SH002', showName: 'Prewedding Lê - Phạm', role: 'Pick', amount: 300000, date: '2025-01-14' },
+          { showId: 'SH004', showName: 'Wedding Hoàng - Mai', role: 'Pick', amount: 450000, date: '2025-01-10' }
+        ],
+        additionalCosts: [],
+        advances: []
+      },
+      'ST006': { // Long - Blend
+        showEarnings: [
+          { showId: 'SH001', showName: 'Wedding Nguyễn - Trần', role: 'Blend', amount: 900000, date: '2025-01-08' },
+          { showId: 'SH004', showName: 'Wedding Hoàng - Mai', role: 'Blend', amount: 1200000, date: '2025-01-12' }
+        ],
+        additionalCosts: [
+          { type: 'Phần mềm', amount: 150000, description: 'License Photoshop tháng 1' }
+        ],
+        advances: []
+      },
+      'ST007': { // Lai - Retouch
+        showEarnings: [
+          { showId: 'SH002', showName: 'Prewedding Lê - Phạm', role: 'Retouch', amount: 700000, date: '2025-01-16' },
+          { showId: 'SH005', showName: 'Birthday Party VIP', role: 'Retouch', amount: 525000, date: '2025-01-18' }
+        ],
+        additionalCosts: [],
+        advances: [
+          { type: 'Ứng lương', amount: 300000, description: 'Ứng tiền khẩn cấp', wishlistId: 'WL003' }
+        ]
+      },
+      'ST004': { // Minh - Key Photographer
+        showEarnings: [
+          { showId: 'SH007', showName: 'Wedding Phạm - Nguyễn', role: 'Key Photographer', amount: 3000000, date: '2025-01-10' },
+          { showId: 'SH008', showName: 'Corporate Event XYZ', role: 'Key Photographer', amount: 2200000, date: '2025-01-22' }
+        ],
+        additionalCosts: [
+          { type: 'Xăng xe', amount: 400000, description: 'Chi phí di chuyển chụp ngoại cảnh' }
+        ],
+        advances: []
+      },
+      'ST008': { // Tùng - Support Photographer
+        showEarnings: [
+          { showId: 'SH007', showName: 'Wedding Phạm - Nguyễn', role: 'Support Photographer', amount: 1800000, date: '2025-01-10' },
+          { showId: 'SH009', showName: 'Birthday Party Premium', role: 'Support Photographer', amount: 1400000, date: '2025-01-25' }
+        ],
+        additionalCosts: [],
+        advances: [
+          { type: 'Ứng lương', amount: 800000, description: 'Ứng tiền cá nhân', wishlistId: 'WL004' }
+        ]
+      }
+
+    };
+
+    const staffSalary = salaryBreakdown[staffId] || { 
+      showEarnings: [], 
+      additionalCosts: [], 
+      advances: [] 
+    };
+
+    const totalShowEarnings = staffSalary.showEarnings.reduce((sum, earning) => sum + earning.amount, 0);
+    const totalAdditionalCosts = staffSalary.additionalCosts.reduce((sum, cost) => sum + cost.amount, 0);
+    const totalAdvances = staffSalary.advances.reduce((sum, advance) => sum + advance.amount, 0);
+    const totalSalary = totalShowEarnings + totalAdditionalCosts - totalAdvances;
+
+    return {
+      ...staffSalary,
+      totalShowEarnings,
+      totalAdditionalCosts,
+      totalAdvances,
+      totalSalary
+    };
+  };
+
+  // Filter and sort staff for salary tab
+  const filteredStaff = staffData
+    .filter(staff => {
+      return salarySearchTerm === '' || 
+        staff.name.toLowerCase().includes(salarySearchTerm.toLowerCase()) ||
+        staff.role.toLowerCase().includes(salarySearchTerm.toLowerCase()) ||
+        staff.department.toLowerCase().includes(salarySearchTerm.toLowerCase()) ||
+        staff.id.toLowerCase().includes(salarySearchTerm.toLowerCase());
+    })
+    .sort((a, b) => {
+      // Sort by priority: Manager (1) -> Multi-role staff (2) -> Design team (3)
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority;
+      }
+      
+      // Within same priority, sort by total shows/earnings (descending)
+      const aSalaryDetail = getStaffSalaryDetails(a.id, currentYear, selectedMonth);
+      const bSalaryDetail = getStaffSalaryDetails(b.id, currentYear, selectedMonth);
+      
+      // Sort by number of shows first, then by total earnings
+      const aShowCount = aSalaryDetail.showEarnings?.length || 0;
+      const bShowCount = bSalaryDetail.showEarnings?.length || 0;
+      
+      if (aShowCount !== bShowCount) {
+        return bShowCount - aShowCount; // More shows first
+      }
+      
+      // If same number of shows, sort by total earnings
+      return bSalaryDetail.totalShowEarnings - aSalaryDetail.totalShowEarnings;
+    });
 
   const [isAddingExpense, setIsAddingExpense] = useState(false);
   const [editingExpense, setEditingExpense] = useState<number | null>(null);
+  
+  // Salary detail modal state
+  const [selectedStaffForSalary, setSelectedStaffForSalary] = useState<string | null>(null);
+  const [salaryDetailModalOpen, setSalaryDetailModalOpen] = useState(false);
   const [newExpense, setNewExpense] = useState({
     category: '',
     predicted: 0,
@@ -197,14 +466,26 @@ export default function FinancePage() {
     notes: ''
   });
 
-  // External Income state - Dữ liệu cả năm 2024
-  const [externalIncomes, setExternalIncomes] = useState([
+  // Update data when year changes
+  useEffect(() => {
+    setFixedExpenses(getFixedExpensesData(currentYear, selectedMonth));
+    setExternalIncomes(getExternalIncomesData(currentYear, selectedMonth));
+  }, [currentYear, selectedMonth]);
+
+  // External Income state - Dữ liệu theo tháng được chọn
+  const getExternalIncomesData = (year: number, month: number) => {
+    // Chỉ hiển thị data cho tháng hiện tại và các tháng trước đó
+    if (month > currentDate.getMonth() + 1 && year >= currentDate.getFullYear()) {
+      return [];
+    }
+    
+    const allIncomes = [
     // Tháng 1
     {
       id: 1,
       source: 'Bán thiết bị cũ',
       amount: 15000000,
-      date: '2024-01-15',
+      date: `${year}-01-15`,
       category: 'Bán thiết bị',
       description: 'Bán máy ảnh Canon 5D Mark IV',
       recordedBy: 'Admin'
@@ -213,7 +494,7 @@ export default function FinancePage() {
       id: 2,
       source: 'Cho thuê studio',
       amount: 8000000,
-      date: '2024-01-20',
+      date: `${year}-01-20`,
       category: 'Cho thuê',
       description: 'Thuê studio 2 ngày cho công ty ABC',
       recordedBy: 'Admin'
@@ -222,7 +503,7 @@ export default function FinancePage() {
       id: 3,
       source: 'Workshop nhiếp ảnh',
       amount: 12000000,
-      date: '2024-01-25',
+      date: `${year}-01-25`,
       category: 'Đào tạo',
       description: 'Workshop cơ bản về nhiếp ảnh cưới',
       recordedBy: 'Manager'
@@ -232,7 +513,7 @@ export default function FinancePage() {
       id: 4,
       source: 'Bán lens cũ',
       amount: 8500000,
-      date: '2024-02-10',
+      date: `${year}-02-10`,
       category: 'Bán thiết bị',
       description: 'Bán lens 70-200mm f/2.8',
       recordedBy: 'Admin'
@@ -241,7 +522,7 @@ export default function FinancePage() {
       id: 5,
       source: 'Tư vấn setup studio',
       amount: 5000000,
-      date: '2024-02-18',
+      date: `${year}-02-18`,
       category: 'Tư vấn',
       description: 'Tư vấn thiết kế studio cho khách hàng',
       recordedBy: 'Manager'
@@ -251,7 +532,7 @@ export default function FinancePage() {
       id: 6,
       source: 'Workshop nâng cao',
       amount: 18000000,
-      date: '2024-03-05',
+      date: `${year}-03-05`,
       category: 'Đào tạo',
       description: 'Workshop nhiếp ảnh thương mại',
       recordedBy: 'Admin'
@@ -260,7 +541,7 @@ export default function FinancePage() {
       id: 7,
       source: 'Cho thuê thiết bị',
       amount: 6000000,
-      date: '2024-03-22',
+      date: `${year}-03-22`,
       category: 'Cho thuê',
       description: 'Cho thuê bộ đèn studio 1 tuần',
       recordedBy: 'Manager'
@@ -270,7 +551,7 @@ export default function FinancePage() {
       id: 8,
       source: 'Bán backdrop cũ',
       amount: 3500000,
-      date: '2024-04-08',
+      date: `${year}-04-08`,
       category: 'Bán thiết bị',
       description: 'Bán bộ backdrop và stand',
       recordedBy: 'Admin'
@@ -280,7 +561,7 @@ export default function FinancePage() {
       id: 9,
       source: 'Workshop online',
       amount: 15000000,
-      date: '2024-05-12',
+      date: `${year}-05-12`,
       category: 'Đào tạo',
       description: 'Khóa học online về post-processing',
       recordedBy: 'Manager'
@@ -289,7 +570,7 @@ export default function FinancePage() {
       id: 10,
       source: 'Cho thuê studio cuối tuần',
       amount: 10000000,
-      date: '2024-05-25',
+      date: `${year}-05-25`,
       category: 'Cho thuê',
       description: 'Thuê studio cho event công ty',
       recordedBy: 'Admin'
@@ -299,7 +580,7 @@ export default function FinancePage() {
       id: 11,
       source: 'Bán máy tính cũ',
       amount: 12000000,
-      date: '2024-06-15',
+      date: `${year}-06-15`,
       category: 'Bán thiết bị',
       description: 'Bán workstation edit cũ',
       recordedBy: 'Admin'
@@ -309,7 +590,7 @@ export default function FinancePage() {
       id: 12,
       source: 'Tư vấn workflow',
       amount: 7500000,
-      date: '2024-07-03',
+      date: `${year}-07-03`,
       category: 'Tư vấn',
       description: 'Tư vấn quy trình làm việc cho studio mới',
       recordedBy: 'Manager'
@@ -319,7 +600,7 @@ export default function FinancePage() {
       id: 13,
       source: 'Workshop mùa hè',
       amount: 20000000,
-      date: '2024-08-10',
+      date: `${year}-08-10`,
       category: 'Đào tạo',
       description: 'Workshop intensive 3 ngày',
       recordedBy: 'Admin'
@@ -329,7 +610,7 @@ export default function FinancePage() {
       id: 14,
       source: 'Cho thuê trang phục',
       amount: 4500000,
-      date: '2024-09-18',
+      date: `${year}-09-18`,
       category: 'Cho thuê',
       description: 'Cho thuê váy cưới và phụ kiện',
       recordedBy: 'Manager'
@@ -339,7 +620,7 @@ export default function FinancePage() {
       id: 15,
       source: 'Bán phụ kiện',
       amount: 6500000,
-      date: '2024-10-22',
+      date: `${year}-10-22`,
       category: 'Bán thiết bị',
       description: 'Bán bộ filter và tripod',
       recordedBy: 'Admin'
@@ -349,7 +630,7 @@ export default function FinancePage() {
       id: 16,
       source: 'Workshop cuối năm',
       amount: 25000000,
-      date: '2024-11-15',
+      date: `${year}-11-15`,
       category: 'Đào tạo',
       description: 'Workshop master class với nhiếp ảnh gia nổi tiếng',
       recordedBy: 'Admin'
@@ -359,12 +640,21 @@ export default function FinancePage() {
       id: 17,
       source: 'Cho thuê studio Noel',
       amount: 15000000,
-      date: '2024-12-20',
+      date: `${year}-12-20`,
       category: 'Cho thuê',
       description: 'Thuê studio trang trí Noel cho nhiều gia đình',
       recordedBy: 'Manager'
     }
-  ]);
+  ];
+
+  // Filter theo tháng được chọn
+  return allIncomes.filter(income => {
+    const incomeMonth = parseInt(income.date.split('-')[1]);
+    return incomeMonth === month;
+  });
+};
+
+  const [externalIncomes, setExternalIncomes] = useState(getExternalIncomesData(currentYear, selectedMonth));
 
   const [isAddingIncome, setIsAddingIncome] = useState(false);
   const [editingIncome, setEditingIncome] = useState<number | null>(null);
@@ -585,6 +875,112 @@ export default function FinancePage() {
     setIsIncomeModalOpen(true);
   };
 
+  const openSalaryDetailModal = (staffId: string) => {
+    setSelectedStaffForSalary(staffId);
+    setSalaryDetailModalOpen(true);
+  };
+
+  const closeSalaryDetailModal = () => {
+    setSelectedStaffForSalary(null);
+    setSalaryDetailModalOpen(false);
+  };
+
+  // Function to automatically add advance payments to wishlist
+  const addAdvanceToWishlist = (advance: any, staffName: string) => {
+    const newWishlistItem = {
+      id: Math.max(...wishlistItems.map(w => w.id), 0) + 1,
+      item: `Ứng lương - ${staffName}`,
+      category: 'Ứng lương',
+      priority: 'Cao',
+      estimatedCost: advance.amount,
+      status: 'Đã duyệt',
+      notes: `${advance.description} - Tự động từ hệ thống lương`
+    };
+    
+    setWishlistItems(prev => [...prev, newWishlistItem]);
+    return newWishlistItem.id;
+  };
+
+  // Function to add additional cost to wishlist
+  const addCostToWishlist = (cost: any, staffName: string) => {
+    const newWishlistItem = {
+      id: Math.max(...wishlistItems.map(w => w.id), 0) + 1,
+      item: `Chi phí - ${staffName}`,
+      category: cost.type,
+      priority: 'Trung bình',
+      estimatedCost: cost.amount,
+      status: 'Đã duyệt',
+      notes: `${cost.description} - Tự động từ hệ thống lương`
+    };
+    
+    setWishlistItems(prev => [...prev, newWishlistItem]);
+    return newWishlistItem.id;
+  };
+
+  // States for adding new cost/advance in salary modal
+  const [newCost, setNewCost] = useState({ type: '', amount: 0, description: '' });
+  const [newAdvance, setNewAdvance] = useState({ type: '', amount: 0, description: '' });
+  const [showAddCostForm, setShowAddCostForm] = useState(false);
+  const [showAddAdvanceForm, setShowAddAdvanceForm] = useState(false);
+
+  // Function to add new cost to staff salary
+  const handleAddCost = () => {
+    if (!selectedStaffForSalary || !newCost.type || !newCost.amount || !newCost.description) return;
+    
+    const staff = staffData.find(s => s.id === selectedStaffForSalary);
+    if (!staff) return;
+
+    // Add to wishlist
+    const wishlistId = addCostToWishlist(newCost, staff.name);
+    
+    // Here you would update the staff salary data
+    // For now, we'll just reset the form
+    setNewCost({ type: '', amount: 0, description: '' });
+    setShowAddCostForm(false);
+    
+    // You could also trigger a refresh of salary data here
+  };
+
+  // Function to add new advance to staff salary
+  const handleAddAdvance = () => {
+    if (!selectedStaffForSalary || !newAdvance.type || !newAdvance.amount || !newAdvance.description) return;
+    
+    const staff = staffData.find(s => s.id === selectedStaffForSalary);
+    if (!staff) return;
+
+    // Add to wishlist
+    const wishlistId = addAdvanceToWishlist(newAdvance, staff.name);
+    
+    // Here you would update the staff salary data
+    // For now, we'll just reset the form
+    setNewAdvance({ type: '', amount: 0, description: '' });
+    setShowAddAdvanceForm(false);
+    
+    // You could also trigger a refresh of salary data here
+  };
+
+  const handleDeleteCost = (staffId: string, costIndex: number) => {
+    // In a real app, this would update the backend
+    // For now, we'll just show a confirmation and simulate deletion
+    if (confirm('Bạn có chắc chắn muốn xóa khoản cộng thêm này?')) {
+      // This would typically make an API call to delete the cost
+      console.log(`Deleting cost at index ${costIndex} for staff ${staffId}`);
+      // Force re-render by updating a state
+      setStaffPaymentStatus(prev => ({ ...prev }));
+    }
+  };
+
+  const handleDeleteAdvance = (staffId: string, advanceIndex: number) => {
+    // In a real app, this would update the backend
+    // For now, we'll just show a confirmation and simulate deletion
+    if (confirm('Bạn có chắc chắn muốn xóa khoản trừ bớt này?')) {
+      // This would typically make an API call to delete the advance
+      console.log(`Deleting advance at index ${advanceIndex} for staff ${staffId}`);
+      // Force re-render by updating a state
+      setStaffPaymentStatus(prev => ({ ...prev }));
+    }
+  };
+
   // Filter functions
   const filteredExpenses = fixedExpenses.filter(expense => {
     return expenseSearchTerm === '' || 
@@ -612,17 +1008,40 @@ export default function FinancePage() {
 
   const tabs = [
     { id: 'budget', label: 'Dự toán & Chi phí cố định', icon: Calculator },
-    { id: 'wishlist', label: 'Quản lý Wishlist', icon: Heart },
-    { id: 'external-income', label: 'Thu ngoài', icon: DollarSign }
+    { id: 'wishlist', label: 'Chi Wishlist', icon: Heart },
+    { id: 'external-income', label: 'Thu ngoài', icon: DollarSign },
+    { id: 'salary', label: 'Chi lương', icon: Users },
+    { id: 'closing', label: 'Chốt sổ', icon: BookOpen }
   ];
 
   return (
     <div className="space-y-3">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-lg font-semibold">Dự toán & Quản lý Chi tiêu</h1>
-        <div className="text-xs text-muted-foreground">
-          Trang chủ yếu để nhập liệu - Thông tin tổng quan hiển thị ở Dashboard
+        <h1 className="text-lg font-semibold">Dự toán & Quản lý Chi tiêu - {currentYear}</h1>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1 bg-muted/50 rounded-md px-2 py-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-muted"
+              onClick={previousMonth}
+            >
+              <ChevronLeft className="h-3 w-3" />
+            </Button>
+            <span className="text-sm font-medium min-w-[80px] text-center">
+              {monthNames[selectedMonth - 1]}
+            </span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-muted"
+              onClick={nextMonth}
+            >
+              <ChevronRight className="h-3 w-3" />
+            </Button>
+          </div>
+
         </div>
       </div>
       
@@ -631,7 +1050,7 @@ export default function FinancePage() {
       </div>
 
       {/* Budget Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
         <Card>
           <CardContent className="p-2">
             <div className="flex items-center justify-between">
@@ -680,6 +1099,51 @@ export default function FinancePage() {
                 <p className="text-xs text-green-600">Bổ sung quỹ Wishlist</p>
               </div>
               <ArrowUpCircle className="h-6 w-6 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Tiền mặt hiện tại</p>
+                <p className="text-base font-bold text-blue-600">{formatCurrency((() => {
+                  // Calculate actual paid salaries based on payment status
+                  const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
+                    if (staffPaymentStatus[staff.id]) {
+                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                      return total + salaryDetail.totalSalary;
+                    }
+                    return total;
+                  }, 0);
+                  
+                  return 50000000 + 95000000 + budgetOverview.externalIncome - actualPaidSalaries - budgetOverview.wishlistUsed;
+                })())}</p>
+                <p className="text-xs text-blue-600">Thực tế hiện tại</p>
+              </div>
+              <DollarSign className="h-6 w-6 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Tiền mặt cuối kỳ</p>
+                <p className="text-base font-bold text-purple-600">{formatCurrency((() => {
+                  // Calculate estimated end-of-period cash (if all salaries are paid)
+                  const totalSalaries = filteredStaff.reduce((sum, staff) => {
+                    const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                    return sum + salaryDetail.totalSalary;
+                  }, 0);
+                  
+                  return 50000000 + 95000000 + budgetOverview.externalIncome - totalSalaries - budgetOverview.wishlistUsed;
+                })())}</p>
+                <p className="text-xs text-purple-600">Ước tính</p>
+              </div>
+              <TrendingUp className="h-6 w-6 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -780,9 +1244,9 @@ export default function FinancePage() {
               </div>
               
               <div className="admin-table-container">
-                <div className="admin-table">
+                <div className="space-y-1">
                   {/* Table Header */}
-                  <div className="admin-table-header finance-table-grid">
+                  <div className="finance-table-grid text-xs font-medium text-muted-foreground border-b pb-1">
                   <div>Danh mục</div>
                   <div>Dự báo</div>
                   <div>Thực tế</div>
@@ -802,32 +1266,32 @@ export default function FinancePage() {
                     <div key={expense.id}>
                       {/* Desktop Table Layout */}
                       <div 
-                        className="admin-table-row finance-table-grid cursor-pointer hover:bg-muted/30"
+                        className="finance-table-grid py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
                         onClick={() => openExpenseModal('edit', expense)}
                       >
-                        <div className="admin-table-cell">
+                        <div className="flex items-center">
                           <Icon className="h-3 w-3 mr-1" />
-                          <span className="text-sm">{expense.category}</span>
+                          <span>{expense.category}</span>
                         </div>
-                        <div className="admin-table-cell text-sm font-medium text-blue-600">{formatCurrency(expense.predicted)}</div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm font-medium text-green-600">{formatCurrency(expense.actual)}</span>
+                        <div className="font-medium text-blue-600">{formatCurrency(expense.predicted)}</div>
+                        <div>
+                          <span className="font-medium text-green-600">{formatCurrency(expense.actual)}</span>
                         </div>
-                        <div className="admin-table-cell">
+                        <div>
                           <div className="flex items-center">
                             <Calendar className="h-3 w-3 text-muted-foreground mr-1" />
-                            <span className="text-sm">{expense.date ? new Date(expense.date).toLocaleDateString('vi-VN') : '-'}</span>
+                            <span>{expense.date ? new Date(expense.date).toLocaleDateString('vi-VN') : '-'}</span>
                           </div>
                         </div>
-                        <div className="admin-table-cell text-muted-foreground">
-                          <span className="text-sm truncate">{expense.description || '-'}</span>
+                        <div className="text-muted-foreground">
+                          <span className="truncate">{expense.description || '-'}</span>
                         </div>
-                        <div className={`admin-table-cell text-sm ${getVarianceColor(expense.predicted, expense.actual)}`}>
+                        <div className={`${getVarianceColor(expense.predicted, expense.actual)}`}>
                           {expense.actual - expense.predicted > 0 ? '+' : ''}
                           {formatCurrency(expense.actual - expense.predicted)}
                         </div>
-                        <div className="admin-table-cell">
-                          <span className={`px-1 py-0.5 rounded-full text-xs ${getStatusColor(expense.status)}`}>
+                        <div>
+                          <span className={`px-1 py-0.5 rounded-full ${getStatusColor(expense.status)}`}>
                             {expense.status}
                           </span>
                         </div>
@@ -930,7 +1394,7 @@ export default function FinancePage() {
           <Card>
             <CardHeader className="pb-1">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Quản lý Wishlist</CardTitle>
+                <CardTitle className="text-sm">Chi Wishlist</CardTitle>
                 <Button 
                   size="sm" 
                   onClick={() => openWishlistModal('add')}
@@ -990,7 +1454,7 @@ export default function FinancePage() {
                           {item.category}
                         </div>
                         <div>
-                          <span className={`px-1 py-0.5 rounded-full text-xs ${getPriorityColor(item.priority)}`}>
+                          <span className={`px-1 py-0.5 rounded-full ${getPriorityColor(item.priority)}`}>
                             {item.priority}
                           </span>
                         </div>
@@ -998,7 +1462,7 @@ export default function FinancePage() {
                           {formatCurrency(item.estimatedCost)}
                         </div>
                         <div>
-                          <span className={`px-1 py-0.5 rounded-full text-xs ${getStatusColor(item.status)}`}>
+                          <span className={`px-1 py-0.5 rounded-full ${getStatusColor(item.status)}`}>
                             {item.status}
                           </span>
                         </div>
@@ -1236,6 +1700,333 @@ export default function FinancePage() {
               </div>
             </CardContent>
           </Card>
+        </div>
+      )}
+
+      {/* Salary Tab */}
+      {activeTab === 'salary' && (
+        <div className="space-y-3">
+          {/* Salary Overview */}
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Tổng quan Chi lương - {monthNames[selectedMonth - 1]} {currentYear}</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                <div>
+                  <p className="text-xs text-muted-foreground">Tổng lương tháng</p>
+                  <p className="text-sm font-bold text-primary">
+                    {formatCurrency(filteredStaff.reduce((sum, staff) => {
+                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                      return sum + salaryDetail.totalSalary;
+                    }, 0))}
+                  </p>
+                  <p className="text-xs text-muted-foreground">{filteredStaff.length} nhân viên</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Thu nhập từ shows</p>
+                  <p className="text-sm font-bold text-blue-600">
+                    {formatCurrency(filteredStaff.reduce((sum, staff) => {
+                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                      return sum + salaryDetail.totalShowEarnings;
+                    }, 0))}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Dựa trên hiệu suất</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Trừ Bớt</p>
+                  <p className="text-sm font-bold text-red-600">
+                    {formatCurrency(filteredStaff.reduce((sum, staff) => {
+                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                      return sum + salaryDetail.totalAdvances;
+                    }, 0))}
+                  </p>
+                  <p className="text-xs text-muted-foreground">Tạm ứng</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Department Summary */}
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Tổng hợp theo Phòng ban</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {['Đội ngũ quản lý', 'Photographer', 'Design'].map((dept) => {
+                  const deptStaff = filteredStaff.filter(s => s.department === dept);
+                  const deptTotal = deptStaff.reduce((sum, staff) => {
+                    const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                    return sum + salaryDetail.totalSalary;
+                  }, 0);
+                  
+                  return (
+                    <div key={dept} className="p-3 bg-muted/30 rounded-lg">
+                      <h3 className="font-medium text-sm mb-2">{dept}</h3>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span>Số người:</span>
+                          <span className="font-medium">{deptStaff.length}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>Tổng:</span>
+                          <span className="font-bold text-primary">{formatCurrency(deptTotal)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>TB:</span>
+                          <span className="font-medium">{formatCurrency(deptStaff.length > 0 ? deptTotal / deptStaff.length : 0)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+
+
+
+          {/* Staff Salary List */}
+          <Card>
+            <CardHeader className="pb-1">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Danh sách Lương Nhân viên</CardTitle>
+                <div className="flex gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                    <Input
+                      placeholder="Tìm kiếm nhân viên..."
+                      value={salarySearchTerm}
+                      onChange={(e) => setSalarySearchTerm(e.target.value)}
+                      className="h-8 text-sm pl-7 w-48"
+                    />
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                {filteredStaff.map((staff) => {
+                  const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                  return (
+                    <div 
+                      key={staff.id}
+                      className="p-3 border border-border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
+                      onClick={() => openSalaryDetailModal(staff.id)}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">
+                          {staff.avatar}
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">{staff.name}</div>
+                          <div className="text-xs text-muted-foreground">{staff.role}</div>
+                          <div className="text-xs text-muted-foreground">{staff.department} • {staff.id}</div>
+                        </div>
+                      </div>
+                      <div className="space-y-1">
+                        <div className="flex justify-between text-xs">
+                          <span>Tổng lương:</span>
+                          <span className="font-bold text-primary">{formatCurrency(salaryDetail.totalSalary)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>Shows:</span>
+                          <span className="text-blue-600">{formatCurrency(salaryDetail.totalShowEarnings)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>Cộng thêm:</span>
+                          <span className="text-green-600">{formatCurrency(salaryDetail.totalAdditionalCosts)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs">
+                          <span>Trừ bớt:</span>
+                          <span className="text-red-600">{formatCurrency(salaryDetail.totalAdvances)}</span>
+                        </div>
+                        <div className="flex justify-between text-xs pt-1 border-t">
+                          <span>Trạng thái:</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full ${
+                            staffPaymentStatus[staff.id] 
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' 
+                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300'
+                          }`}>
+                            {staffPaymentStatus[staff.id] ? 'Đã chi' : 'Chưa chi'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Closing Tab */}
+      {activeTab === 'closing' && (
+        <div className="space-y-3">
+          {/* Monthly Summary */}
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Chốt sổ Tháng 1/2025</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Revenue Section */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-green-600">📈 Thu nhập</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Doanh thu từ Shows</span>
+                      <span className="font-medium">{formatCurrency(120000000)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Thu ngoài</span>
+                      <span className="font-medium">{formatCurrency(budgetOverview.externalIncome)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Tổng thu</span>
+                      <span className="font-bold text-green-600">{formatCurrency(120000000 + budgetOverview.externalIncome)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Expense Section */}
+                <div className="space-y-3">
+                  <h3 className="font-medium text-sm text-red-600">📉 Chi phí</h3>
+                  <div className="space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm">Chi phí cố định</span>
+                      <span className="font-medium">{formatCurrency(budgetOverview.fixedExpensesTotal)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Chi lương (dự kiến)</span>
+                      <span className="font-medium">{formatCurrency(45000000)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm">Chi Wishlist</span>
+                      <span className="font-medium">{formatCurrency(budgetOverview.wishlistUsed)}</span>
+                    </div>
+                    <div className="flex justify-between border-t pt-2">
+                      <span className="font-medium">Tổng chi</span>
+                      <span className="font-bold text-red-600">{formatCurrency(budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Net Profit */}
+              <div className="mt-4 p-3 bg-muted/30 rounded">
+                <div className="flex justify-between items-center">
+                  <span className="font-medium">Lợi nhuận ròng</span>
+                  <span className={`font-bold text-lg ${
+                    (120000000 + budgetOverview.externalIncome) - (budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed) > 0
+                      ? 'text-green-600' : 'text-red-600'
+                  }`}>
+                    {formatCurrency((120000000 + budgetOverview.externalIncome) - (budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed))}
+                  </span>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Tỷ lệ lợi nhuận: {Math.round(((120000000 + budgetOverview.externalIncome) - (budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed)) / (120000000 + budgetOverview.externalIncome) * 100)}%
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Cash Flow */}
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Dòng tiền</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-sm">Tiền mặt đầu kỳ</span>
+                  <span className="font-medium">{formatCurrency(50000000)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Đã thu trong kỳ</span>
+                  <span className="font-medium text-green-600">+{formatCurrency(95000000)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Thu ngoài trong kỳ</span>
+                  <span className="font-medium text-green-600">+{formatCurrency(budgetOverview.externalIncome)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Chi lương (thực chi)</span>
+                  <span className="font-medium text-red-600">-{formatCurrency(35000000)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-sm">Chi Wishlist (thực chi)</span>
+                  <span className="font-medium text-red-600">-{formatCurrency(budgetOverview.wishlistUsed)}</span>
+                </div>
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium">Tiền mặt hiện tại</span>
+                  <span className="font-bold text-blue-600">{formatCurrency((() => {
+                    // Calculate actual paid salaries based on payment status
+                    const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
+                      if (staffPaymentStatus[staff.id]) {
+                        const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                        return total + salaryDetail.totalSalary;
+                      }
+                      return total;
+                    }, 0);
+                    
+                    return 50000000 + 95000000 + budgetOverview.externalIncome - actualPaidSalaries - budgetOverview.wishlistUsed;
+                  })())}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Tiền mặt cuối kỳ (ước tính)</span>
+                  <span className="font-bold text-purple-600">{formatCurrency(50000000 + 95000000 + budgetOverview.externalIncome - 45000000 - budgetOverview.wishlistUsed)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Outstanding Payments */}
+          <Card>
+            <CardHeader className="pb-1">
+              <CardTitle className="text-sm">Công nợ phải thu</CardTitle>
+            </CardHeader>
+            <CardContent className="p-2">
+              <div className="space-y-2">
+                {[
+                  { customer: 'Công ty ABC', amount: 15000000, dueDate: '2025-02-15', overdue: false },
+                  { customer: 'Anh Minh - Wedding', amount: 8000000, dueDate: '2025-01-30', overdue: true },
+                  { customer: 'Chị Lan - Event', amount: 12000000, dueDate: '2025-02-10', overdue: false }
+                ].map((debt, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 border rounded">
+                    <div>
+                      <div className="font-medium text-sm">{debt.customer}</div>
+                      <div className="text-xs text-muted-foreground">
+                        Hạn: {new Date(debt.dueDate).toLocaleDateString('vi-VN')}
+                        {debt.overdue && <span className="text-red-600 ml-1">(Quá hạn)</span>}
+                      </div>
+                    </div>
+                    <div className={`font-bold ${debt.overdue ? 'text-red-600' : 'text-orange-600'}`}>
+                      {formatCurrency(debt.amount)}
+                    </div>
+                  </div>
+                ))}
+                <div className="flex justify-between border-t pt-2">
+                  <span className="font-medium">Tổng công nợ</span>
+                  <span className="font-bold text-orange-600">{formatCurrency(35000000)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Action Buttons */}
+          <div className="flex gap-2">
+            <Button className="flex-1">
+              <BookOpen className="h-4 w-4 mr-2" />
+              Xuất báo cáo tháng
+            </Button>
+            <Button variant="outline" className="flex-1">
+              <Calendar className="h-4 w-4 mr-2" />
+              So sánh tháng trước
+            </Button>
+          </div>
         </div>
       )}
 
@@ -1722,6 +2513,346 @@ export default function FinancePage() {
                 </Button>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Salary Detail Modal */}
+      {salaryDetailModalOpen && selectedStaffForSalary && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-card border border-border shadow-2xl rounded-lg p-4 w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground">
+                Chi tiết Lương - {staffData.find(s => s.id === selectedStaffForSalary)?.name}
+              </h3>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={closeSalaryDetailModal}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {(() => {
+              const staff = staffData.find(s => s.id === selectedStaffForSalary);
+              const salaryDetail = getStaffSalaryDetails(selectedStaffForSalary, currentYear, selectedMonth);
+              
+              if (!staff) return null;
+
+              return (
+                <div className="space-y-4">
+                  {/* Staff Info */}
+                  <div className="flex items-center gap-3 p-3 bg-muted/30 rounded-lg">
+                    <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-lg font-bold">
+                      {staff.avatar}
+                    </div>
+                    <div>
+                      <h4 className="font-medium">{staff.name}</h4>
+                      <p className="text-sm text-muted-foreground">{staff.role} • {staff.department}</p>
+                      <p className="text-xs text-muted-foreground">{staff.id} • {staff.status}</p>
+                    </div>
+                  </div>
+
+                  {/* Salary Summary */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg text-center">
+                      <p className="text-xs text-muted-foreground">Thu nhập shows</p>
+                      <p className="font-bold text-blue-600">{formatCurrency(salaryDetail.totalShowEarnings)}</p>
+                    </div>
+                    <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg text-center">
+                      <p className="text-xs text-muted-foreground">Cộng Thêm</p>
+                      <p className="font-bold text-green-600">+{formatCurrency(salaryDetail.totalAdditionalCosts)}</p>
+                    </div>
+                    <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg text-center">
+                      <p className="text-xs text-muted-foreground">Trừ Bớt</p>
+                      <p className="font-bold text-red-600">-{formatCurrency(salaryDetail.totalAdvances)}</p>
+                    </div>
+                  </div>
+
+                  {/* Total Salary */}
+                  <div className="p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
+                    <div className="flex justify-between items-center mb-3">
+                      <span className="font-medium">Tổng lương tháng {selectedMonth}:</span>
+                      <span className="text-xl font-bold text-primary">{formatCurrency(salaryDetail.totalSalary)}</span>
+                    </div>
+                    
+                    {/* Payment Status Switch */}
+                    <div className="flex items-center justify-between pt-3 border-t border-primary/20">
+                      <span className="text-sm font-medium">Trạng thái chi trả:</span>
+                      <div className="flex items-center gap-2">
+                        <span className={`text-sm ${!staffPaymentStatus[selectedStaffForSalary] ? 'font-medium' : 'text-muted-foreground'}`}>
+                          Chưa chi
+                        </span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={staffPaymentStatus[selectedStaffForSalary] || false}
+                            onChange={(e) => {
+                              const newStatus = e.target.checked;
+                              setStaffPaymentStatus(prev => ({
+                                ...prev,
+                                [selectedStaffForSalary]: newStatus
+                              }));
+                              
+                              // Update cash flow when payment status changes
+                              // This would affect the "Tiền mặt hiện tại" calculation
+                              // The logic should subtract/add the salary amount from current cash
+                            }}
+                            className="sr-only"
+                          />
+                          <div className={`w-11 h-6 rounded-full transition-colors relative ${
+                            staffPaymentStatus[selectedStaffForSalary] 
+                              ? 'bg-blue-600' 
+                              : 'bg-gray-200 dark:bg-gray-700'
+                          }`}>
+                            <div className={`absolute top-[2px] left-[2px] bg-white border border-gray-300 dark:border-gray-600 rounded-full h-5 w-5 transition-transform ${
+                              staffPaymentStatus[selectedStaffForSalary] 
+                                ? 'translate-x-5' 
+                                : 'translate-x-0'
+                            }`}></div>
+                          </div>
+                        </label>
+                        <span className={`text-sm ${staffPaymentStatus[selectedStaffForSalary] ? 'font-medium' : 'text-muted-foreground'}`}>
+                          Đã chi
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Show Earnings Detail */}
+                  {salaryDetail.showEarnings.length > 0 && (
+                    <div>
+                      <h5 className="font-medium mb-2">Chi tiết Thu nhập từ Shows</h5>
+                      <div className="space-y-2">
+                        {salaryDetail.showEarnings.map((earning, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-muted/30 rounded">
+                            <div>
+                              <p className="font-medium text-sm">{earning.showName}</p>
+                              <p className="text-xs text-muted-foreground">{earning.role} • {earning.date}</p>
+                            </div>
+                            <span className="font-bold text-green-600">{formatCurrency(earning.amount)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Costs Detail */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="font-medium">Chi tiết Cộng Thêm</h5>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAddCostForm(!showAddCostForm)}
+                        className="h-6 text-xs"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Thêm
+                      </Button>
+                    </div>
+                    
+                    {/* Add Cost Form */}
+                    {showAddCostForm && (
+                      <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg mb-2 space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <div>
+                            <Input
+                              placeholder="Loại cộng thêm"
+                              value={newCost.type}
+                              onChange={(e) => setNewCost({...newCost, type: e.target.value})}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              type="number"
+                              placeholder="Số tiền"
+                              value={newCost.amount || ''}
+                              onChange={(e) => setNewCost({...newCost, amount: parseInt(e.target.value) || 0})}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              placeholder="Mô tả"
+                              value={newCost.description}
+                              onChange={(e) => setNewCost({...newCost, description: e.target.value})}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleAddCost}
+                            className="h-6 text-xs"
+                          >
+                            Lưu
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setShowAddCostForm(false);
+                              setNewCost({ type: '', amount: 0, description: '' });
+                            }}
+                            className="h-6 text-xs"
+                          >
+                            Hủy
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Existing Costs */}
+                    {salaryDetail.additionalCosts.length > 0 && (
+                      <div className="space-y-2">
+                        {salaryDetail.additionalCosts.map((cost, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-green-50 dark:bg-green-900/20 rounded">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{cost.type}</p>
+                              <p className="text-xs text-muted-foreground">{cost.description}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-green-600">+{formatCurrency(cost.amount)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteCost(selectedStaffForSalary, index)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Empty state for costs */}
+                    {salaryDetail.additionalCosts.length === 0 && !showAddCostForm && (
+                      <div className="text-center py-3 text-muted-foreground text-xs">
+                        <p>Chưa có khoản cộng thêm nào</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Advances Detail */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="font-medium">Chi tiết Trừ Bớt</h5>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowAddAdvanceForm(!showAddAdvanceForm)}
+                        className="h-6 text-xs"
+                      >
+                        <Plus className="h-3 w-3 mr-1" />
+                        Thêm
+                      </Button>
+                    </div>
+                    
+                    {/* Add Advance Form */}
+                    {showAddAdvanceForm && (
+                      <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-2 space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                          <div>
+                            <Input
+                              placeholder="Loại trừ bớt"
+                              value={newAdvance.type}
+                              onChange={(e) => setNewAdvance({...newAdvance, type: e.target.value})}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              type="number"
+                              placeholder="Số tiền"
+                              value={newAdvance.amount || ''}
+                              onChange={(e) => setNewAdvance({...newAdvance, amount: parseInt(e.target.value) || 0})}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                          <div>
+                            <Input
+                              placeholder="Mô tả"
+                              value={newAdvance.description}
+                              onChange={(e) => setNewAdvance({...newAdvance, description: e.target.value})}
+                              className="h-8 text-xs"
+                            />
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={handleAddAdvance}
+                            className="h-6 text-xs"
+                          >
+                            Lưu
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              setShowAddAdvanceForm(false);
+                              setNewAdvance({ type: '', amount: 0, description: '' });
+                            }}
+                            className="h-6 text-xs"
+                          >
+                            Hủy
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Existing Advances */}
+                    {salaryDetail.advances.length > 0 && (
+                      <div className="space-y-2">
+                        {salaryDetail.advances.map((advance, index) => (
+                          <div key={index} className="flex justify-between items-center p-2 bg-red-50 dark:bg-red-900/20 rounded">
+                            <div className="flex-1">
+                              <p className="font-medium text-sm">{advance.type}</p>
+                              <p className="text-xs text-muted-foreground">{advance.description}</p>
+                              {advance.wishlistId && (
+                                <p className="text-xs text-blue-600">→ Wishlist ID: {advance.wishlistId}</p>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-red-600">-{formatCurrency(advance.amount)}</span>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteAdvance(selectedStaffForSalary, index)}
+                                className="h-6 w-6 p-0 text-red-500 hover:text-red-700 hover:bg-red-50"
+                              >
+                                <X className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Empty state for advances */}
+                    {salaryDetail.advances.length === 0 && !showAddAdvanceForm && (
+                      <div className="text-center py-3 text-muted-foreground text-xs">
+                        <p>Chưa có khoản trừ bớt nào</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* No additional earnings message */}
+                  {salaryDetail.showEarnings.length === 0 && salaryDetail.additionalCosts.length === 0 && salaryDetail.advances.length === 0 && !showAddCostForm && !showAddAdvanceForm && (
+                    <div className="text-center py-6 text-muted-foreground">
+                      <p>Không có dữ liệu lương trong tháng này</p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

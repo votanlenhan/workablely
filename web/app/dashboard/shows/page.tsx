@@ -27,9 +27,16 @@ import {
   Receipt,
   FileText,
   Search,
-  Filter
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
+  Users,
+  Hash
 } from 'lucide-react';
 import { DatePickerInput } from '@/components/ui/date-picker';
+import { calculateDeadline } from '@/lib/system-variables';
+import { useYear } from '@/lib/year-context';
 
 interface Payment {
   id: string;
@@ -53,12 +60,15 @@ interface AuditLog {
 
 interface Show {
   id: string;
+  stt: number;
   shootDate: string;
-  deliveryDate: string;
+  deadline: string;
   shootTime: string;
   customer: string;
   phone: string;
   price: number;
+  discount: number;
+  finalPrice: number;
   deposit: number;
   paid: number;
   type: string;
@@ -70,6 +80,8 @@ interface Show {
   retouch: string;
   status: 'Chờ tới ngày chụp' | 'Chờ design' | 'Đang design' | 'Hoàn thành';
   designStatus: 'Not Started' | 'Waiting' | 'Blend: Work in Progress' | 'Retouch: Work in Progress' | 'Video: Work in Progress' | 'Done/Archived';
+  khuVuc: string;
+  soTho: number;
   payments: Payment[];
   auditLogs: AuditLog[];
   totalCollected: number;
@@ -77,195 +89,18 @@ interface Show {
   paymentStatus: 'Chưa thanh toán' | 'Còn nợ' | 'Đã thanh toán đủ';
 }
 
-const showsData: Show[] = [
-  {
-    id: 'SH001',
-    shootDate: '2025-01-05',
-    deliveryDate: '2025-01-20',
-    shootTime: 'Sáng',
-    customer: 'TT Gia Nghĩa',
-    phone: '',
-    price: 1750000,
-    deposit: 1000000,
-    paid: 1750000,
-    type: 'Chụp TT',
-    key: 'Đạt',
-    support1: 'Đạt',
-    support2: '',
-    selective: '',
-    blend: '',
-    retouch: '',
-    status: 'Hoàn thành',
-    designStatus: 'Done/Archived',
-    payments: [
-      {
-        id: 'p1',
-        amount: 1000000,
-        date: '2024-12-20',
-        type: 'deposit',
-        description: 'Tiền cọc đặt lịch',
-        recordedBy: 'Admin',
-        recordedAt: '2024-12-20T10:30:00Z'
-      },
-      {
-        id: 'p2',
-        amount: 750000,
-        date: '2025-01-05',
-        type: 'final',
-        description: 'Thanh toán cuối khi giao hàng',
-        recordedBy: 'Admin',
-        recordedAt: '2025-01-05T15:45:00Z'
-      }
-    ],
-    auditLogs: [
-      {
-        id: 'a1',
-        field: 'status',
-        oldValue: 'Chờ design',
-        newValue: 'Hoàn thành',
-        changedBy: 'Admin',
-        changedAt: '2025-01-05T16:00:00Z',
-        description: 'Cập nhật trạng thái hoàn thành'
-      },
-      {
-        id: 'a2',
-        field: 'key',
-        oldValue: 'An',
-        newValue: 'Đạt',
-        changedBy: 'Manager',
-        changedAt: '2024-12-25T09:15:00Z',
-        description: 'Thay đổi photographer chính'
-      }
-    ],
-    totalCollected: 1750000,
-    amountDue: 0,
-    paymentStatus: 'Đã thanh toán đủ'
-  },
-  {
-    id: 'SH002',
-    shootDate: '2025-01-08',
-    deliveryDate: '2025-01-24',
-    shootTime: 'Cả ngày',
-    customer: 'YEP Thanh Mai',
-    phone: '',
-    price: 2560000,
-    deposit: 1000000,
-    paid: 2560000,
-    type: 'Event',
-    key: 'Đạt',
-    support1: 'An',
-    support2: '',
-    selective: '',
-    blend: '',
-    retouch: '',
-    status: 'Hoàn thành',
-    designStatus: 'Done/Archived',
-    payments: [],
-    auditLogs: [],
-    totalCollected: 2560000,
-    amountDue: 0,
-    paymentStatus: 'Đã thanh toán đủ'
-  },
-  {
-    id: 'SH003',
-    shootDate: '2025-01-10',
-    deliveryDate: '2025-01-24',
-    shootTime: 'Chiều',
-    customer: 'YEP SG',
-    phone: '',
-    price: 4600000,
-    deposit: 1500000,
-    paid: 1500000,
-    type: 'Event',
-    key: 'Đạt',
-    support1: 'Huy',
-    support2: '',
-    selective: '',
-    blend: '',
-    retouch: '',
-    status: 'Chờ design',
-    designStatus: 'Blend: Work in Progress',
-    payments: [
-      {
-        id: 'p3',
-        amount: 1500000,
-        date: '2025-01-08',
-        type: 'deposit',
-        description: 'Tiền cọc 50%',
-        recordedBy: 'Manager',
-        recordedAt: '2025-01-08T14:20:00Z'
-      }
-    ],
-    auditLogs: [
-      {
-        id: 'a3',
-        field: 'status',
-        oldValue: 'Chờ tới ngày chụp',
-        newValue: 'Chờ design',
-        changedBy: 'Manager',
-        changedAt: '2025-01-10T18:30:00Z',
-        description: 'Hoàn thành buổi chụp'
-      }
-    ],
-    totalCollected: 1500000,
-    amountDue: 3100000,
-    paymentStatus: 'Còn nợ'
-  },
-  {
-    id: 'SH004',
-    shootDate: '2025-01-12',
-    deliveryDate: '2025-01-12',
-    customer: '12A8 THPT Cao Ba Quát',
-    phone: '',
-    price: 4720000,
-    deposit: 1000000,
-    paid: 1000000,
-    type: 'Chụp K.Y',
-    key: 'Huy Lớn',
-    support1: 'A Phúc',
-    support2: 'An',
-    selective: '',
-    blend: '',
-    retouch: '',
-    status: 'Chờ design',
-    designStatus: 'Retouch: Work in Progress',
-    payments: [],
-    auditLogs: [],
-    totalCollected: 1000000,
-    amountDue: 3720000,
-    paymentStatus: 'Còn nợ'
-  },
-  {
-    id: 'SH005',
-    shootDate: '2025-01-12',
-    deliveryDate: '2025-01-21',
-    customer: '12A5 Cao Nguyên (Chụp)',
-    phone: '',
-    price: 4830000,
-    deposit: 3150000,
-    paid: 1680000,
-    type: 'Chụp K.Y',
-    key: 'Đạt',
-    support1: 'Long',
-    support2: 'Lai',
-    selective: '',
-    blend: '',
-    retouch: '',
-    status: 'Chờ design',
-    designStatus: 'Blend: Work in Progress',
-    payments: [],
-    auditLogs: [],
-    totalCollected: 1680000,
-    amountDue: 3150000,
-    paymentStatus: 'Còn nợ'
-  },
+const getShowsData = (year: number): Show[] => [
   {
     id: 'SH006',
-    shootDate: '2025-01-18',
-    deliveryDate: '2025-01-24',
+    stt: 6,
+    shootDate: `${year}-01-18`,
+    deadline: `${year}-01-24`,
+    shootTime: 'Cả ngày',
     customer: '12A12 THPT Chu Văn An',
     phone: '',
     price: 6800000,
+    discount: 0,
+    finalPrice: 6800000,
     deposit: 3500000,
     paid: 3300000,
     type: 'Chụp K.Y',
@@ -277,19 +112,229 @@ const showsData: Show[] = [
     retouch: '',
     status: 'Chờ tới ngày chụp',
     designStatus: 'Not Started',
+    khuVuc: 'Huyện Eakar',
+    soTho: 4,
     payments: [],
     auditLogs: [],
     totalCollected: 3300000,
     amountDue: 3500000,
     paymentStatus: 'Còn nợ'
+  },
+  {
+    id: 'SH005',
+    stt: 5,
+    shootDate: `${year}-01-12`,
+    deadline: `${year}-01-21`,
+    shootTime: 'Chiều',
+    customer: '12A5 Cao Nguyên (Chụp)',
+    phone: '',
+    price: 4830000,
+    discount: 300000,
+    finalPrice: 4530000,
+    deposit: 3150000,
+    paid: 1680000,
+    type: 'Chụp K.Y',
+    key: 'Đạt',
+    support1: 'Long',
+    support2: 'Lai',
+    selective: '',
+    blend: '',
+    retouch: '',
+    khuVuc: 'Huyện Eakar',
+    soTho: 3,
+    status: 'Chờ design',
+    designStatus: 'Blend: Work in Progress',
+    payments: [],
+    auditLogs: [],
+    totalCollected: 1680000,
+    amountDue: 3150000,
+    paymentStatus: 'Còn nợ'
+  },
+  {
+    id: 'SH004',
+    stt: 4,
+    shootDate: `${year}-01-12`,
+    deadline: `${year}-01-12`,
+    shootTime: 'Sáng',
+    customer: '12A8 THPT Cao Ba Quát',
+    phone: '',
+    price: 4720000,
+    discount: 0,
+    finalPrice: 4720000,
+    deposit: 1000000,
+    paid: 1000000,
+    type: 'Chụp K.Y',
+    key: 'Huy Lớn',
+    support1: 'A Phúc',
+    support2: 'An',
+    selective: '',
+    blend: '',
+    retouch: '',
+    status: 'Chờ design',
+    designStatus: 'Retouch: Work in Progress',
+    khuVuc: 'Huyện Eakar',
+    soTho: 5,
+    payments: [],
+    auditLogs: [],
+    totalCollected: 1000000,
+    amountDue: 3720000,
+    paymentStatus: 'Còn nợ'
+  },
+  {
+    id: 'SH003',
+    stt: 3,
+    shootDate: `${year}-01-10`,
+    deadline: `${year}-01-24`,
+    shootTime: 'Chiều',
+    customer: 'YEP SG',
+    phone: '',
+    price: 4600000,
+    discount: 200000,
+    finalPrice: 4400000,
+    deposit: 1500000,
+    paid: 1500000,
+    type: 'Event',
+    key: 'Đạt',
+    support1: 'Huy',
+    support2: '',
+    selective: '',
+    blend: '',
+    retouch: '',
+    status: 'Chờ design',
+    designStatus: 'Blend: Work in Progress',
+    khuVuc: 'Huyện Eakar',
+    soTho: 4,
+    payments: [
+      {
+        id: 'p3',
+        amount: 1500000,
+        date: `${year}-01-08`,
+        type: 'deposit',
+        description: 'Tiền cọc 50%',
+        recordedBy: 'Manager',
+        recordedAt: `${year}-01-08T14:20:00Z`
+      }
+    ],
+    auditLogs: [
+      {
+        id: 'a3',
+        field: 'status',
+        oldValue: 'Chờ tới ngày chụp',
+        newValue: 'Chờ design',
+        changedBy: 'Manager',
+        changedAt: `${year}-01-10T18:30:00Z`,
+        description: 'Hoàn thành buổi chụp'
+      }
+    ],
+    totalCollected: 1500000,
+    amountDue: 3100000,
+    paymentStatus: 'Còn nợ'
+  },
+  {
+    id: 'SH002',
+    stt: 2,
+    shootDate: `${year}-01-08`,
+    deadline: `${year}-01-24`,
+    shootTime: 'Cả ngày',
+    customer: 'YEP Thanh Mai',
+    phone: '',
+    price: 2560000,
+    discount: 60000,
+    finalPrice: 2500000,
+    deposit: 1000000,
+    paid: 2500000,
+    type: 'Event',
+    key: 'Đạt',
+    support1: 'An',
+    support2: '',
+    selective: '',
+    blend: '',
+    retouch: '',
+    status: 'Hoàn thành',
+    designStatus: 'Done/Archived',
+    khuVuc: 'Huyện Eakar',
+    soTho: 3,
+    payments: [],
+    auditLogs: [],
+    totalCollected: 2500000,
+    amountDue: 0,
+    paymentStatus: 'Đã thanh toán đủ'
+  },
+  {
+    id: 'SH001',
+    stt: 1,
+    shootDate: `${year}-01-05`,
+    deadline: `${year}-01-20`,
+    shootTime: 'Sáng',
+    customer: 'TT Gia Nghĩa',
+    phone: '',
+    price: 1750000,
+    discount: 0,
+    finalPrice: 1750000,
+    deposit: 1000000,
+    paid: 1750000,
+    type: 'Chụp TT',
+    key: 'Đạt',
+    support1: 'Đạt',
+    support2: '',
+    selective: '',
+    blend: '',
+    retouch: '',
+    status: 'Hoàn thành',
+    designStatus: 'Done/Archived',
+    khuVuc: 'Huyện Eakar',
+    soTho: 2,
+    payments: [
+      {
+        id: 'p1',
+        amount: 1000000,
+        date: `${year-1}-12-20`,
+        type: 'deposit',
+        description: 'Tiền cọc đặt lịch',
+        recordedBy: 'Admin',
+        recordedAt: `${year-1}-12-20T10:30:00Z`
+      },
+      {
+        id: 'p2',
+        amount: 750000,
+        date: `${year}-01-05`,
+        type: 'final',
+        description: 'Thanh toán cuối khi giao hàng',
+        recordedBy: 'Admin',
+        recordedAt: `${year}-01-05T15:45:00Z`
+      }
+    ],
+    auditLogs: [
+      {
+        id: 'a1',
+        field: 'status',
+        oldValue: 'Chờ design',
+        newValue: 'Hoàn thành',
+        changedBy: 'Admin',
+        changedAt: `${year}-01-05T16:00:00Z`,
+        description: 'Cập nhật trạng thái hoàn thành'
+      },
+      {
+        id: 'a2',
+        field: 'key',
+        oldValue: 'An',
+        newValue: 'Đạt',
+        changedBy: 'Manager',
+        changedAt: `${year-1}-12-25T09:15:00Z`,
+        description: 'Thay đổi photographer chính'
+      }
+    ],
+    totalCollected: 1750000,
+    amountDue: 0,
+    paymentStatus: 'Đã thanh toán đủ'
   }
 ];
 
 // Calendar Component
-function CalendarView({ shows }: { shows: Show[] }) {
+function CalendarView({ shows, onShowClick }: { shows: Show[], onShowClick: (showId: string) => void }) {
   const today = new Date();
-  const currentMonth = today.getMonth();
-  const currentYear = today.getFullYear();
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
   
   const getDaysInMonth = (month: number, year: number) => {
     return new Date(year, month + 1, 0).getDate();
@@ -308,52 +353,169 @@ function CalendarView({ shows }: { shows: Show[] }) {
     const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     return shows.filter(show => show.shootDate === dateStr);
   };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    if (direction === 'prev') {
+      if (currentMonth === 0) {
+        setCurrentMonth(11);
+        setCurrentYear(currentYear - 1);
+      } else {
+        setCurrentMonth(currentMonth - 1);
+      }
+    } else {
+      if (currentMonth === 11) {
+        setCurrentMonth(0);
+        setCurrentYear(currentYear + 1);
+      } else {
+        setCurrentMonth(currentMonth + 1);
+      }
+    }
+  };
+
+  const goToToday = () => {
+    setCurrentMonth(today.getMonth());
+    setCurrentYear(today.getFullYear());
+  };
+
+  const monthNames = [
+    'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+    'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+  ];
   
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle className="text-sm flex items-center gap-2">
-          <CalendarDays className="h-4 w-4" />
-          Lịch Shows - Tháng {currentMonth + 1}/{currentYear}
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <CalendarDays className="h-4 w-4" />
+            Lịch Shows
+          </CardTitle>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goToToday}
+              className="h-7 text-xs"
+            >
+              Hôm nay
+            </Button>
+          </div>
+        </div>
+        <div className="flex items-center justify-between mt-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateMonth('prev')}
+              className="h-7 w-7 p-0"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <h3 className="text-lg font-semibold min-w-[140px] text-center">
+              {monthNames[currentMonth]} {currentYear}
+            </h3>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigateMonth('next')}
+              className="h-7 w-7 p-0"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="p-2">
-        <div className="grid grid-cols-7 gap-1 text-xs">
+        <div className="bg-border rounded-lg overflow-hidden">
           {/* Header */}
-          {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
-            <div key={day} className="p-2 text-center font-medium text-muted-foreground">
-              {day}
-            </div>
-          ))}
+          <div className="grid grid-cols-7 gap-px">
+            {['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].map(day => (
+              <div key={day} className="p-2 text-center font-medium text-muted-foreground bg-muted/50 text-xs">
+                {day}
+              </div>
+            ))}
+          </div>
           
-          {/* Empty days */}
-          {emptyDays.map((_, index) => (
-            <div key={`empty-${index}`} className="p-2 h-20"></div>
-          ))}
-          
-          {/* Days with shows */}
-          {days.map(day => {
-            const dayShows = getShowsForDate(day);
-            const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+          {/* Calendar Body */}
+          <div className="grid grid-cols-7 gap-px">
+            {/* Empty days */}
+            {emptyDays.map((_, index) => (
+              <div key={`empty-${index}`} className="p-2 min-h-[120px] bg-background"></div>
+            ))}
             
-            return (
-              <div key={day} className={`p-1 h-20 border rounded text-xs ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
-                <div className={`font-medium mb-1 ${isToday ? 'text-blue-600' : ''}`}>
-                  {day}
-                </div>
-                <div className="space-y-1">
-                  {dayShows.slice(0, 2).map(show => (
-                    <div key={show.id} className="p-1 bg-green-100 dark:bg-green-900/30 rounded text-xs truncate">
-                      {show.customer}
-                    </div>
-                  ))}
-                  {dayShows.length > 2 && (
-                    <div className="text-xs text-muted-foreground">+{dayShows.length - 2} khác</div>
-                  )}
+            {/* Days with shows */}
+            {days.map(day => {
+              const dayShows = getShowsForDate(day);
+              const isToday = day === today.getDate() && currentMonth === today.getMonth() && currentYear === today.getFullYear();
+              const isCurrentMonth = true;
+              
+              return (
+                <div key={day} className={`p-2 min-h-[120px] bg-background hover:bg-muted/30 transition-colors cursor-pointer ${isToday ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}>
+                  <div className={`font-medium mb-1 text-xs ${isToday ? 'text-blue-600 font-bold' : isCurrentMonth ? 'text-foreground' : 'text-muted-foreground'}`}>
+                    {day}
+                  </div>
+                  <div className="space-y-1">
+                    {dayShows.map(show => {
+                    const getStatusColor = (status: string) => {
+                      switch (status) {
+                        case 'Chờ tới ngày chụp': return 'bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 border-gray-400';
+                        case 'Chờ design': return 'bg-gray-900/10 dark:bg-gray-100/10 text-gray-900 dark:text-gray-100 border-gray-900 dark:border-gray-100';
+                        case 'Đang design': return 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-200 border-blue-500';
+                        case 'Hoàn thành': return 'bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-200 border-green-500';
+                        default: return 'bg-gray-100 dark:bg-gray-900/40 text-gray-800 dark:text-gray-200 border-gray-500';
+                      }
+                    };
+
+                    const formatCurrency = (amount: number) => {
+                      return new Intl.NumberFormat('vi-VN').format(amount);
+                    };
+
+                    return (
+                      <div 
+                        key={show.id} 
+                        className={`px-1 py-1 rounded text-xs border-l-2 cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(show.status)}`}
+                        onClick={() => onShowClick(show.id)}
+                        title={`${show.customer} - ${show.type}\nGiờ: ${show.shootTime}\nGiá: ${formatCurrency(show.price)} VND\nKey: ${show.key || 'Chưa gán'}\nTrạng thái: ${show.status}`}
+                      >
+                        <div className="font-medium truncate">{show.customer}</div>
+                        <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                          <Clock className="h-2.5 w-2.5" />
+                          {show.shootTime || 'Chưa xác định'}
+                        </div>
+                        <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                          <Camera className="h-2.5 w-2.5" />
+                          {show.type}
+                        </div>
+                        <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                          <User className="h-2.5 w-2.5" />
+                          {show.key || 'Chưa gán'}
+                        </div>
+                        {(show.support1 || show.support2) && (
+                          <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                            <Users className="h-2.5 w-2.5" />
+                            {[show.support1, show.support2].filter(Boolean).join(', ')}
+                          </div>
+                        )}
+                        <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                          <Kanban className="h-2.5 w-2.5" />
+                          {show.designStatus}
+                        </div>
+                        <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                          <Users className="h-2.5 w-2.5" />
+                          {show.soTho} thợ
+                        </div>
+                        <div className="text-xs opacity-75 truncate flex items-center gap-1">
+                          <MapPin className="h-2.5 w-2.5" />
+                          {show.khuVuc}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
+          </div>
         </div>
       </CardContent>
     </Card>
@@ -361,70 +523,212 @@ function CalendarView({ shows }: { shows: Show[] }) {
 }
 
 // Design Board Component
-function DesignBoard({ shows, onUpdateShow }: { shows: Show[], onUpdateShow: (id: string, updates: Partial<Show>) => void }) {
+function DesignBoard({ shows, onUpdateShow, onShowClick }: { shows: Show[], onUpdateShow: (id: string, updates: Partial<Show>) => void, onShowClick: (showId: string) => void }) {
   const stages = [
-    { id: 'Not Started', title: 'Chưa bắt đầu', color: 'bg-gray-100 dark:bg-gray-800' },
-    { id: 'Waiting', title: 'Chờ xử lý', color: 'bg-red-100 dark:bg-red-900/30' },
-    { id: 'Blend: Work in Progress', title: 'Blend: Đang xử lý', color: 'bg-orange-100 dark:bg-orange-900/30' },
-    { id: 'Retouch: Work in Progress', title: 'Retouch: Đang xử lý', color: 'bg-orange-100 dark:bg-orange-900/30' },
-    { id: 'Video: Work in Progress', title: 'Video: Đang xử lý', color: 'bg-orange-100 dark:bg-orange-900/30' },
-    { id: 'Done/Archived', title: 'Hoàn thành', color: 'bg-green-100 dark:bg-green-900/30' }
+    { 
+      id: 'Not Started', 
+      title: 'Chưa bắt đầu', 
+      color: 'bg-gray-50 dark:bg-gray-900/50',
+      headerColor: 'text-gray-700 dark:text-gray-300',
+      count: 0
+    },
+    { 
+      id: 'Waiting', 
+      title: 'Chờ xử lý', 
+      color: 'bg-red-50 dark:bg-red-900/20',
+      headerColor: 'text-red-700 dark:text-red-300',
+      count: 0
+    },
+    { 
+      id: 'Blend: Work in Progress', 
+      title: 'Blend', 
+      color: 'bg-orange-50 dark:bg-orange-900/20',
+      headerColor: 'text-orange-700 dark:text-orange-300',
+      count: 0
+    },
+    { 
+      id: 'Retouch: Work in Progress', 
+      title: 'Retouch', 
+      color: 'bg-yellow-50 dark:bg-yellow-900/20',
+      headerColor: 'text-yellow-700 dark:text-yellow-300',
+      count: 0
+    },
+    { 
+      id: 'Video: Work in Progress', 
+      title: 'Video', 
+      color: 'bg-purple-50 dark:bg-purple-900/20',
+      headerColor: 'text-purple-700 dark:text-purple-300',
+      count: 0
+    },
+    { 
+      id: 'Done/Archived', 
+      title: 'Hoàn thành', 
+      color: 'bg-green-50 dark:bg-green-900/20',
+      headerColor: 'text-green-700 dark:text-green-300',
+      count: 0
+    }
   ];
   
   const getShowsForStage = (stageId: string) => {
     return shows.filter(show => show.designStatus === stageId);
   };
+
+  // Update counts
+  stages.forEach(stage => {
+    stage.count = getShowsForStage(stage.id).length;
+  });
   
   const handleDragStart = (e: React.DragEvent, showId: string) => {
     e.dataTransfer.setData('text/plain', showId);
+    e.currentTarget.classList.add('opacity-50');
+  };
+
+  const handleDragEnd = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('opacity-50');
   };
   
   const handleDrop = (e: React.DragEvent, stageId: string) => {
     e.preventDefault();
     const showId = e.dataTransfer.getData('text/plain');
     onUpdateShow(showId, { designStatus: stageId as Show['designStatus'] });
+    
+    // Remove drag over styling
+    e.currentTarget.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
   };
   
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
+    e.currentTarget.classList.add('ring-2', 'ring-blue-500', 'ring-opacity-50');
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.currentTarget.classList.remove('ring-2', 'ring-blue-500', 'ring-opacity-50');
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'Chờ tới ngày chụp': return 'bg-gray-100 text-gray-700 dark:bg-gray-800/60 dark:text-gray-300';
+      case 'Chờ design': return 'bg-gray-900/10 text-gray-900 dark:bg-gray-100/10 dark:text-gray-100';
+      case 'Đang design': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'Hoàn thành': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
   };
   
   return (
     <Card>
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-3">
         <CardTitle className="text-sm flex items-center gap-2">
           <Kanban className="h-4 w-4" />
           Bảng Tiến trình Design
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-2">
-        <div className="grid grid-cols-6 gap-2">
+      <CardContent className="p-3">
+        <div className="grid grid-cols-6 gap-3">
           {stages.map(stage => (
             <div 
               key={stage.id}
-              className={`p-2 rounded-lg min-h-[400px] ${stage.color}`}
+              className={`rounded-lg min-h-[500px] transition-all duration-200 ${stage.color}`}
               onDrop={(e) => handleDrop(e, stage.id)}
               onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
             >
-              <h3 className="font-medium text-xs mb-2 text-center">{stage.title}</h3>
-              <div className="space-y-2">
+              {/* Column Header */}
+              <div className="p-3 border-b border-border/50">
+                <div className="flex items-center justify-between">
+                  <h3 className={`font-semibold text-sm ${stage.headerColor}`}>
+                    {stage.title}
+                  </h3>
+                  <span className={`text-xs px-2 py-1 rounded-full bg-white/50 dark:bg-black/20 ${stage.headerColor}`}>
+                    {stage.count}
+                  </span>
+                </div>
+              </div>
+
+              {/* Cards Container */}
+              <div className="p-2 space-y-2">
                 {getShowsForStage(stage.id).map(show => (
                   <div
                     key={show.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, show.id)}
-                    className="p-2 bg-white dark:bg-gray-800 rounded shadow-sm cursor-move hover:shadow-md transition-shadow"
+                    onDragEnd={handleDragEnd}
+                    onClick={() => onShowClick(show.id)}
+                    className="group p-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-border/50 cursor-pointer hover:shadow-md hover:scale-[1.02] transition-all duration-200"
                   >
-                    <div className="font-medium text-xs truncate">{show.customer}</div>
-                    <div className="text-xs text-muted-foreground">{show.type}</div>
-                    <div className="text-xs text-muted-foreground">
-                      Key: {show.key || '-'}
+                    {/* Card Header */}
+                    <div className="flex items-start justify-between mb-2">
+                      <h4 className="font-medium text-sm text-foreground truncate flex-1">
+                        #{show.stt} - {show.customer}
+                      </h4>
+                      <span className={`text-xs px-2 py-1 rounded-full ml-2 ${getStatusColor(show.status)}`}>
+                        {show.status}
+                      </span>
                     </div>
-                    <div className="text-xs text-blue-600">
-                      Giao: {new Date(show.deliveryDate).toLocaleDateString('vi-VN')}
+
+                    {/* Card Content */}
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{show.shootTime || 'Chưa xác định'}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <Camera className="h-3 w-3" />
+                        <span>{show.type}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        <span>Key: {show.key || 'Chưa phân'}</span>
+                      </div>
+                      
+                      {(show.support1 || show.support2) && (
+                        <div className="flex items-center gap-1">
+                          <Users className="h-3 w-3" />
+                          <span>SP: {[show.support1, show.support2].filter(Boolean).join(', ')}</span>
+                        </div>
+                      )}
+
+                      <div className="flex items-center gap-1">
+                        <Kanban className="h-3 w-3" />
+                        <span>{show.designStatus}</span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>{show.soTho} thợ</span>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <MapPin className="h-3 w-3" />
+                        <span>{show.khuVuc}</span>
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="mt-2 pt-2 border-t border-border/30">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(show.shootDate).toLocaleDateString('vi-VN')}
+                        </span>
+                        <span className="text-xs font-medium text-green-600">
+                          {(show.price / 1000000).toFixed(1)}M
+                        </span>
+                      </div>
                     </div>
                   </div>
                 ))}
+
+                {/* Empty State */}
+                {getShowsForStage(stage.id).length === 0 && (
+                  <div className="p-4 text-center text-muted-foreground text-xs">
+                    <div className="w-8 h-8 mx-auto mb-2 rounded-full bg-muted/50 flex items-center justify-center">
+                      <Plus className="h-4 w-4" />
+                    </div>
+                    Chưa có show nào
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -435,7 +739,8 @@ function DesignBoard({ shows, onUpdateShow }: { shows: Show[], onUpdateShow: (id
 }
 
 export default function ShowsPage() {
-  const [shows, setShows] = useState<Show[]>(showsData);
+  const { currentYear } = useYear();
+  const [shows, setShows] = useState<Show[]>(getShowsData(currentYear));
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingShow, setEditingShow] = useState<Show | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -447,14 +752,18 @@ export default function ShowsPage() {
 
   const [newShow, setNewShow] = useState({
     shootDate: new Date().toISOString().split('T')[0],
-    deliveryDate: new Date().toISOString().split('T')[0],
+    deadline: calculateDeadline(new Date().toISOString().split('T')[0], 'Chụp TT'),
     shootTime: '',
     customer: '',
     phone: '',
     price: 0,
+    discount: 0,
+    finalPrice: 0,
     deposit: 0,
     paid: 0,
     type: 'Chụp TT',
+    khuVuc: 'Huyện Eakar',
+    soTho: 1,
     key: '',
     support1: '',
     support2: '',
@@ -474,7 +783,12 @@ export default function ShowsPage() {
   // Payment editing state
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
 
-  // Auto-update status based on shoot date
+  // Update shows data when year changes
+  useEffect(() => {
+    setShows(getShowsData(currentYear));
+  }, [currentYear]);
+
+  // Auto-update status based on shoot date and design status
   useEffect(() => {
     const updateStatuses = () => {
       const today = new Date();
@@ -486,20 +800,25 @@ export default function ShowsPage() {
           shootDate.setHours(0, 0, 0, 0);
           
           let newStatus = show.status;
-          let newDesignStatus = show.designStatus;
           
-          if (shootDate > today && show.status !== 'Hoàn thành') {
+          // Logic tự động tính trạng thái
+          if (shootDate > today) {
+            // Chưa tới ngày chụp
             newStatus = 'Chờ tới ngày chụp';
-            newDesignStatus = 'Not Started';
-          } else if (shootDate <= today && show.status === 'Chờ tới ngày chụp') {
-            newStatus = 'Chờ design';
-            newDesignStatus = 'Waiting';
+          } else if (shootDate <= today) {
+            // Đã tới hoặc qua ngày chụp
+            if (show.designStatus === 'Done/Archived') {
+              newStatus = 'Hoàn thành';
+            } else if (['Blend: Work in Progress', 'Retouch: Work in Progress', 'Video: Work in Progress'].includes(show.designStatus)) {
+              newStatus = 'Đang design';
+            } else {
+              newStatus = 'Chờ design';
+            }
           }
           
           return {
             ...show,
-            status: newStatus,
-            designStatus: newDesignStatus
+            status: newStatus
           };
         })
       );
@@ -528,7 +847,11 @@ export default function ShowsPage() {
 
   const handleCreateShow = () => {
     if (newShow.customer && newShow.price > 0) {
-      const id = `SH${String(shows.length + 1).padStart(3, '0')}`;
+      // Calculate next STT (highest STT + 1)
+      const maxStt = shows.length > 0 ? Math.max(...shows.map(s => s.stt)) : 0;
+      const nextStt = maxStt + 1;
+      const id = `SH${String(nextStt).padStart(3, '0')}`;
+      
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const shootDate = new Date(newShow.shootDate);
@@ -539,6 +862,7 @@ export default function ShowsPage() {
       
       const show: Show = {
         id,
+        stt: nextStt,
         ...newShow,
         status: status as Show['status'],
         designStatus: designStatus as Show['designStatus'],
@@ -548,17 +872,23 @@ export default function ShowsPage() {
         amountDue: newShow.price,
         paymentStatus: 'Chưa thanh toán'
       };
-      setShows([...shows, show]);
+      
+      // Add new show at the beginning (newest first)
+      setShows([show, ...shows]);
       setNewShow({
         shootDate: new Date().toISOString().split('T')[0],
-        deliveryDate: new Date().toISOString().split('T')[0],
+        deadline: calculateDeadline(new Date().toISOString().split('T')[0], 'Chụp TT'),
         shootTime: '',
         customer: '',
         phone: '',
         price: 0,
+        discount: 0,
+        finalPrice: 0,
         deposit: 0,
         paid: 0,
         type: 'Chụp TT',
+        khuVuc: 'Huyện Eakar',
+        soTho: 1,
         key: '',
         support1: '',
         support2: '',
@@ -601,12 +931,14 @@ export default function ShowsPage() {
           { key: 'price', label: 'Giá' },
           { key: 'type', label: 'Loại show' },
           { key: 'shootDate', label: 'Ngày chụp' },
-          { key: 'deliveryDate', label: 'Ngày giao' },
+          { key: 'deadline', label: 'Deadline' },
           { key: 'shootTime', label: 'Thời gian' },
+          { key: 'khuVuc', label: 'Khu vực' },
+          { key: 'soTho', label: 'Số thợ' },
           { key: 'key', label: 'Key' },
           { key: 'support1', label: 'SP1' },
           { key: 'support2', label: 'SP2' },
-          { key: 'selective', label: 'Culling' },
+          { key: 'selective', label: 'Pick' },
           { key: 'blend', label: 'Blend' },
           { key: 'retouch', label: 'Retouch' },
           { key: 'status', label: 'Trạng thái' },
@@ -822,13 +1154,14 @@ export default function ShowsPage() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'Hoàn thành':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
+      case 'Chờ tới ngày chụp':
+        return 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300';
       case 'Chờ design':
+        return 'bg-gray-900/10 text-gray-900 dark:bg-gray-100/10 dark:text-gray-100';
       case 'Đang design':
         return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'Chờ tới ngày chụp':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300';
+      case 'Hoàn thành':
+        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
       default:
         return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
     }
@@ -845,10 +1178,13 @@ export default function ShowsPage() {
     const matchesSearch = searchTerm === '' || 
       show.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
       show.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      show.stt.toString().includes(searchTerm) ||
       show.phone.includes(searchTerm) ||
       show.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
       show.support1.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      show.support2.toLowerCase().includes(searchTerm.toLowerCase());
+      show.support2.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      show.khuVuc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      show.soTho.toString().includes(searchTerm);
     
     const matchesStatus = statusFilter === 'all' || show.status === statusFilter;
     const matchesType = typeFilter === 'all' || show.type === typeFilter;
@@ -881,8 +1217,8 @@ export default function ShowsPage() {
       <Tabs defaultValue="list" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="list" className="text-xs">Danh sách Shows</TabsTrigger>
-          <TabsTrigger value="calendar" className="text-xs">Lịch</TabsTrigger>
-          <TabsTrigger value="board" className="text-xs">Bảng Design</TabsTrigger>
+                      <TabsTrigger value="calendar" className="text-xs">Lịch Đi Làm</TabsTrigger>
+                      <TabsTrigger value="board" className="text-xs">Tiến Độ Design</TabsTrigger>
         </TabsList>
         
         <TabsContent value="list" className="space-y-3">
@@ -901,7 +1237,7 @@ export default function ShowsPage() {
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                     <Input
-                      placeholder="Tìm kiếm theo tên khách hàng, ID, SĐT, Key, SP..."
+                      placeholder="Tìm kiếm theo STT, tên khách hàng, ID, SĐT, Key, SP, khu vực, số thợ..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="h-8 text-sm pl-7"
@@ -936,16 +1272,20 @@ export default function ShowsPage() {
               </div>
               
               <div className="admin-table-container">
-                <div className="admin-table">
+                <div className="space-y-1">
                   {/* Table Header */}
-                  <div className="admin-table-header shows-table-grid">
+                  <div className="shows-table-grid text-xs font-medium text-muted-foreground border-b pb-1">
+                  <div className="flex items-center gap-1">
+                    <Hash className="h-3 w-3" />
+                    STT
+                  </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
                     Ngày chụp
                   </div>
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    Ngày giao
+                    Deadline
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
@@ -955,13 +1295,21 @@ export default function ShowsPage() {
                     <User className="h-3 w-3" />
                     Khách hàng
                   </div>
-                  <div>SĐT</div>
                   <div>Giá</div>
+                  <div>% Discount</div>
                   <div>Loại</div>
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-3 w-3" />
+                    Khu vực
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Users className="h-3 w-3" />
+                    Số thợ
+                  </div>
                   <div>Key</div>
                   <div>SP1</div>
                   <div>SP2</div>
-                  <div>Culling</div>
+                  <div>Pick</div>
                   <div>Blend</div>
                   <div>Retouch</div>
                   <div>Trạng thái</div>
@@ -976,57 +1324,81 @@ export default function ShowsPage() {
                     <div key={show.id}>
                       {/* Desktop Table Layout */}
                       <div 
-                        className="admin-table-row shows-table-grid cursor-pointer hover:bg-muted/30"
+                        className="shows-table-grid py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
                         onClick={() => handleRowClick(show.id)}
                       >
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{new Date(show.shootDate).toLocaleDateString('vi-VN')}</span>
+                        <div>
+                          <span className="font-medium text-blue-600">#{show.stt}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{new Date(show.deliveryDate).toLocaleDateString('vi-VN')}</span>
+                        <div>
+                          <span>{new Date(show.shootDate).toLocaleDateString('vi-VN')}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.shootTime || '-'}</span>
+                        <div>
+                          <span>{new Date(show.deadline).toLocaleDateString('vi-VN')}</span>
                         </div>
-                        <div className="admin-table-cell">
+                        <div>
+                          <span>{show.shootTime || '-'}</span>
+                        </div>
+                        <div>
                           <div>
-                            <div className="font-medium text-sm truncate">{show.customer}</div>
-                            <div className={`text-xs ${paymentStatus.color}`}>
+                            <div className="font-medium truncate">{show.customer}</div>
+                            <div className={`${paymentStatus.color}`}>
                               {paymentStatus.text} • Còn {formatCurrency(remaining)}
                             </div>
                           </div>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.phone || '-'}</span>
+                        <div>
+                          <div>
+                            {show.discount > 0 ? (
+                              <>
+                                <div className="text-xs text-muted-foreground line-through">{formatCurrency(show.price)}</div>
+                                <div className="font-medium text-orange-600">
+                                  {formatCurrency(show.finalPrice)}
+                                </div>
+                              </>
+                            ) : (
+                              <div className="font-medium">
+                                {formatCurrency(show.finalPrice)}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm font-medium">{formatCurrency(show.price)}</span>
+                        <div>
+                          <span className={`font-medium ${show.discount > 0 ? 'text-orange-600' : 'text-muted-foreground'}`}>
+                            {show.discount > 0 ? `${Math.round((show.discount / show.price) * 100)}%` : '0%'}
+                          </span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs">
+                        <div>
+                          <span className="px-1 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full">
                             {show.type}
                           </span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.key || '-'}</span>
+                        <div>
+                          <span>{show.khuVuc}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.support1 || '-'}</span>
+                        <div>
+                          <span className="font-medium">{show.soTho}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.support2 || '-'}</span>
+                        <div>
+                          <span>{show.key || '-'}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.selective || '-'}</span>
+                        <div>
+                          <span>{show.support1 || '-'}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.blend || '-'}</span>
+                        <div>
+                          <span>{show.support2 || '-'}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className="text-sm">{show.retouch || '-'}</span>
+                        <div>
+                          <span>{show.selective || '-'}</span>
                         </div>
-                        <div className="admin-table-cell">
-                          <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getStatusColor(show.status)}`}>
+                        <div>
+                          <span>{show.blend || '-'}</span>
+                        </div>
+                        <div>
+                          <span>{show.retouch || '-'}</span>
+                        </div>
+                        <div>
+                          <span className={`px-1 py-0.5 rounded-full flex items-center gap-1 ${getStatusColor(show.status)}`}>
                             {getStatusIcon(show.status)}
                             {show.status}
                           </span>
@@ -1040,7 +1412,7 @@ export default function ShowsPage() {
                       >
                         <div className="mobile-show-header">
                           <div>
-                            <h3 className="font-medium text-sm">{show.customer}</h3>
+                            <h3 className="font-medium text-sm">#{show.stt} - {show.customer}</h3>
                             <p className="text-xs text-muted-foreground">{show.type}</p>
                           </div>
                           <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getStatusColor(show.status)}`}>
@@ -1059,12 +1431,21 @@ export default function ShowsPage() {
                             <p className="text-sm">{show.shootTime || '-'}</p>
                           </div>
                           <div>
-                            <span className="text-xs text-muted-foreground">Ngày giao:</span>
-                            <p className="text-sm">{new Date(show.deliveryDate).toLocaleDateString('vi-VN')}</p>
+                                            <span className="text-xs text-muted-foreground">Deadline:</span>
+                <p className="text-sm">{new Date(show.deadline).toLocaleDateString('vi-VN')}</p>
                           </div>
                           <div>
                             <span className="text-xs text-muted-foreground">Giá:</span>
-                            <p className="text-sm font-medium">{formatCurrency(show.price)}</p>
+                            <div>
+                              {show.discount > 0 ? (
+                                <>
+                                  <p className="text-xs text-muted-foreground line-through">{formatCurrency(show.price)}</p>
+                                  <p className="text-sm font-medium text-orange-600">{formatCurrency(show.finalPrice)}</p>
+                                </>
+                              ) : (
+                                <p className="text-sm font-medium">{formatCurrency(show.finalPrice)}</p>
+                              )}
+                            </div>
                           </div>
                           <div>
                             <span className="text-xs text-muted-foreground">SĐT:</span>
@@ -1075,6 +1456,14 @@ export default function ShowsPage() {
                             <p className={`text-sm ${paymentStatus.color}`}>
                               {paymentStatus.text}
                             </p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Khu vực:</span>
+                            <p className="text-sm">{show.khuVuc}</p>
+                          </div>
+                          <div>
+                            <span className="text-xs text-muted-foreground">Số thợ:</span>
+                            <p className="text-sm font-medium">{show.soTho}</p>
                           </div>
                         </div>
 
@@ -1096,7 +1485,7 @@ export default function ShowsPage() {
                           )}
                           {show.selective && (
                             <span className="mobile-staff-badge">
-                              Culling: {show.selective}
+                              Pick: {show.selective}
                             </span>
                           )}
                           {show.blend && (
@@ -1121,11 +1510,11 @@ export default function ShowsPage() {
         </TabsContent>
         
         <TabsContent value="calendar">
-          <CalendarView shows={filteredShows} />
+          <CalendarView shows={filteredShows} onShowClick={handleRowClick} />
         </TabsContent>
         
         <TabsContent value="board">
-          <DesignBoard shows={filteredShows} onUpdateShow={handleUpdateShow} />
+          <DesignBoard shows={filteredShows} onUpdateShow={handleUpdateShow} onShowClick={handleRowClick} />
         </TabsContent>
       </Tabs>
 
@@ -1156,17 +1545,21 @@ export default function ShowsPage() {
                   <Input
                     type="date"
                     value={newShow.shootDate}
-                    onChange={(e) => setNewShow({...newShow, shootDate: e.target.value})}
+                    onChange={(e) => {
+                      const newShootDate = e.target.value;
+                      const newDeadline = calculateDeadline(newShootDate, newShow.type);
+                      setNewShow({...newShow, shootDate: newShootDate, deadline: newDeadline});
+                    }}
                     className="h-8 text-xs"
                     required
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Ngày giao</Label>
+                  <Label className="text-xs font-medium">Deadline</Label>
                   <Input
                     type="date"
-                    value={newShow.deliveryDate}
-                    onChange={(e) => setNewShow({...newShow, deliveryDate: e.target.value})}
+                    value={newShow.deadline}
+                    onChange={(e) => setNewShow({...newShow, deadline: e.target.value})}
                     className="h-8 text-xs"
                     required
                   />
@@ -1183,12 +1576,16 @@ export default function ShowsPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <div>
                   <Label className="text-xs font-medium">Loại show</Label>
                   <select 
                     value={newShow.type}
-                    onChange={(e) => setNewShow({...newShow, type: e.target.value})}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      const newDeadline = calculateDeadline(newShow.shootDate, newType);
+                      setNewShow({...newShow, type: newType, deadline: newDeadline});
+                    }}
                     className="w-full px-2 py-1 border rounded-md text-xs h-8"
                     required
                   >
@@ -1198,13 +1595,80 @@ export default function ShowsPage() {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Giá (VND)</Label>
+                  <Label className="text-xs font-medium">Giá gốc (VND)</Label>
                   <Input
                     type="number"
-                    placeholder="Nhập giá"
+                    placeholder="Nhập giá gốc"
                     value={newShow.price}
-                    onChange={(e) => setNewShow({...newShow, price: Number(e.target.value)})}
+                    onChange={(e) => {
+                      const newPrice = Number(e.target.value);
+                      const finalPrice = newPrice - newShow.discount;
+                      setNewShow({...newShow, price: newPrice, finalPrice: finalPrice});
+                    }}
                     className="h-8 text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Discount (%)</Label>
+                  <Input
+                    type="number"
+                    placeholder="Nhập % discount"
+                    value={newShow.price > 0 ? Math.round((newShow.discount / newShow.price) * 100) : 0}
+                    onChange={(e) => {
+                      const discountPercent = Number(e.target.value);
+                      const newDiscount = Math.round((newShow.price * discountPercent) / 100);
+                      const finalPrice = newShow.price - newDiscount;
+                      setNewShow({...newShow, discount: newDiscount, finalPrice: finalPrice});
+                    }}
+                    className="h-8 text-xs"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs font-medium">Giá sau discount (VND)</Label>
+                  <Input
+                    type="number"
+                    value={newShow.finalPrice}
+                    className="h-8 text-xs bg-muted"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Bù lương thợ (VND)</Label>
+                  <Input
+                    type="number"
+                    value={newShow.discount}
+                    className="h-8 text-xs bg-muted"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div>
+                  <Label className="text-xs font-medium">Khu vực</Label>
+                  <Input
+                    placeholder="VD: Huyện Eakar"
+                    value={newShow.khuVuc}
+                    onChange={(e) => setNewShow({...newShow, khuVuc: e.target.value})}
+                    className="h-8 text-xs"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs font-medium">Số thợ</Label>
+                  <Input
+                    type="number"
+                    placeholder="Nhập số thợ"
+                    value={newShow.soTho}
+                    onChange={(e) => setNewShow({...newShow, soTho: Number(e.target.value)})}
+                    className="h-8 text-xs"
+                    min="1"
                     required
                   />
                 </div>
@@ -1301,13 +1765,13 @@ export default function ShowsPage() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs">Culling</Label>
+                    <Label className="text-xs">Pick</Label>
                     <select 
                       value={newShow.selective}
                       onChange={(e) => setNewShow({...newShow, selective: e.target.value})}
                       className="w-full px-2 py-1 border rounded text-xs h-8"
                     >
-                      <option value="">Chọn Culling</option>
+                      <option value="">Chọn Pick</option>
                       {staffOptions.map(staff => (
                         <option key={staff} value={staff}>{staff}</option>
                       ))}
@@ -1370,7 +1834,7 @@ export default function ShowsPage() {
       {/* Edit Show Modal */}
       {isEditModalOpen && editingShow && (
         <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2">
-          <div className="bg-card border border-border rounded-lg p-4 w-full max-w-2xl max-h-[95vh] overflow-y-auto shadow-2xl">
+          <div className="bg-card border border-border rounded-lg p-4 w-full max-w-2xl h-[95vh] flex flex-col shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Edit className="h-5 w-5 text-primary" />
@@ -1389,8 +1853,8 @@ export default function ShowsPage() {
               </Button>
             </div>
 
-            <Tabs defaultValue="info" className="w-full">
-              <TabsList className="grid w-full grid-cols-3 h-auto">
+            <Tabs defaultValue="info" className="w-full flex flex-col flex-1 min-h-0">
+              <TabsList className="grid w-full grid-cols-3 h-auto flex-shrink-0">
                 <TabsTrigger value="info" className="text-xs sm:text-sm flex-col sm:flex-row gap-1 sm:gap-2 p-2">
                   <FileText className="h-3 w-3 sm:h-4 sm:w-4" />
                   <span className="hidden sm:inline">Thông tin Show</span>
@@ -1408,7 +1872,7 @@ export default function ShowsPage() {
                 </TabsTrigger>
               </TabsList>
 
-              <TabsContent value="info" className="space-y-4 mt-4">
+              <TabsContent value="info" className="space-y-4 mt-4 flex-1 overflow-y-auto">
 
             <div className="space-y-4">
               {/* Basic Information */}
@@ -1418,20 +1882,24 @@ export default function ShowsPage() {
                   <Input
                     type="date"
                     value={editingShow.shootDate}
-                    onChange={(e) => setEditingShow({...editingShow, shootDate: e.target.value})}
+                    onChange={(e) => {
+                      const newShootDate = e.target.value;
+                      const newDeadline = calculateDeadline(newShootDate, editingShow.type);
+                      setEditingShow({...editingShow, shootDate: newShootDate, deadline: newDeadline});
+                    }}
                     className="h-10 text-sm bg-background border-input"
                     required
                   />
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-foreground">Ngày giao</Label>
+                  <Label className="text-sm font-medium text-foreground">Deadline (Tự động)</Label>
                   <Input
                     type="date"
-                    value={editingShow.deliveryDate}
-                    onChange={(e) => setEditingShow({...editingShow, deliveryDate: e.target.value})}
-                    className="h-10 text-sm bg-background border-input"
-                    required
+                    value={editingShow.deadline}
+                    className="h-10 text-sm bg-muted border-input"
+                    disabled
                   />
+                  <p className="text-xs text-muted-foreground mt-1">Deadline được tính tự động dựa trên ngày chụp và loại show</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium text-foreground">Thời gian</Label>
@@ -1450,7 +1918,11 @@ export default function ShowsPage() {
                   <Label className="text-sm font-medium text-foreground">Loại show</Label>
                   <select 
                     value={editingShow.type}
-                    onChange={(e) => setEditingShow({...editingShow, type: e.target.value})}
+                    onChange={(e) => {
+                      const newType = e.target.value;
+                      const newDeadline = calculateDeadline(editingShow.shootDate, newType);
+                      setEditingShow({...editingShow, type: newType, deadline: newDeadline});
+                    }}
                     className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     required
                   >
@@ -1460,13 +1932,81 @@ export default function ShowsPage() {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium text-foreground">Giá (VND)</Label>
+                  <Label className="text-sm font-medium text-foreground">Giá gốc (VND)</Label>
                   <Input
                     type="number"
-                    placeholder="Nhập giá"
+                    placeholder="Nhập giá gốc"
                     value={editingShow.price}
-                    onChange={(e) => setEditingShow({...editingShow, price: Number(e.target.value)})}
+                    onChange={(e) => {
+                      const newPrice = Number(e.target.value);
+                      const finalPrice = newPrice - editingShow.discount;
+                      setEditingShow({...editingShow, price: newPrice, finalPrice: finalPrice});
+                    }}
                     className="h-10 text-sm bg-background border-input"
+                    required
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Discount (%)</Label>
+                  <Input
+                    type="number"
+                    placeholder="Nhập % discount"
+                    value={editingShow.price > 0 ? Math.round((editingShow.discount / editingShow.price) * 100) : 0}
+                    onChange={(e) => {
+                      const discountPercent = Number(e.target.value);
+                      const newDiscount = Math.round((editingShow.price * discountPercent) / 100);
+                      const finalPrice = editingShow.price - newDiscount;
+                      setEditingShow({...editingShow, discount: newDiscount, finalPrice: finalPrice});
+                    }}
+                    className="h-10 text-sm bg-background border-input"
+                    min="0"
+                    max="100"
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Giá sau discount (VND)</Label>
+                  <Input
+                    type="number"
+                    value={editingShow.finalPrice}
+                    className="h-10 text-sm bg-muted border-input"
+                    disabled
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Bù lương thợ (VND)</Label>
+                  <Input
+                    type="number"
+                    value={editingShow.discount}
+                    className="h-10 text-sm bg-muted border-input"
+                    disabled
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Số tiền discount sẽ được tự động thêm vào chi phí "Bù lương thợ"</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Khu vực</Label>
+                  <Input
+                    placeholder="VD: Huyện Eakar"
+                    value={editingShow.khuVuc}
+                    onChange={(e) => setEditingShow({...editingShow, khuVuc: e.target.value})}
+                    className="h-10 text-sm bg-background border-input"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Số thợ</Label>
+                  <Input
+                    type="number"
+                    placeholder="Nhập số thợ"
+                    value={editingShow.soTho}
+                    onChange={(e) => setEditingShow({...editingShow, soTho: Number(e.target.value)})}
+                    className="h-10 text-sm bg-background border-input"
+                    min="1"
                     required
                   />
                 </div>
@@ -1541,13 +2081,13 @@ export default function ShowsPage() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-sm text-foreground">Culling</Label>
+                    <Label className="text-sm text-foreground">Pick</Label>
                     <select 
                       value={editingShow.selective}
                       onChange={(e) => setEditingShow({...editingShow, selective: e.target.value})}
                       className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
-                      <option value="">Chọn Culling</option>
+                      <option value="">Chọn Pick</option>
                       {staffOptions.map(staff => (
                         <option key={staff} value={staff}>{staff}</option>
                       ))}
@@ -1586,16 +2126,13 @@ export default function ShowsPage() {
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-sm text-foreground">Trạng thái</Label>
-                    <select 
+                    <Label className="text-sm text-foreground">Trạng thái (Tự động)</Label>
+                    <Input
                       value={editingShow.status}
-                      onChange={(e) => setEditingShow({...editingShow, status: e.target.value as Show['status']})}
-                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
-                    >
-                      {statusOptions.map(status => (
-                        <option key={status} value={status}>{status}</option>
-                      ))}
-                    </select>
+                      className="h-10 text-sm bg-muted border-input"
+                      disabled
+                    />
+                    <p className="text-xs text-muted-foreground mt-1">Trạng thái được tính tự động dựa trên ngày chụp và design status</p>
                   </div>
                   <div>
                     <Label className="text-sm text-foreground">Design Status</Label>
@@ -1647,15 +2184,20 @@ export default function ShowsPage() {
               </TabsContent>
 
               {/* Payments Tab */}
-              <TabsContent value="payments" className="space-y-4 mt-4">
+              <TabsContent value="payments" className="space-y-4 mt-4 flex-1 overflow-y-auto">
                 <div className="space-y-4">
                   {/* Payment Summary */}
                   <div className="grid grid-cols-4 gap-4">
                     <Card className="p-3">
                       <div className="text-xs text-muted-foreground">Tổng giá trị</div>
                       <div className="text-lg font-semibold text-blue-600">
-                        {formatCurrency(editingShow.price)}₫
+                        {formatCurrency(editingShow.finalPrice)}₫
                       </div>
+                      {editingShow.discount > 0 && (
+                        <div className="text-xs text-muted-foreground">
+                          Gốc: {formatCurrency(editingShow.price)}₫ (-{formatCurrency(editingShow.discount)}₫)
+                        </div>
+                      )}
                     </Card>
                     <Card className="p-3">
                       <div className="text-xs text-muted-foreground">Đã thu</div>
@@ -1870,7 +2412,7 @@ export default function ShowsPage() {
               </TabsContent>
 
               {/* History Tab */}
-              <TabsContent value="history" className="space-y-4 mt-4">
+              <TabsContent value="history" className="space-y-4 mt-4 flex-1 overflow-y-auto">
                 <Card className="p-4">
                   <h4 className="text-sm font-medium mb-3 flex items-center gap-2">
                     <History className="h-4 w-4" />
