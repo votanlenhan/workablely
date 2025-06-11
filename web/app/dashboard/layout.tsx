@@ -25,7 +25,6 @@ const navigation = [
   { name: 'Tổng quan', href: '/dashboard', icon: BarChart3 },
   { name: 'Shows', href: '/dashboard/shows', icon: Camera },
   { name: 'Thuê đồ', href: '/dashboard/rentals', icon: Shirt },
-  { name: 'Doanh thu', href: '/dashboard/revenue', icon: DollarSign },
       { name: 'Quyết Toán', href: '/dashboard/finance', icon: CreditCard },
   { name: 'Nhân viên', href: '/dashboard/staff', icon: UserCheck },
   { name: 'Khách hàng', href: '/dashboard/clients', icon: Users },

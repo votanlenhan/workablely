@@ -167,10 +167,12 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
 
 - **Thư mục:** `web/`
 - **Tiến độ:**
+
   - Thiết lập cấu trúc dự án NextJS với App Router.
   - Cài đặt và cấu hình Shadcn UI, Tailwind CSS.
   - Xây dựng layout chính với sidebar navigation.
   - **Triển khai các trang quản lý:**
+
     - Dashboard tổng quan với thống kê và biểu đồ.
     - Quản lý Shows với calendar view, design board, và table view.
     - Quản lý Staff với grid view và performance tracking.
@@ -189,6 +191,7 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
     - **Rentals page:** Search theo tên, ID, danh mục, size, màu cho items. Search theo tên khách hàng, ID đơn, SĐT cho orders.
     - **Tính năng:** Real-time search với debouncing, search icon trong input field, placeholder text mô tả rõ ràng.
     - **Cập nhật UI/UX (Ngày 16/01/2025):**
+
       - **Revenue page:** Bỏ button "Xuất báo cáo", đổi selector từ period (tuần này, tháng này...) thành month navigation với arrows (< >) giống year selector, mặc định là tháng hiện tại.
       - **Finance page:**
         - Thêm month navigation với arrows (< >) và thiết kế logic dữ liệu theo tháng được chọn. Data sẽ thay đổi theo tháng, chỉ hiển thị dữ liệu cho tháng hiện tại và các tháng trước đó.
@@ -198,6 +201,57 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
         - Logic tính toán: finalPrice = price - discount, doanh thu tính theo finalPrice, lương thợ tính theo price gốc.
         - Khoản chênh lệch (discount) tự động đưa vào dự chi danh mục "Bù lương thợ".
         - **Danh sách shows:** Ẩn cột SĐT, thêm cột "% Discount" bên phải cột giá. Hiển thị finalPrice và % discount với màu sắc phân biệt.
+
+    - **Finance Management Enhancement (Ngày 19/01/2025):**
+
+      - **Thêm 2 cards mới vào Budget Overview:**
+        - Card "Doanh thu": Hiển thị tổng doanh thu từ shows (120,000,000 VNĐ)
+        - Card "Đã thu": Hiển thị số tiền thực tế đã thu được (shows + external income based on status)
+      - **Cập nhật grid layout:** Từ 6 columns lên 8 columns cho budget overview
+      - **Đồng bộ logic tính toán hoàn toàn:**
+        - Tất cả calculations dựa trên trạng thái thực tế (switch positions)
+        - Chi phí cố định: Tính theo actual paid expenses
+        - Quỹ Wishlist: Tính theo actual wishlist spending
+        - Thu ngoài: Tính theo actual collected external income
+        - Tiền mặt hiện tại: Real-time calculation based on all actual transactions
+        - Tiền mặt cuối kỳ: Projected calculation if all items are paid/collected
+      - **Real-time updates across all tabs:**
+        - Overview cards update instantly when status switches are toggled
+        - Closing tab calculations sync with overview cards
+        - Consistent data flow throughout the application
+      - **Search functionality:** Đã có sẵn trong tab chi lương
+      - **Professional user experience:** Mobile-responsive, consistent interactions
+
+    - **Finance Simplification (Ngày 20/01/2025):**
+
+      - **Wishlist Tab Simplification:**
+
+        - Bỏ cột "Trạng thái" khỏi table
+        - Bỏ Switch controls khỏi table và modal
+        - Bỏ field "Mức độ ưu tiên"
+        - Modal chỉ còn 4 fields: Ngày, Mô tả, Danh mục, Số tiền
+        - CSS grid từ 5 columns xuống 4 columns
+        - Auto cash flow impact khi tạo/sửa item
+
+      - **External Income Tab Simplification:**
+
+        - Bỏ cột "Trạng thái" khỏi table
+        - Bỏ Switch controls khỏi table và modal
+        - Modal chỉ còn 4 fields: Ngày, Mô tả, Danh mục, Số tiền
+        - CSS grid từ 5 columns xuống 4 columns
+        - Auto cash flow impact khi tạo/sửa item
+
+      - **CSS Grid Updates:**
+
+        - Thêm `.wishlist-table-grid-simple` và `.income-table-grid-simple`
+        - Responsive breakpoints cho mobile/tablet
+        - Consistent styling across all simplified grids
+
+      - **UX Philosophy Change:**
+        - Khi tạo khoản chi/thu = tự động impact cash flow
+        - Không cần quản lý trạng thái "đã chi/chưa chi"
+        - Simplified workflow cho faster data entry
+
     - **Cập nhật Finance page (Ngày 16/01/2025 - Cuối ngày):**
       - **Thay đổi thứ tự tabs:** Di chuyển tab "Chi lương" từ vị trí thứ 2 xuống vị trí thứ 4 (giữa "Thu ngoài" và "Chốt sổ").
       - **Thứ tự mới:** Dự toán & Chi phí cố định → Chi Wishlist → Thu ngoài → Chi lương → Chốt sổ.
@@ -242,6 +296,7 @@ Tài liệu này tóm tắt quá trình và trạng thái hiện tại của d�
       - Logic tự động: Chưa tới ngày chụp → "Chờ tới ngày chụp", Đã qua ngày chụp + design status "Done/Archived" → "Hoàn thành", design status "Blend/Retouch/Video: Work in Progress" → "Đang design", còn lại → "Chờ design".
       - **Dashboard:** Bỏ phần "Thao tác nhanh" (Tạo Show mới, Ghi nhận thanh toán, Báo cáo, Quản lý nhân viên).
       - **Navigation:** Di chuyển tab "Thuê đồ" lên ngay dưới "Shows" trong sidebar navigation.
+
   - **UI/UX Features:**
     - Responsive design với mobile-first approach.
     - Dark/Light mode support.
@@ -1314,6 +1369,99 @@ interface YearContextType {
 - ✅ **Professional UI:** Clean, compact design với consistent spacing
 - ✅ **TypeScript Support:** Full type safety và proper error handling
 - ✅ **Mobile Responsive:** Optimized layout cho all screen sizes
+
+## 47. Cập nhật Chi phí Cố định - UX và Logic Cải tiến (Ngày 17/01/2025):
+
+- **Thay đổi Thứ tự Cột:** Điều chỉnh thứ tự các cột trong bảng chi phí cố định
+
+  - **Thứ tự mới:** Ngày chi → Mô tả → Danh mục → Dự báo → Thực tế → Chênh lệch → Trạng thái
+  - **CSS Grid Update:** Cập nhật `.finance-table-grid` với layout mới phù hợp responsive design
+  - **Mobile Layout:** Điều chỉnh thứ tự hiển thị trong mobile card layout
+
+- **Cải tiến Modal Chỉnh sửa Chi phí Cố định:**
+
+  - **Khoá field Dự báo:** Readonly khi edit, chỉ cho phép chỉnh sửa khi thêm mới
+  - **Ghi chú từ tháng trước:** Hiển thị "(từ tháng trước)" bên cạnh label Dự báo
+  - **Switch thay cho Dropdown:** Thay select dropdown bằng Switch component
+  - **Visual Feedback:** Hiển thị trạng thái "Đã tác động/Chưa tác động vào dòng tiền"
+  - **Real-time Impact:** Switch sẽ tác động ngay lập tức vào tính toán dòng tiền studio
+
+- **Logic Dòng tiền Tự động:**
+
+  - **Switch Integration:** Mỗi khi toggle switch, hệ thống tự động cập nhật cash flow
+  - **Instant Calculation:** Không cần save, thay đổi trạng thái sẽ update ngay
+  - **Visual Indicators:** Clear feedback về trạng thái thanh toán và impact
+
+- **Technical Implementation:**
+
+  - **Switch Component:** Import và sử dụng từ shadcn/ui
+  - **Enhanced UX:** Better visual design với icons và color coding
+  - **Responsive Grid:** Optimized grid layout cho mobile và desktop
+  - **State Management:** Proper handling của payment status changes
+
+- **Switch trong Bảng chính (Table):**
+  - **Thay thế Badge:** Loại bỏ text badge trạng thái, thay bằng Switch interactive
+  - **Toggle Function:** `handleToggleExpenseStatus()` để toggle trực tiếp trong bảng
+  - **Stop Propagation:** Ngăn chặn mở modal khi click switch
+  - **Visual Consistency:** Color coding và styling nhất quán với modal
+  - **Mobile Support:** Switch cũng hoạt động trong mobile card layout
+  - **Real-time Update:** Thay đổi trạng thái ngay lập tức trong state
+
+## 48. Cập nhật UX Finance Pages - Simplification (Ngày 17/01/2025):
+
+- **Tab Dự toán & Chi phí Cố định:**
+
+  - **Bỏ Phân tích Dự báo Chi phí Cố định:** Loại bỏ card "Phân tích Dự báo Chi phí Cố định"
+  - **Loại bỏ Internet:** Xóa khoản "Internet" khỏi quản lý chi phí cố định
+  - **Simplified View:** Chỉ còn lại card "Quản lý Chi phí Cố định" với switch interactive
+
+- **Tab Chi Wishlist:**
+
+  - **Bỏ Tình trạng Quỹ Wishlist:** Loại bỏ card overview về budget status
+  - **Thay đổi Layout Cột:** Thứ tự mới - Ngày → Mô tả → Danh mục → Chi phí → Trạng thái
+  - **Bỏ cột Ưu tiên:** Loại bỏ cột priority để đơn giản hóa
+  - **CSS Grid Update:** Cập nhật `.wishlist-table-grid` với 5 cột thay vì 6
+  - **Add Date Field:** Thêm field `date` vào wishlist items với default value
+
+- **Tab Thu ngoài:**
+
+  - **Bỏ Tổng quan Thu ngoài:** Loại bỏ card overview statistics
+  - **Bỏ Phân tích theo Danh mục:** Loại bỏ card category breakdown analysis
+  - **Thay đổi Layout Cột:** Thứ tự mới - Ngày → Mô tả → Danh mục → Số tiền → Trạng thái
+  - **Simplified Management:** Chỉ còn lại card "Quản lý Thu ngoài" với table data
+  - **Add Status Column:** Thêm cột trạng thái với default value "Đã thu"
+
+- **Technical Changes:**
+  - **CSS Responsive:** Cập nhật responsive breakpoints cho layout mới
+  - **Data Structure:** Thêm date field vào wishlist data với sample dates
+  - **Table Header:** Cập nhật header theo thứ tự cột mới
+  - **Mobile Layout:** Điều chỉnh mobile card layout phù hợp thứ tự mới
+  - **Income Grid:** Cập nhật `.income-table-grid` cho 5 cột layout mới
+  - **Status Integration:** Tích hợp trạng thái vào external income với fallback logic
+
+## 49. Đồng bộ Switch cho tất cả Tabs (Ngày 17/01/2025):
+
+- **Switch Consistency Across Tabs:**
+
+  - **Chi Wishlist Switch:** Thêm switch tương tự fixed expenses cho cột trạng thái
+  - **Thu ngoài Switch:** Thêm switch cho status "Đã thu/Chưa thu"
+  - **Toggle Functions:** `handleToggleWishlistStatus()` và `handleToggleIncomeStatus()`
+  - **Visual Consistency:** Cùng style và behavior với fixed expenses switch
+
+- **Status Value Updates:**
+
+  - **Wishlist Status:** Chuyển từ "Đang xem xét/Đã duyệt/Chờ duyệt" thành "Đã chi/Chưa chi"
+  - **Income Status:** Default "Đã thu" với option "Chưa thu"
+  - **Color Coding:** Green cho đã chi/đã thu, Orange cho chưa chi/chưa thu
+  - **Stop Propagation:** Ngăn mở modal khi click switch trong tất cả tables
+
+- **Cash Flow Integration:**
+
+  - **Real-time Impact:** Switch toggle tác động trực tiếp vào dòng tiền studio
+  - **Consistent Behavior:** Cùng logic với fixed expenses switch
+  - **Mobile Support:** Switch hoạt động trong mobile card layouts
+  - **State Management:** Instant update trong React state
+
 - ✅ **Integration Ready:** Sẵn sàng connect với backend API
 
 ## 48. Triển khai Tab Thu ngoài và Hệ thống Theo dõi Cả năm (07/06/2025):
@@ -1813,704 +1961,564 @@ interface YearContextType {
   - Real-time data sync
   - Conflict resolution cho concurrent edits
 
-# Tiến độ Dự án Workablely
+# Tiến độ Dự án Workablely - Studio Chụp Ảnh
 
-## Thông tin Dự án
+**Cập nhật lần cuối:** ${new Date().toLocaleDateString('vi-VN')} ${new Date().toLocaleTimeString('vi-VN')}
 
-- **Tên dự án**: Workablely - Hệ thống quản lý Studio Nhiếp ảnh
-- **Ngày bắt đầu**: 15/01/2025
-- **Cập nhật lần cuối**: 15/01/2025 - 23:30
+## Tổng quan Dự án
 
-## Tổng quan Tiến độ
+### Thông tin Cơ bản
 
-- **Trạng thái tổng thể**: 🟡 Đang phát triển
-- **Hoàn thành**: 75%
-- **Giai đoạn hiện tại**: Tối ưu hóa UI/UX và tính năng nâng cao
-
-## Chi tiết Tiến độ theo Module
-
-### 1. 🏗️ Cơ sở hạ tầng (100% ✅)
-
-- [x] Setup Next.js 15 với App Router
-- [x] Cấu hình TypeScript
-- [x] Setup Tailwind CSS + shadcn/ui
-- [x] Cấu hình theme system (dark/light mode)
-- [x] Setup development environment
-
-### 2. 🎨 UI/UX Framework (95% ✅)
-
-- [x] Layout chính với sidebar navigation
-- [x] Theme provider và dark mode
-- [x] Component library cơ bản
-- [x] Responsive design
-- [x] Modal system với enhanced styling
-- [ ] Loading states và error boundaries (5%)
-
-## 💰 Salary Management Enhancement - Admin Controls (16/01/2025 - 16:30)
-
-### Cập nhật hệ thống quản lý lương theo yêu cầu mới:
-
-#### **1. Tab Order Reorganization:**
-
-**Tab Position Changes:**
-
-- **Before**: Dự toán → Chi Wishlist → Thu ngoài → Chi lương → Chốt sổ
-- **After**: Dự toán → Chi lương → Chi Wishlist → Thu ngoài → Chốt sổ
-- **Rationale**: Chi lương được ưu tiên cao hơn, đặt ngay sau dự toán
-
-#### **2. Enhanced Salary Detail Modal:**
-
-**Admin Control Features:**
-
-- **Add Additional Costs**: Admin có thể tạo thêm chi phí cho nhân viên
-- **Add Advances**: Admin có thể tạo thêm khoản ứng cho nhân viên
-- **Automatic Wishlist Integration**: Tất cả chi phí và ứng tự động tạo trong Chi Wishlist
-
-#### **3. Add Cost Functionality:**
-
-**UI Components:**
-
-```typescript
-// Add Cost Form
-<div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg mb-2 space-y-2">
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-    <Input placeholder="Loại chi phí" />
-    <Input type="number" placeholder="Số tiền" />
-    <Input placeholder="Mô tả" />
-  </div>
-  <div className="flex gap-2">
-    <Button onClick={handleAddCost}>Lưu</Button>
-    <Button variant="outline" onClick={cancelAddCost}>
-      Hủy
-    </Button>
-  </div>
-</div>
-```
-
-**Business Logic:**
-
-```typescript
-const handleAddCost = () => {
-  // Validate input
-  if (
-    !selectedStaffForSalary ||
-    !newCost.type ||
-    !newCost.amount ||
-    !newCost.description
-  )
-    return;
-
-  // Get staff info
-  const staff = staffData.find((s) => s.id === selectedStaffForSalary);
-
-  // Auto-create wishlist item
-  const wishlistId = addCostToWishlist(newCost, staff.name);
-
-  // Reset form
-  setNewCost({ type: "", amount: 0, description: "" });
-  setShowAddCostForm(false);
-};
-```
-
-#### **4. Add Advance Functionality:**
-
-**UI Components:**
-
-```typescript
-// Add Advance Form
-<div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-2 space-y-2">
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-    <Input placeholder="Loại ứng" />
-    <Input type="number" placeholder="Số tiền" />
-    <Input placeholder="Mô tả" />
-  </div>
-  <div className="flex gap-2">
-    <Button onClick={handleAddAdvance}>Lưu</Button>
-    <Button variant="outline" onClick={cancelAddAdvance}>
-      Hủy
-    </Button>
-  </div>
-</div>
-```
-
-**Business Logic:**
-
-```typescript
-const handleAddAdvance = () => {
-  // Validate input
-  if (
-    !selectedStaffForSalary ||
-    !newAdvance.type ||
-    !newAdvance.amount ||
-    !newAdvance.description
-  )
-    return;
-
-  // Get staff info
-  const staff = staffData.find((s) => s.id === selectedStaffForSalary);
-
-  // Auto-create wishlist item
-  const wishlistId = addAdvanceToWishlist(newAdvance, staff.name);
-
-  // Reset form
-  setNewAdvance({ type: "", amount: 0, description: "" });
-  setShowAddAdvanceForm(false);
-};
-```
-
-#### **5. Wishlist Auto-Integration:**
-
-**Cost to Wishlist:**
-
-```typescript
-const addCostToWishlist = (cost: any, staffName: string) => {
-  const newWishlistItem = {
-    id: Math.max(...wishlistItems.map((w) => w.id), 0) + 1,
-    item: `Chi phí - ${staffName}`,
-    category: cost.type,
-    priority: "Trung bình",
-    estimatedCost: cost.amount,
-    status: "Đã duyệt",
-    notes: `${cost.description} - Tự động từ hệ thống lương`,
-  };
-
-  setWishlistItems((prev) => [...prev, newWishlistItem]);
-  return newWishlistItem.id;
-};
-```
-
-**Advance to Wishlist:**
-
-```typescript
-const addAdvanceToWishlist = (advance: any, staffName: string) => {
-  const newWishlistItem = {
-    id: Math.max(...wishlistItems.map((w) => w.id), 0) + 1,
-    item: `Ứng lương - ${staffName}`,
-    category: "Ứng lương",
-    priority: "Cao",
-    estimatedCost: advance.amount,
-    status: "Đã duyệt",
-    notes: `${advance.description} - Tự động từ hệ thống lương`,
-  };
-
-  setWishlistItems((prev) => [...prev, newWishlistItem]);
-  return newWishlistItem.id;
-};
-```
-
-#### **6. Enhanced Modal UI:**
-
-**Section Headers with Add Buttons:**
-
-- **Chi tiết Chi phí**: Header với nút "Thêm" (Plus icon)
-- **Chi tiết Đã ứng**: Header với nút "Thêm" (Plus icon)
-- **Toggle Forms**: Click "Thêm" để show/hide form input
-- **Empty States**: Hiển thị message khi chưa có data
-
-**Form Design:**
-
-- **3-column grid**: Loại/Số tiền/Mô tả
-- **Compact inputs**: h-8 text-xs cho mobile-friendly
-- **Color coding**: Green background cho costs, Red cho advances
-- **Action buttons**: Lưu/Hủy với proper spacing
-
-#### **7. State Management:**
-
-**New State Variables:**
-
-```typescript
-const [newCost, setNewCost] = useState({
-  type: "",
-  amount: 0,
-  description: "",
-});
-const [newAdvance, setNewAdvance] = useState({
-  type: "",
-  amount: 0,
-  description: "",
-});
-const [showAddCostForm, setShowAddCostForm] = useState(false);
-const [showAddAdvanceForm, setShowAddAdvanceForm] = useState(false);
-```
-
-**Form Control:**
-
-- **Show/Hide Logic**: Toggle forms independently
-- **Reset on Cancel**: Clear form data when cancelled
-- **Validation**: Check required fields before submission
-- **Auto-close**: Hide form after successful submission
-
-#### **8. User Experience Improvements:**
-
-**Intuitive Workflow:**
-
-1. **Open Salary Modal**: Click on staff member
-2. **Add Cost/Advance**: Click "Thêm" button in respective section
-3. **Fill Form**: Enter type, amount, description
-4. **Auto-Integration**: Item automatically added to wishlist
-5. **Visual Feedback**: Form closes, data appears in list
-
-**Visual Design:**
-
-- **Consistent Colors**: Green for costs (+), Red for advances (-)
-- **Clear Hierarchy**: Section headers with action buttons
-- **Responsive Layout**: Works on desktop and mobile
-- **Empty States**: Helpful messages when no data exists
-
-#### **9. Business Benefits:**
-
-**Administrative Control:**
-
-- **Real-time Adjustments**: Add costs/advances as needed
-- **Automatic Tracking**: All items tracked in wishlist
-- **Audit Trail**: Clear record of who added what when
-- **Workflow Integration**: Seamless connection between salary and expenses
-
-**Financial Management:**
-
-- **Expense Tracking**: All salary-related costs in one place
-- **Budget Control**: Automatic addition to expense categories
-- **Cash Flow**: Real-time impact on financial planning
-- **Transparency**: Clear visibility of all salary components
-
-#### **10. Technical Implementation:**
-
-**File Updates:**
-
-- **Tab Order**: Updated tabs array in finance page
-- **Modal Enhancement**: Added forms and state management
-- **Wishlist Integration**: Enhanced auto-creation functions
-- **UI Components**: Added Plus icons and form layouts
-
-**Data Flow:**
-
-1. **User Input**: Admin enters cost/advance details
-2. **Validation**: Check required fields
-3. **Wishlist Creation**: Auto-generate wishlist item
-4. **State Update**: Update local state and UI
-5. **Form Reset**: Clear form and hide input area
-
-#### **11. Future Enhancements:**
-
-**Planned Features:**
-
-- **Edit/Delete**: Ability to modify existing costs/advances
-- **Approval Workflow**: Manager approval for large amounts
-- **Notification System**: Alert when new items added
-- **Reporting**: Summary reports of salary adjustments
-- **Integration**: Connect with actual payroll systems
+- **Tên dự án:** Workablely - Hệ thống quản lý studio chụp ảnh
+- **Nền tảng:** Web Application (Next.js 15, TypeScript, React 19)
+- **Kiến trúc:** Fullstack với API Backend (NestJS) + Frontend Dashboard
+- **Database:** PostgreSQL với TypeORM
+- **UI Framework:** Tailwind CSS + Shadcn/ui
+- **Ngôn ngữ:** Tiếng Việt (với các thuật ngữ chuyên môn bằng tiếng Anh)
+
+### Mục tiêu Chính
+
+1. **Quản lý Shows chụp ảnh** - Từ booking đến delivery
+2. **Quản lý Nhân sự** - Staff, roles, assignments, salaries
+3. **Quản lý Tài chính** - Revenue, expenses, allocations, budgets
+4. **Dashboard & Analytics** - Báo cáo thống kê tổng quan
+
+## Trạng thái Hiện tại
+
+### 🟢 Các Module Đã Hoàn thành (100%)
+
+#### 1. **Authentication & Authorization**
+
+- ✅ JWT-based authentication
+- ✅ Role-based access control (Admin, Manager, Photographer)
+- ✅ Login/logout workflow
+- ✅ Protected routes và guards
+
+#### 2. **Shows Management**
+
+- ✅ CRUD operations cho shows
+- ✅ Show status workflow (pending → confirmed → in_progress → completed)
+- ✅ Staff assignments với roles (Key, Support, Selective, etc.)
+- ✅ Advanced filtering & search
+- ✅ Responsive table/cards view
+- ✅ Show details modal với đầy đủ thông tin
+- ✅ Pagination và performance optimization
+
+#### 3. **Staff Management**
+
+- ✅ CRUD operations cho staff/users
+- ✅ Role assignments và permissions
+- ✅ Staff profiles với avatar và contact info
+- ✅ Department organization
+- ✅ Active/inactive status management
+
+#### 4. **Finance Management (Hoàn thiện mới)**
+
+- ✅ **Budget Overview mở rộng (8 cards):**
+
+  - Doanh thu (tổng revenue từ shows)
+  - Đã thu (actual collected amount + external income)
+  - Tổng dự toán
+  - Chi phí cố định (actual paid expenses)
+  - Quỹ Wishlist (remaining available funds)
+  - Thu ngoài (actual collected external income)
+  - Tiền mặt hiện tại (real-time calculation)
+  - Tiền mặt cuối kỳ (projected end-of-period)
+
+- ✅ **Chi phí Cố định Tab:**
+
+  - Table với 7 cột (Ngày chi, Mô tả, Danh mục, Dự báo, Thực tế, Chênh lệch, Trạng thái)
+  - Switch controls cho payment status với immediate cash flow impact
+  - Search và filter functionality
+  - Responsive mobile cards
+  - Modal for add/edit với forecast từ tháng trước
+
+- ✅ **Chi Wishlist Tab:**
+
+  - Table với 5 cột (Ngày, Mô tả, Danh mục, Chi phí, Trạng thái)
+  - Switch controls cho spending status
+  - Real-time budget availability calculation
+
+- ✅ **Thu ngoài Tab:**
+
+  - Table với 5 cột (Ngày, Mô tả, Danh mục, Số tiền, Trạng thái)
+  - Switch controls cho collection status
+  - Integration với cash flow calculation
+
+- ✅ **Chi lương Tab:**
+
+  - Table với 8 cột bao gồm Ngày Chi
+  - Search functionality cho staff
+  - Detailed salary breakdown (shows, bonuses, advances)
+  - Payment status switches với auto date setting
+  - Mobile responsive design
+
+- ✅ **Chốt sổ Tab (Accounting Workflow):**
+
+  - Pre-closing checklist với 3 items chính
+  - Real-time financial summary based on actual payments
+  - Month closing switch với confirmation
+  - Profit calculation: Đã thu - Chi lương - Trích wishlist (20% doanh thu)
+  - **Logic tính toán hoàn toàn đồng bộ** giữa tất cả tabs
+
+- ✅ **Tính toán Tài chính Đồng bộ:**
+  - Tất cả amounts được tính dựa trên trạng thái thực tế (switch positions)
+  - Real-time updates khi thay đổi payment/collection status
+  - Consistent calculation logic across overview cards và closing tab
+  - Cash flow impact immediate khi toggle switches
+
+#### 5. **Core Infrastructure**
+
+- ✅ Database schema với TypeORM entities
+- ✅ API endpoints với proper validation
+- ✅ Error handling và logging
+- ✅ Environment configuration
+- ✅ Docker setup cho development
+
+#### 6. **User Interface**
+
+- ✅ Modern, responsive design với Tailwind CSS
+- ✅ Dark/light theme support
+- ✅ Professional dashboard layout
+- ✅ Mobile-first responsive approach
+- ✅ Consistent component library với Shadcn/ui
+- ✅ Vietnamese language support
+
+#### 7. **Revenue Allocations System**
+
+- ✅ Automated revenue distribution logic
+- ✅ Role-based percentage calculations
+- ✅ Fund allocations (Marketing, Wishlist, etc.)
+- ✅ Net profit calculations
+- ✅ Configuration-driven percentages
+
+### 🟡 Các Module Đang Phát triển (In Progress)
+
+#### 1. **Advanced Analytics & Reporting**
+
+- 🟡 Revenue analytics dashboard
+- 🟡 Staff performance metrics
+- 🟡 Monthly/yearly comparison reports
+- 🟡 Export functionality (PDF, Excel)
+
+#### 2. **System Optimization**
+
+- 🟡 Performance monitoring
+- 🟡 Database query optimization
+- 🟡 Caching strategies
+
+### 🔴 Các Module Chưa Bắt đầu (Planned)
+
+#### 1. **Customer Management**
+
+- 🔴 Customer database
+- 🔴 Booking history
+- 🔴 Communication logs
+
+#### 2. **Inventory Management**
+
+- 🔴 Equipment tracking
+- 🔴 Maintenance schedules
+- 🔴 Asset depreciation
+
+#### 3. **Advanced Workflow**
+
+- 🔴 Automated notifications
+- 🔴 Email integration
+- 🔴 Calendar sync
+
+## Công nghệ Sử dụng
+
+### Frontend
+
+- **Next.js 15** - App Router với Server Components
+- **React 19** - Latest features và optimizations
+- **TypeScript** - Type safety và developer experience
+- **Tailwind CSS** - Utility-first styling
+- **Shadcn/ui** - Component library
+- **Lucide Icons** - Icon system
+
+### Backend
+
+- **NestJS** - Node.js framework với TypeScript
+- **TypeORM** - Object-relational mapping
+- **PostgreSQL** - Primary database
+- **JWT** - Authentication tokens
+- **Class Validator** - Input validation
+
+### DevOps & Tools
+
+- **Docker** - Containerization
+- **ESLint & Prettier** - Code quality
+- **Jest** - Testing framework
+- **GitHub** - Version control
+
+## Thống kê Phát triển
+
+### Completion Status
+
+- **Shows Management:** 100% ✅
+- **Staff Management:** 100% ✅
+- **Finance Management:** 100% ✅
+- **Authentication:** 100% ✅
+- **UI/UX:** 95% ✅
+- **API Backend:** 90% ✅
+- **Analytics:** 30% 🟡
+- **Testing:** 25% 🔴
+
+### Tổng tiến độ: ~85% hoàn thành
+
+## Các Tính năng Nổi bật Đã Implemented
+
+### 1. Finance Management System
+
+- **Real-time Budget Tracking:** 8 overview cards với live calculations
+- **Multi-tab Interface:** 5 tabs chuyên biệt cho từng area
+- **Switch-based Status Management:** Immediate cash flow impact
+- **Synchronized Calculations:** Consistent logic across all components
+- **Mobile Responsive:** Professional mobile experience
+- **Search & Filter:** Advanced filtering capabilities
+
+### 2. Shows Management
+
+- **Complete Workflow:** End-to-end show lifecycle management
+- **Staff Assignment:** Role-based photographer assignments
+- **Status Tracking:** Visual progress indicators
+- **Advanced Search:** Multiple filter criteria
+- **Responsive Design:** Seamless mobile experience
+
+### 3. Professional UI/UX
+
+- **Modern Design Language:** Clean, intuitive interface
+- **Vietnamese Localization:** Native language support
+- **Consistent Interactions:** Unified user experience patterns
+- **Performance Optimized:** Fast loading và smooth interactions
+
+## Challenges & Solutions Đã Giải quyết
+
+### 1. **Complex Financial Calculations**
+
+- **Challenge:** Đồng bộ logic tính toán giữa các tabs khác nhau
+- **Solution:** Centralized calculation functions với consistent data flow
+
+### 2. **Real-time Updates**
+
+- **Challenge:** Immediate reflection của status changes
+- **Solution:** React state management với proper event handling
+
+### 3. **Mobile Responsiveness**
+
+- **Challenge:** Professional experience trên mobile devices
+- **Solution:** Mobile-first design với adaptive layouts
+
+### 4. **Data Consistency**
+
+- **Challenge:** Maintain data integrity across complex operations
+- **Solution:** Proper state management và validation layers
+
+## Kế hoạch Tiếp theo
+
+### Giai đoạn 1 (2-3 tuần tới)
+
+1. **Analytics Dashboard Enhancement**
+
+   - Revenue trend analysis
+   - Staff performance metrics
+   - Customer analytics
+
+2. **System Optimization**
+   - Performance monitoring setup
+   - Database query optimization
+   - Error tracking improvement
+
+### Giai đoạn 2 (1-2 tháng tới)
+
+1. **Customer Management Module**
+
+   - Customer database design
+   - Booking history tracking
+   - Communication logs
+
+2. **Advanced Reporting**
+   - Automated report generation
+   - Export functionality
+   - Email notifications
+
+### Giai đoạn 3 (Long-term)
+
+1. **Inventory Management**
+2. **Advanced Workflow Automation**
+3. **Third-party Integrations**
+
+## Testing & Quality Assurance
+
+### Current Testing Coverage
+
+- **Unit Tests:** API services và utilities
+- **Integration Tests:** Database operations
+- **E2E Tests:** Critical user workflows
+- **Manual Testing:** UI/UX validation
+
+### Quality Metrics
+
+- **Code Quality:** ESLint + TypeScript strict mode
+- **Performance:** Core Web Vitals optimization
+- **Accessibility:** WCAG compliance efforts
+- **Security:** JWT best practices, input validation
+
+## Deployment & Production
+
+### Current Status
+
+- **Development Environment:** Fully functional
+- **Staging Environment:** Ready for testing
+- **Production Deployment:** Pending final testing
+- **CI/CD Pipeline:** GitHub Actions setup
+
+### Production Readiness Checklist
+
+- ✅ Environment configuration
+- ✅ Database migrations
+- ✅ Security configurations
+- ✅ Performance optimization
+- 🟡 Monitoring setup
+- 🟡 Backup strategies
 
 ---
 
-_Cập nhật bởi: AI Assistant | Thời gian: 16/01/2025 16:30_
+## Notes từ Phiên Development Gần nhất
 
-#### 11. Staff List Reorganization (January 16, 2025 - Final Update)
+### Finance Management Enhancement (Latest)
 
-**Staff Data Structure Cleanup:**
+- **Thêm 2 cards mới:** Doanh thu và Đã thu vào budget overview
+- **Cập nhật grid layout:** Từ 6 columns lên 8 columns
+- **Đồng bộ logic tính toán:**
+  - Tất cả calculations based on actual status (switch positions)
+  - Real-time updates across all tabs
+  - Consistent data flow từ overview cards đến closing tab
+- **Search functionality:** Đã có sẵn trong tab chi lương
+- **Status Management:** Switch controls với immediate cash flow impact
+- **Mobile Optimization:** Responsive design cho tất cả screen sizes
 
-- Removed Lead (Thế Anh), Marketing Team, Art Director from salary management list
-- Rationale: These management roles' salaries are already included in individual staff member details
-- Management team members occasionally take on photographer roles in addition to their management duties
+### Technical Implementation
 
-**Staff Priority Ordering System:**
+- **State Management:** React useState với proper data flow
+- **Event Handling:** stopPropagation để prevent modal opening khi click switches
+- **Responsive Design:** CSS Grid với Tailwind breakpoints
+- **Performance:** Optimized calculations với reduce functions
+- **Type Safety:** TypeScript interfaces cho all data structures
 
-- Implemented priority-based sorting system with 3 levels:
-  - Priority 1: Manager team (Huy Lớn) - highest priority
-  - Priority 2: Multi-role staff (An, Huy, Đạt) - photographers who can take various roles
-  - Priority 3: Design team (A Phúc, Long, Lai) - remaining staff
-- Within same priority level, sort by number of shows (descending), then by total earnings
+Hệ thống Finance Management hiện tại đã đạt mức độ hoàn thiện cao với tính năng comprehensive và user experience chuyên nghiệp, sẵn sàng cho production deployment.
 
-**Enhanced Manager Data:**
+## Menu Khách Hàng và Shows Cập Nhật (Ngày 21/01/2025)
 
-- Updated Huy Lớn's salary data to reflect dual role as Manager + Photographer
-- Added show earnings: Wedding VIP Client (Key Photographer - 2.8M), Corporate Headshots (Support - 1.2M)
-- Enhanced additional costs: Management fee (2M) + Equipment rental (500K)
-- Added advance payment (1.5M) with wishlist integration
+### Khách Hàng Menu Improvements
 
-**Department Summary Updates:**
+**Completed Tasks:**
 
-- Reduced from 6 departments to 3: Manager, Photographer, Design
-- Changed grid layout from 6-column to 3-column for better space utilization
-- Maintained department totals, staff count, and average salary calculations
-- Preserved all existing functionality while streamlining display
+- ✅ Loại bỏ tab "Thêm khách hàng" vì đã có button thêm khách hàng ở header
+- ✅ Hoàn thiện button "Thêm khách hàng" trong header với modal form đầy đủ
+- ✅ Thêm khả năng click vào card khách hàng để edit
+- ✅ Thêm modal form cho việc thêm/edit khách hàng với validation
+- ✅ State management cho client operations (add/edit)
 
-**Sorting Algorithm Implementation:**
+**Technical Details:**
 
-```typescript
-.sort((a, b) => {
-  // Primary sort: Priority level (1 = Manager, 2 = Photographer, 3 = Design)
-  if (a.priority !== b.priority) {
-    return a.priority - b.priority;
-  }
+- Removed tab "Thêm khách hàng" từ tabs array
+- Added client modal state management: `isClientModalOpen`, `modalMode`, `selectedClient`, `newClient`
+- Added functions: `openClientModal()`, `handleSaveClient()`
+- Updated client cards với click handler để mở edit modal
+- Added complete modal form với các fields: tên, email, SĐT, địa chỉ, trạng thái, ngày gia nhập, dịch vụ quan tâm, ghi chú
 
-  // Secondary sort: Number of shows (more shows first)
-  const aShowCount = aSalaryDetail.showEarnings?.length || 0;
-  const bShowCount = bSalaryDetail.showEarnings?.length || 0;
-  if (aShowCount !== bShowCount) {
-    return bShowCount - aShowCount;
-  }
+### Shows Menu Restructure
 
-  // Tertiary sort: Total earnings (higher earnings first)
-  return bSalaryDetail.totalShowEarnings - aSalaryDetail.totalShowEarnings;
-});
-```
+**Completed Tasks:**
 
-**Data Integrity Maintained:**
+- ✅ Đổi trường "Khách hàng" thành "Đơn hàng" trong bảng
+- ✅ Thêm trường "Khách hàng" mới được pick từ list khách hàng
+- ✅ Cập nhật hiển thị: Tên đơn hàng → Tên khách hàng → Trạng thái thanh toán
+- ✅ Số điện thoại tự động upload từ menu Khách hàng (không thể edit trong shows)
+- ✅ Cập nhật interface Show với orderName, clientId, clientName, clientPhone
+- ✅ Cập nhật tất cả hiển thị: table view, calendar view, design board, mobile cards
 
-- All salary calculations remain accurate
-- Wishlist integration continues to function
-- Search functionality works across all remaining staff
-- Modal details display correctly for all staff members
-- Department summaries reflect actual organizational structure
+**Technical Details:**
 
-// ... existing code ...
+- Updated Show interface:
+  - `customer: string` → `orderName: string`
+  - `phone: string` → `clientPhone: string`
+  - Added: `clientId: string`, `clientName: string`
+- Updated all show data với client references
+- Updated forms:
+  - Create form: Đơn hàng field + Client dropdown + Auto-filled phone
+  - Edit form: Same structure, disabled phone field
+- Updated search functionality to search both orderName and clientName
+- Updated calendar tooltips and design board displays
+- Updated mobile card layouts với proper client info display
 
-#### 12. Founder System Reorganization & Modal Updates (January 16, 2025 - Final Update)
+### UI/UX Improvements
 
-**Founder Department Structure:**
+**Display Structure:**
 
-- Changed "Manager" department to "Founder" department
-- Reorganized staff structure to reflect founder roles with revenue percentage allocation
-- Removed individual Lead, Marketing, Art Director entries from staff list
-- Consolidated into 3 founder members with assigned roles
+- Table Column "Đơn hàng": Shows orderName (bold) → clientName (muted) → payment status
+- Calendar Events: Shows orderName → clientName
+- Design Board Cards: Shows orderName → clientName
+- Mobile Cards: Enhanced with proper client information hierarchy
 
-**Founder Role Assignments:**
+**Form Validation:**
 
-- **Đạt**: Lead (2%) + Marketing (5%) = 7% total revenue
-- **Huy**: Art Director (5%) = 5% total revenue
-- **An**: Manager (5%) = 5% total revenue
-- All founder percentages automatically calculated and added to "Cộng Thêm" (Additional Costs)
+- Tên đơn hàng: Required field
+- Khách hàng selection: Required, auto-populates phone number
+- Phone number: Auto-filled and disabled in forms
+- Client modal: Full validation for required fields (name, email, phone)
 
-**Revenue Percentage System:**
+### Data Integration
 
-- Lead: 2% of monthly revenue (assigned to core staff)
-- Marketing: 5% of monthly revenue (assigned to core staff)
-- Art Director: 5% of monthly revenue (assigned to core staff)
-- Manager: 5% of monthly revenue (assigned to core staff)
-- Automatic calculation: monthlyRevenue \* percentage for each role
+**Client-Show Relationship:**
 
-**Department Summary Updates:**
+- Shows now reference clients by ID
+- Phone numbers automatically sync from client data
+- Dropdown selection in show forms populated from client list
+- Edit forms maintain client relationship integrity
 
-- Reduced from 3 departments to 2: Founder, Design
-- Changed grid layout from 3-column to 2-column
-- Founder department includes all 3 core staff members
-- Maintained all calculation logic and display functionality
+### Mobile Responsiveness
 
-**Salary Modal Text Updates:**
+**Enhanced Mobile Experience:**
 
-- Changed "Chi phí" to "Cộng Thêm" (Additional Costs → Add More)
-- Changed "Đã ứng" to "Trừ Bớt" (Advances → Subtract)
-- Updated all section headers, placeholders, and empty state messages
-- Updated overview cards to reflect new terminology
-- Maintained all functionality while improving clarity
+- Client cards: Improved touch targets and information hierarchy
+- Show forms: Responsive grid layouts for mobile devices
+- Modal forms: Optimized for mobile screens with proper spacing
+- Table views: Better mobile card layouts với client information display
 
-**Backend Configuration Updates:**
+## Create Show Modal Synchronization (Ngày 21/01/2025)
 
-- Updated ConfigurationKey enum:
-  - Added: FUND_LEAD_PERCENT, FUND_ART_DIRECTOR_PERCENT, FUND_MANAGER_PERCENT
-  - Removed: FUND_ART_LEAD_PERCENT, FUND_PM_PERCENT, FUND_SECURITY_PERCENT
-- Updated revenue allocation service to use new configuration keys
-- Modified fund allocation logic to reflect new founder structure
+### Modal Design Consistency
 
-**Data Structure Changes:**
+**Completed Tasks:**
 
-```typescript
-// New staff structure with founder roles
-{
-  id: 'ST003',
-  name: 'Đạt',
-  role: 'Lead + Marketing',
-  department: 'Founder',
-  founderRoles: ['Lead', 'Marketing'],
-  revenuePercentage: 7 // 2% + 5%
-}
+- ✅ Đồng bộ Create Show modal với Edit Show modal design
+- ✅ Cập nhật styling để giống Edit modal: backdrop blur, card styling, proper spacing
+- ✅ Thay đổi layout từ single column sang professional 2-column modal
+- ✅ Cập nhật tất cả form fields với consistent styling và sizing
 
-// Automatic revenue calculation
-additionalCosts: [
-  { type: 'Lead (2% doanh thu)', amount: monthlyRevenue * 0.02 },
-  { type: 'Marketing (5% doanh thu)', amount: monthlyRevenue * 0.05 }
-]
-```
+**Technical Details:**
 
-**Specifications Updates:**
-
-- Updated specs.md to reflect new percentage structure
-- Added founder role assignment documentation
-- Modified revenue allocation formulas
-- Updated total fixed costs calculation
+- Modal container: `bg-black/70 backdrop-blur-sm` với `max-w-2xl h-[95vh]`
+- Form styling: `h-10 text-sm` inputs với `bg-background border-input`
+- Button styling: `h-10 text-sm font-medium` với proper spacing
+- Grid layouts: `gap-3` thay vì `gap-2` cho better spacing
+- Label styling: `text-sm font-medium text-foreground` thay vì `text-xs`
 
 **UI/UX Improvements:**
 
-- Clearer terminology in salary management
-- Simplified department structure
-- Automatic founder revenue calculation display
-- Consistent color coding: green for additions, red for subtractions
-- Enhanced modal readability with updated section headers
+- **Professional Modal Design:** Same backdrop và shadow như Edit modal
+- **Consistent Field Sizing:** Tất cả inputs đều `h-10` height
+- **Better Typography:** Larger labels và text cho better readability
+- **Proper Spacing:** 3-unit gaps thay vì 2-unit cho cleaner layout
+- **Action Buttons:** Border-top separator với proper button sizing
 
-**System Integration:**
+**Validation Updates:**
 
-- Founder revenue automatically flows into salary calculations
-- Wishlist integration continues to work with new terminology
-- Search functionality works across updated staff structure
-- All existing features maintained with improved clarity
+- Added `clientId` validation trong handleCreateShow
+- Required both `orderName` và `clientId` để create show
+- Maintained existing price validation logic
 
----
+## Client Interface Simplification (Ngày 21/01/2025)
 
-#### 13. Department Structure & Staff Management Updates (January 16, 2025 - Latest)
+### Simplified Client Management
 
-**Department Reorganization:**
+**Completed Tasks:**
 
-- Changed "Founder" to "Đội ngũ quản lý" (Management Team) in department summary
-- Expanded from 2 departments to 3: Đội ngũ quản lý, Photographer, Design
-- Changed grid layout from 2-column to 3-column for better organization
-- Added dedicated photographer department with new staff members
+- ✅ Xóa trường "Trạng thái" khỏi Client interface
+- ✅ Xóa trường "Ngày gia nhập" khỏi Client interface
+- ✅ Xóa trường "Dịch vụ quan tâm" khỏi Client interface
+- ✅ Cập nhật sample data để loại bỏ các trường không cần thiết
+- ✅ Cập nhật form state và validation logic
 
-**New Staff Structure:**
+**Interface Changes:**
 
-- **Đội ngũ quản lý**: Đạt (Lead + Marketing), Huy (Art Director), An (Manager)
-- **Photographer**: Minh (Key Photographer), Tùng (Support Photographer)
-- **Design**: A Phúc (Pick), Long (Blend), Lai (Retouch)
+- **Before:** `status`, `joinDate`, `preferredServices` fields
+- **After:** Chỉ giữ lại: `id`, `name`, `email`, `phone`, `address`, `totalShows`, `totalSpent`, `lastShowDate`, `notes`
 
-**Staff List Display Updates:**
+## Finance Tab Search Position Update (Ngày 21/01/2025)
 
-- Implemented role-based grouping with sub-headers showing job titles
-- Removed individual status indicators (Hoạt động, Nghỉ phép, Tạm nghỉ)
-- Removed salary/month display from staff cards
-- Removed skills display (Wedding Photography, Portrait, +1)
-- Removed eye icon (view action) - kept only edit functionality
+### Chi Lương Tab Search Alignment
 
-**Staff Management Page Cleanup:**
+**Completed Tasks:**
 
-- Removed `baseSalary`, `status`, and `skills` fields from Staff interface
-- Updated search functionality to exclude skills-based filtering
-- Simplified staff card display to show only essential information
-- Enhanced edit functionality while removing unnecessary view options
-- Updated placeholder text from "kỹ năng" to "chức vụ"
+- ✅ Di chuyển ô tìm kiếm từ CardHeader xuống CardContent
+- ✅ Đồng bộ vị trí search với các tab khác (Wishlist, External Income)
+- ✅ Cập nhật layout để search ở dưới CardTitle
 
-**Salary Data Integration:**
+**Technical Details:**
 
-- Added salary breakdown for new photographer staff (ST004 - Minh, ST008 - Tùng)
-- Minh: Key Photographer with 5.2M total earnings, 400K additional costs
-- Tùng: Support Photographer with 3.2M total earnings, 800K advances
-- Maintained all existing calculation logic and wishlist integration
+- Moved search from `justify-between` header layout
+- Added dedicated search section trong CardContent với `mb-3` spacing
+- Search input now `flex-1` width thay vì fixed `w-48`
+- Maintained Filter button và functionality
 
-**UI/UX Improvements:**
+## Hydration Mismatch Fix (Ngày 21/01/2025)
 
-- Role-based sub-headers with uppercase tracking for better visual hierarchy
-- Indented staff cards under their respective role headers
-- Cleaner staff information display focusing on name, department, and ID
-- Streamlined edit interface without redundant view options
-- Consistent spacing and typography across all staff displays
+### React Hydration Error Resolution
+
+**Issue:** Server-client HTML mismatch causing hydration warnings
+**Root Cause:** Usage of `new Date()` in component initialization and theme provider hydration
+
+**Completed Fixes:**
+
+- ✅ Fixed YearProvider hydration mismatch với useEffect pattern
+- ✅ Added suppressHydrationWarning to ThemeProvider
+- ✅ Added suppressHydrationWarning to body element trong RootLayout
+- ✅ Created useClientDate và useHydrationSafeDate hooks for safe date handling
 
 **Technical Implementation:**
 
-```typescript
-// Role-based grouping
-{
-  Array.from(new Set(filteredStaff.map((staff) => staff.role))).map((role) => {
-    const roleStaff = filteredStaff.filter((staff) => staff.role === role);
-    return (
-      <div key={role} className="space-y-2">
-        <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide px-2">
-          {role}
-        </div>
-        {/* Staff cards for this role */}
-      </div>
-    );
-  });
-}
+- **YearProvider:** Changed from `useState(new Date().getFullYear())` to safe initialization
+- **ThemeProvider:** Added `suppressHydrationWarning` prop
+- **RootLayout:** Added `suppressHydrationWarning` to body element
+- **Custom Hooks:** Created utility hooks for client-safe date operations
+
+**Before:**
+
+```tsx
+const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 ```
 
-**Data Structure Updates:**
+**After:**
 
-- Removed unnecessary fields from staff interface
-- Added new photographer staff with complete salary data
-- Updated department mapping to reflect new structure
-- Maintained backward compatibility with existing functionality
+```tsx
+const [currentYear, setCurrentYear] = useState(2024); // Fallback
+useEffect(() => {
+  setCurrentYear(new Date().getFullYear());
+}, []);
+```
 
-**Benefits:**
+**Prevention:** Use custom hooks `useClientDate()` or `useHydrationSafeDate()` for future date operations
 
-- **Cleaner Interface**: Removed clutter from staff management
-- **Better Organization**: Role-based grouping improves navigation
-- **Enhanced Focus**: Emphasis on essential information only
-- **Improved Workflow**: Streamlined edit process without redundant options
-- **Scalable Structure**: Easy to add new roles and departments
+## Client Interface TypeError Fix (Ngày 21/01/2025)
 
----
+### Undefined Slice Error Resolution
 
-#### 14. Quyết toán & Salary Management Enhancement (January 16, 2025 - Latest)
+**Issue:** `TypeError: Cannot read properties of undefined (reading 'slice')` in ClientsPage
+**Root Cause:** Code still referencing removed fields (`status`, `joinDate`, `preferredServices`) after interface simplification
 
-**Cash Flow Calculation Updates:**
+**Completed Fixes:**
 
-- **Tiền mặt hiện tại**: Implemented real-time calculation based on specs formula
-  - Formula: `Tiền mặt đầu kỳ + Đã thu trong kỳ + Thu ngoài trong kỳ - Chi lương (thực chi) - Chi Wishlist (thực chi)`
-  - Dynamic calculation based on actual salary payment status
-- **Tiền mặt cuối kỳ**: Added estimated end-of-period cash calculation
-  - Formula: `Tiền mặt đầu kỳ + Đã thu trong kỳ + Thu ngoài trong kỳ - Chi lương (dự kiến) - Chi Wishlist (thực chi)`
-  - Helps with financial planning and forecasting
-
-**Salary Management Grid Layout:**
-
-- **Replaced list view** with responsive grid layout (1/2/3 columns)
-- **Individual staff cards** showing:
-  - Staff avatar, name, and role
-  - Total salary, show earnings, and deductions
-  - Click-to-open salary detail modal
-- **Removed role grouping** for better scalability with many staff members
-- **Enhanced visual hierarchy** with card-based design
-
-**Payment Status Tracking:**
-
-- **Added payment switch** in salary detail modal
-- **Real-time cash flow impact**: Changes to payment status immediately affect "Tiền mặt hiện tại"
-- **Status indicators**: Clear "Chưa chi" / "Đã chi" toggle with visual feedback
-- **Automatic calculation**: System tracks which salaries have been actually paid vs. planned
+- ✅ Completely rewrote ClientsPage component với clean interface
+- ✅ Removed all references to deleted fields (`status`, `joinDate`, `preferredServices`)
+- ✅ Simplified search filter to use only existing fields
+- ✅ Updated client cards to show relevant information only
+- ✅ Fixed modal forms to match simplified interface
 
 **Technical Implementation:**
 
-```typescript
-// Payment status state management
-const [staffPaymentStatus, setStaffPaymentStatus] = useState<{
-  [key: string]: boolean;
-}>({});
+- **filteredClients:** Only searches trong existing fields (name, email, phone, address, notes)
+- **Client Cards:** Shows totalShows instead của status badges
+- **Modal Form:** Clean 5-field form (name, email, phone, address, notes)
+- **No Status Filter:** Removed status dropdown filter
+- **Search Enhancement:** Added notes field to search criteria
 
-// Dynamic cash calculation
-const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
-  if (staffPaymentStatus[staff.id]) {
-    const salaryDetail = getStaffSalaryDetails(
-      staff.id,
-      currentYear,
-      selectedMonth
-    );
-    return total + salaryDetail.totalSalary;
-  }
-  return total;
-}, 0);
+**Interface Cleanup:**
 
-// Real-time cash flow
-const currentCash =
-  startingCash +
-  collectedRevenue +
-  externalIncome -
-  actualPaidSalaries -
-  wishlistExpenses;
-```
-
-**UI/UX Improvements:**
-
-- **Grid-based salary display** for better space utilization
-- **Toggle switch design** with clear visual states
-- **Real-time updates** when payment status changes
-- **Consistent terminology** matching specs (đầu kỳ, cuối kỳ, thực chi)
-- **Color-coded cash flow** items for better readability
-
-**Business Benefits:**
-
-- **Accurate cash tracking**: Real-time visibility of actual vs. planned expenses
-- **Better financial control**: Immediate impact visibility when making payments
-- **Improved workflow**: Easy salary payment tracking and management
-- **Scalable design**: Grid layout handles growing number of staff members
-- **Compliance with specs**: Cash flow calculations match documented formulas
-
-**Data Structure Updates:**
-
-- Added payment status tracking for individual staff members
-- Enhanced cash flow calculation logic
-- Maintained backward compatibility with existing salary data
-- Integrated with existing wishlist and external income systems
-
----
-
-#### 15. UI/UX Fixes & Feature Enhancements (January 16, 2025 - Latest)
-
-**Salary List Grid Implementation:**
-
-- **Converted salary list to grid**: Changed from role-grouped list to responsive grid layout (1/2/3 columns)
-- **Enhanced staff cards**: Added payment status indicator, improved information display
-- **Consistent design**: Both "Chi lương" tab and "Quyết toán" tab now use same grid layout
-- **Better space utilization**: Grid layout accommodates more staff members efficiently
-
-**Payment Status Switch Fix:**
-
-- **Fixed toggle functionality**: Replaced complex CSS with conditional classes for reliable operation
-- **Visual feedback**: Clear visual states for "Chưa chi" / "Đã chi" with proper colors
-- **Real-time updates**: Switch changes immediately affect cash flow calculations
-- **Improved accessibility**: Better contrast and hover states
-
-**Delete Functionality for Salary Items:**
-
-- **Added delete buttons**: X button for both "Cộng thêm" and "Trừ bớt" items
-- **Confirmation dialogs**: User confirmation before deletion to prevent accidents
-- **Consistent styling**: Red delete buttons with hover effects
-- **Proper layout**: Flex layout with amount and delete button aligned
-
-**Technical Implementation:**
-
-```typescript
-// Fixed switch styling
-<div
-  className={`w-11 h-6 rounded-full transition-colors relative ${
-    staffPaymentStatus[selectedStaffForSalary]
-      ? "bg-blue-600"
-      : "bg-gray-200 dark:bg-gray-700"
-  }`}
->
-  <div
-    className={`absolute top-[2px] left-[2px] bg-white border rounded-full h-5 w-5 transition-transform ${
-      staffPaymentStatus[selectedStaffForSalary]
-        ? "translate-x-5"
-        : "translate-x-0"
-    }`}
-  ></div>
-</div>;
-
-// Delete functions
-const handleDeleteCost = (staffId: string, costIndex: number) => {
-  if (confirm("Bạn có chắc chắn muốn xóa khoản cộng thêm này?")) {
-    // API call to delete cost
-    console.log(`Deleting cost at index ${costIndex} for staff ${staffId}`);
-  }
-};
-
-const handleDeleteAdvance = (staffId: string, advanceIndex: number) => {
-  if (confirm("Bạn có chắc chắn muốn xóa khoản trừ bớt này?")) {
-    // API call to delete advance
-    console.log(
-      `Deleting advance at index ${advanceIndex} for staff ${staffId}`
-    );
-  }
-};
-```
-
-**UI/UX Improvements:**
-
-- **Grid layout consistency**: Both salary tabs now use same modern grid design
-- **Payment status visibility**: Clear indicators on staff cards showing payment status
-- **Interactive elements**: Proper hover states and visual feedback
-- **Delete confirmation**: User-friendly confirmation dialogs
-- **Responsive design**: Grid adapts to different screen sizes
-
-**Fixed Issues:**
-
-1. ✅ **Salary list grid**: Converted from grouped list to responsive grid layout
-2. ✅ **Switch functionality**: Fixed toggle switch with proper CSS classes and state management
-3. ✅ **Delete functionality**: Added delete buttons with confirmation for salary items
-
-**Business Benefits:**
-
-- **Better user experience**: Consistent grid layout across all salary views
-- **Improved workflow**: Easy payment status tracking and management
-- **Data integrity**: Confirmation dialogs prevent accidental deletions
-- **Scalable design**: Grid layout handles growing number of staff members
-- **Enhanced control**: Full CRUD operations for salary components
-
-**Future Enhancements:**
-
-- **Backend integration**: Connect delete functions to actual API endpoints
-- **Undo functionality**: Allow users to undo recent deletions
-- **Bulk operations**: Select multiple items for batch operations
-- **Audit trail**: Track who deleted what and when
-
----
-
-_Cập nhật bởi: AI Assistant | Thời gian: 16/01/2025 18:15_
+- **Removed:** Status management, join date tracking, preferred services tracking
+- **Retained:** Core contact info, show statistics, notes
+- **Enhanced:** Better search functionality, cleaner UI

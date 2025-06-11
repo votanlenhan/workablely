@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Switch } from '@/components/ui/switch';
 import { 
   Calculator,
   Heart,
@@ -30,7 +31,8 @@ import {
   Users,
   BookOpen,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Clock
 } from 'lucide-react';
 import { DatePickerInput } from '@/components/ui/date-picker';
 import { useYear } from '@/lib/year-context';
@@ -89,6 +91,11 @@ export default function FinancePage() {
   const [incomeSearchTerm, setIncomeSearchTerm] = useState('');
   const [salarySearchTerm, setSalarySearchTerm] = useState('');
   const [staffPaymentStatus, setStaffPaymentStatus] = useState<{[key: string]: boolean}>({});
+  const [staffPaymentDates, setStaffPaymentDates] = useState<{[key: string]: string}>({});
+  
+  // Month closing status
+  const [monthClosingStatus, setMonthClosingStatus] = useState<{[key: string]: boolean}>({});
+  const [closingDate, setClosingDate] = useState<string>('');
 
   // Staff data with roles and salary details - ordered by priority
   const staffData = [
@@ -246,15 +253,7 @@ export default function FinancePage() {
         date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-05` : '',
         description: 'Bù lương thợ do discount show'
       },
-      {
-        id: 6,
-        category: 'Internet',
-        predicted: predictExpenseFromHistory('Internet', historicalFixedExpenses),
-        actual: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 500000 : 0,
-        status: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? 'Đã chi' : 'Chưa chi',
-        date: month <= currentDate.getMonth() + 1 && year <= currentDate.getFullYear() ? `${year}-${monthStr}-03` : '',
-        description: `Cước internet tháng ${month}`
-      }
+
     ];
   };
 
@@ -432,7 +431,8 @@ export default function FinancePage() {
       category: 'Thiết bị',
       priority: 'Cao',
       estimatedCost: 85000000,
-      status: 'Đang xem xét',
+      status: 'Đã chi',
+      date: '2025-01-10',
       notes: 'Cần để nâng cấp chất lượng ảnh'
     },
     {
@@ -441,7 +441,8 @@ export default function FinancePage() {
       category: 'Thiết bị',
       priority: 'Trung bình',
       estimatedCost: 45000000,
-      status: 'Đã duyệt',
+      status: 'Chưa chi',
+      date: '2025-01-15',
       notes: 'Thay thế lens cũ bị hỏng'
     },
     {
@@ -450,7 +451,8 @@ export default function FinancePage() {
       category: 'Thiết bị',
       priority: 'Thấp',
       estimatedCost: 15000000,
-      status: 'Chờ duyệt',
+      status: 'Chưa chi',
+      date: '2025-01-20',
       notes: 'Bổ sung thêm ánh sáng'
     }
   ]);
@@ -463,6 +465,7 @@ export default function FinancePage() {
     priority: 'Trung bình',
     estimatedCost: 0,
     status: 'Chờ duyệt',
+    date: new Date().toISOString().split('T')[0],
     notes: ''
   });
 
@@ -473,6 +476,8 @@ export default function FinancePage() {
   }, [currentYear, selectedMonth]);
 
   // External Income state - Dữ liệu theo tháng được chọn
+
+
   const getExternalIncomesData = (year: number, month: number) => {
     // Chỉ hiển thị data cho tháng hiện tại và các tháng trước đó
     if (month > currentDate.getMonth() + 1 && year >= currentDate.getFullYear()) {
@@ -488,7 +493,8 @@ export default function FinancePage() {
       date: `${year}-01-15`,
       category: 'Bán thiết bị',
       description: 'Bán máy ảnh Canon 5D Mark IV',
-      recordedBy: 'Admin'
+      recordedBy: 'Admin',
+      status: 'Đã thu'
     },
     {
       id: 2,
@@ -497,7 +503,8 @@ export default function FinancePage() {
       date: `${year}-01-20`,
       category: 'Cho thuê',
       description: 'Thuê studio 2 ngày cho công ty ABC',
-      recordedBy: 'Admin'
+      recordedBy: 'Admin',
+      status: 'Đã thu'
     },
     {
       id: 3,
@@ -506,7 +513,8 @@ export default function FinancePage() {
       date: `${year}-01-25`,
       category: 'Đào tạo',
       description: 'Workshop cơ bản về nhiếp ảnh cưới',
-      recordedBy: 'Manager'
+      recordedBy: 'Manager',
+      status: 'Chưa thu'
     },
     // Tháng 2
     {
@@ -664,7 +672,8 @@ export default function FinancePage() {
     date: new Date().toISOString().split('T')[0],
     category: 'Bán thiết bị',
     description: '',
-    recordedBy: 'Admin'
+    recordedBy: 'Admin',
+    status: 'Chưa thu'
   });
 
   // Modal states
@@ -676,15 +685,30 @@ export default function FinancePage() {
   const [selectedWishlist, setSelectedWishlist] = useState<any>(null);
   const [selectedIncome, setSelectedIncome] = useState<any>(null);
 
-  // Budget overview data
+  // Budget overview data - Calculated based on actual payment status
   const budgetOverview = {
     totalBudget: 200000000,
-    fixedExpensesTotal: fixedExpenses.reduce((sum, exp) => sum + exp.actual, 0),
-    wishlistBudget: 80000000,
-    wishlistUsed: wishlistItems.reduce((sum, item) => 
-      item.status === 'Đã duyệt' ? sum + item.estimatedCost : sum, 0
+    // Fixed expenses: only count actually paid items
+    fixedExpensesTotal: fixedExpenses.reduce((sum, exp) => 
+      exp.status === 'Đã chi' ? sum + exp.actual : sum, 0
     ),
-    externalIncome: externalIncomes.reduce((sum, income) => sum + income.amount, 0)
+    // Planned fixed expenses (for forecasting)
+    fixedExpensesPlanned: fixedExpenses.reduce((sum, exp) => sum + exp.actual, 0),
+    wishlistBudget: 80000000,
+    // Wishlist: only count actually paid items
+    wishlistUsed: wishlistItems.reduce((sum, item) => 
+      item.status === 'Đã chi' ? sum + item.estimatedCost : sum, 0
+    ),
+    // Planned wishlist expenses (for forecasting)
+    wishlistPlanned: wishlistItems.reduce((sum, item) => 
+      item.status === 'Đã duyệt' || item.status === 'Đã chi' ? sum + item.estimatedCost : sum, 0
+    ),
+    // External income: only count actually received items
+    externalIncome: externalIncomes.reduce((sum, income) => 
+      income.status === 'Đã thu' ? sum + income.amount : sum, 0
+    ),
+    // Planned external income (for forecasting)
+    externalIncomePlanned: externalIncomes.reduce((sum, income) => sum + income.amount, 0)
   };
 
   const availableWishlistFunds = budgetOverview.wishlistBudget - budgetOverview.wishlistUsed + budgetOverview.externalIncome;
@@ -725,6 +749,115 @@ export default function FinancePage() {
   const handleDeleteExpense = (id: number) => {
     if (confirm('Bạn có chắc chắn muốn xóa khoản chi này?')) {
       setFixedExpenses(fixedExpenses.filter(exp => exp.id !== id));
+    }
+  };
+
+  // Toggle payment status directly in table
+  const handleToggleExpenseStatus = (id: number, currentStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening modal when clicking switch
+    const newStatus = currentStatus === 'Đã chi' ? 'Chưa chi' : 'Đã chi';
+    setFixedExpenses(fixedExpenses.map(exp => 
+      exp.id === id ? { ...exp, status: newStatus } : exp
+    ));
+  };
+
+  // Toggle wishlist payment status directly in table
+  const handleToggleWishlistStatus = (id: number, currentStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening modal when clicking switch
+    const newStatus = currentStatus === 'Đã chi' ? 'Chưa chi' : 'Đã chi';
+    setWishlistItems(wishlistItems.map(item => 
+      item.id === id ? { ...item, status: newStatus } : item
+    ));
+  };
+
+  // Toggle income status directly in table
+  const handleToggleIncomeStatus = (id: number, currentStatus: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening modal when clicking switch
+    const newStatus = currentStatus === 'Đã thu' ? 'Chưa thu' : 'Đã thu';
+    setExternalIncomes(externalIncomes.map(income => 
+      income.id === id ? { ...income, status: newStatus } : income
+    ));
+  };
+
+  // Toggle salary payment status directly in table
+  const handleToggleSalaryStatus = (staffId: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent opening modal when clicking switch
+    const isCurrentlyPaid = staffPaymentStatus[staffId];
+    
+    setStaffPaymentStatus(prev => ({
+      ...prev,
+      [staffId]: !prev[staffId]
+    }));
+
+    // Set payment date when marking as paid, clear when marking as unpaid
+    setStaffPaymentDates(prev => ({
+      ...prev,
+      [staffId]: !isCurrentlyPaid ? new Date().toISOString().split('T')[0] : ''
+    }));
+  };
+
+  // Toggle month closing status and update cash flow
+  const handleToggleMonthClosing = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const monthKey = `${currentYear}-${selectedMonth.toString().padStart(2, '0')}`;
+    const isCurrentlyClosed = monthClosingStatus[monthKey];
+    
+    if (!isCurrentlyClosed) {
+      // Calculate final profit using new formula: Đã thu - Chi lương - Khoản tiền ngắt cho wishlist (20% doanh thu)
+      const collectedRevenue = 95000000; // Actually collected
+      const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
+        if (staffPaymentStatus[staff.id]) {
+          const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+          return total + salaryDetail.totalSalary;
+        }
+        return total;
+      }, 0);
+      const actualCollectedIncome = filteredIncomes.reduce((total, income) => {
+        if (income.status === 'Đã thu') {
+          return total + income.amount;
+        }
+        return total;
+      }, 0);
+      const showsRevenue = 120000000;
+      const wishlistReserve = showsRevenue * 0.2; // 20% doanh thu
+      
+      const totalIncome = collectedRevenue + actualCollectedIncome;
+      const finalProfit = totalIncome - actualPaidSalaries - wishlistReserve;
+      
+      // Confirm before closing month
+      if (confirm(`Bạn có chắc chắn muốn chốt sổ tháng này?\n\nLợi nhuận cuối cùng: ${formatCurrency(finalProfit)}\n\nHành động này sẽ cập nhật vào dòng tiền và không thể hoàn tác dễ dàng.`)) {
+        setMonthClosingStatus(prev => ({
+          ...prev,
+          [monthKey]: true
+        }));
+        setClosingDate(new Date().toISOString().split('T')[0]);
+        
+        // Update cash flow when closing month
+        console.log('Cập nhật dòng tiền:', {
+          month: monthKey,
+          finalProfit: finalProfit,
+          totalIncome: totalIncome,
+          totalExpenses: actualPaidSalaries + wishlistReserve,
+          breakdown: {
+            collectedRevenue: collectedRevenue,
+            externalIncome: budgetOverview.externalIncome,
+            salariesPaid: actualPaidSalaries,
+            wishlistReserve: wishlistReserve
+          }
+        });
+      }
+    } else {
+      // Confirm before reopening month
+      if (confirm('Bạn có chắc chắn muốn mở lại tháng đã chốt sổ? Điều này có thể ảnh hưởng đến báo cáo và dòng tiền.')) {
+        setMonthClosingStatus(prev => ({
+          ...prev,
+          [monthKey]: false
+        }));
+        setClosingDate('');
+        
+        // Revert cash flow when reopening month
+        console.log('Hoàn tác cập nhật dòng tiền cho tháng:', monthKey);
+      }
     }
   };
 
@@ -773,7 +906,8 @@ export default function FinancePage() {
         date: new Date().toISOString().split('T')[0],
         category: 'Bán thiết bị',
         description: '',
-        recordedBy: 'Admin'
+        recordedBy: 'Admin',
+        status: 'Chưa thu'
       });
       setIsAddingIncome(false);
     }
@@ -869,7 +1003,8 @@ export default function FinancePage() {
         date: new Date().toISOString().split('T')[0],
         category: 'Bán thiết bị',
         description: '',
-        recordedBy: 'Admin'
+        recordedBy: 'Admin',
+        status: 'Chưa thu'
       });
     }
     setIsIncomeModalOpen(true);
@@ -1006,8 +1141,10 @@ export default function FinancePage() {
       income.recordedBy.toLowerCase().includes(incomeSearchTerm.toLowerCase());
   });
 
+
+
   const tabs = [
-    { id: 'budget', label: 'Dự toán & Chi phí cố định', icon: Calculator },
+    { id: 'budget', label: 'Chi phí cố định', icon: Calculator },
     { id: 'wishlist', label: 'Chi Wishlist', icon: Heart },
     { id: 'external-income', label: 'Thu ngoài', icon: DollarSign },
     { id: 'salary', label: 'Chi lương', icon: Users },
@@ -1050,7 +1187,39 @@ export default function FinancePage() {
       </div>
 
       {/* Budget Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-8 gap-2">
+        <Card>
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Doanh thu</p>
+                <p className="text-base font-bold text-green-600">{formatCurrency((() => {
+                  const showsRevenue = 120000000; // Total shows revenue
+                  return showsRevenue;
+                })())}</p>
+                <p className="text-xs text-green-600">Tổng doanh thu shows</p>
+              </div>
+              <TrendingUp className="h-6 w-6 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="p-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground">Đã thu</p>
+                <p className="text-base font-bold text-green-600">{formatCurrency((() => {
+                  const collectedRevenue = 95000000; // Actually collected from shows
+                  return collectedRevenue + budgetOverview.externalIncome;
+                })())}</p>
+                <p className="text-xs text-green-600">Shows + Thu ngoài</p>
+              </div>
+              <ArrowUpCircle className="h-6 w-6 text-muted-foreground" />
+            </div>
+          </CardContent>
+        </Card>
+
         <Card>
           <CardContent className="p-2">
             <div className="flex items-center justify-between">
@@ -1069,8 +1238,17 @@ export default function FinancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Chi phí cố định</p>
-                <p className="text-base font-bold">{formatCurrency(budgetOverview.fixedExpensesTotal)}</p>
-                <p className="text-xs text-orange-600">Đã chi: {Math.round((budgetOverview.fixedExpensesTotal / 85000000) * 100)}%</p>
+                <p className="text-base font-bold">{formatCurrency((() => {
+                  // Calculate actual paid fixed expenses
+                  const actualPaidExpenses = filteredExpenses.reduce((total, expense) => {
+                    if (expense.status === 'Đã chi') {
+                      return total + expense.actual;
+                    }
+                    return total;
+                  }, 0);
+                  return actualPaidExpenses;
+                })())}</p>
+                <p className="text-xs text-orange-600">Đã chi thực tế</p>
               </div>
               <Calculator className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -1082,8 +1260,17 @@ export default function FinancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Quỹ Wishlist</p>
-                <p className="text-base font-bold">{formatCurrency(availableWishlistFunds)}</p>
-                <p className="text-xs text-green-600">Khả dụng: {Math.round((availableWishlistFunds / budgetOverview.wishlistBudget) * 100)}%</p>
+                <p className="text-base font-bold">{formatCurrency((() => {
+                  // Calculate actual wishlist spending based on paid status
+                  const actualWishlistSpent = filteredWishlist.reduce((total, item) => {
+                    if (item.status === 'Đã chi') {
+                      return total + item.estimatedCost;
+                    }
+                    return total;
+                  }, 0);
+                  return budgetOverview.wishlistBudget - actualWishlistSpent;
+                })())}</p>
+                <p className="text-xs text-green-600">Khả dụng thực tế</p>
               </div>
               <Wallet className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -1095,8 +1282,17 @@ export default function FinancePage() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-muted-foreground">Thu ngoài</p>
-                <p className="text-base font-bold">{formatCurrency(budgetOverview.externalIncome)}</p>
-                <p className="text-xs text-green-600">Bổ sung quỹ Wishlist</p>
+                <p className="text-base font-bold">{formatCurrency((() => {
+                  // Calculate actual collected external income
+                  const actualCollectedIncome = filteredIncomes.reduce((total, income) => {
+                    if (income.status === 'Đã thu') {
+                      return total + income.amount;
+                    }
+                    return total;
+                  }, 0);
+                  return actualCollectedIncome;
+                })())}</p>
+                <p className="text-xs text-green-600">Đã thu thực tế</p>
               </div>
               <ArrowUpCircle className="h-6 w-6 text-muted-foreground" />
             </div>
@@ -1109,7 +1305,15 @@ export default function FinancePage() {
               <div>
                 <p className="text-xs text-muted-foreground">Tiền mặt hiện tại</p>
                 <p className="text-base font-bold text-blue-600">{formatCurrency((() => {
-                  // Calculate actual paid salaries based on payment status
+                  // Calculate based on actual collected/paid amounts
+                  const startingCash = 50000000;
+                  const collectedRevenue = 95000000;
+                  const actualCollectedIncome = filteredIncomes.reduce((total, income) => {
+                    if (income.status === 'Đã thu') {
+                      return total + income.amount;
+                    }
+                    return total;
+                  }, 0);
                   const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
                     if (staffPaymentStatus[staff.id]) {
                       const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
@@ -1117,8 +1321,20 @@ export default function FinancePage() {
                     }
                     return total;
                   }, 0);
+                  const actualPaidExpenses = filteredExpenses.reduce((total, expense) => {
+                    if (expense.status === 'Đã chi') {
+                      return total + expense.actual;
+                    }
+                    return total;
+                  }, 0);
+                  const actualWishlistSpent = filteredWishlist.reduce((total, item) => {
+                    if (item.status === 'Đã chi') {
+                      return total + item.estimatedCost;
+                    }
+                    return total;
+                  }, 0);
                   
-                  return 50000000 + 95000000 + budgetOverview.externalIncome - actualPaidSalaries - budgetOverview.wishlistUsed;
+                  return startingCash + collectedRevenue + actualCollectedIncome - actualPaidSalaries - actualPaidExpenses - actualWishlistSpent;
                 })())}</p>
                 <p className="text-xs text-blue-600">Thực tế hiện tại</p>
               </div>
@@ -1133,13 +1349,24 @@ export default function FinancePage() {
               <div>
                 <p className="text-xs text-muted-foreground">Tiền mặt cuối kỳ</p>
                 <p className="text-base font-bold text-purple-600">{formatCurrency((() => {
-                  // Calculate estimated end-of-period cash (if all salaries are paid)
+                  // Calculate estimated end-of-period cash if all items are paid/collected
+                  const startingCash = 50000000;
+                  const totalShowsRevenue = 120000000; // Full revenue if all collected
+                  const totalExternalIncome = filteredIncomes.reduce((total, income) => {
+                    return total + income.amount;
+                  }, 0);
                   const totalSalaries = filteredStaff.reduce((sum, staff) => {
                     const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
                     return sum + salaryDetail.totalSalary;
                   }, 0);
+                  const totalFixedExpenses = filteredExpenses.reduce((total, expense) => {
+                    return total + expense.actual;
+                  }, 0);
+                  const totalWishlistBudget = filteredWishlist.reduce((total, item) => {
+                    return total + item.estimatedCost;
+                  }, 0);
                   
-                  return 50000000 + 95000000 + budgetOverview.externalIncome - totalSalaries - budgetOverview.wishlistUsed;
+                  return startingCash + totalShowsRevenue + totalExternalIncome - totalSalaries - totalFixedExpenses - totalWishlistBudget;
                 })())}</p>
                 <p className="text-xs text-purple-600">Ước tính</p>
               </div>
@@ -1179,34 +1406,7 @@ export default function FinancePage() {
       {/* Tab Content */}
       {activeTab === 'budget' && (
         <div className="space-y-3">
-          {/* Variance Analysis Card */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Phân tích Dự báo Chi phí Cố định</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground">Tổng dự báo</p>
-                  <p className="text-sm font-bold">{formatCurrency(fixedExpenses.reduce((sum, exp) => sum + exp.predicted, 0))}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Tổng thực tế</p>
-                  <p className="text-sm font-bold">{formatCurrency(budgetOverview.fixedExpensesTotal)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Chênh lệch</p>
-                  <p className={`text-sm font-bold ${getVarianceColor(
-                    fixedExpenses.reduce((sum, exp) => sum + exp.predicted, 0),
-                    budgetOverview.fixedExpensesTotal
-                  )}`}>
-                    {budgetOverview.fixedExpensesTotal - fixedExpenses.reduce((sum, exp) => sum + exp.predicted, 0) > 0 ? '+' : ''}
-                    {formatCurrency(budgetOverview.fixedExpensesTotal - fixedExpenses.reduce((sum, exp) => sum + exp.predicted, 0))}
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Fixed Expenses Management */}
           <Card>
@@ -1247,11 +1447,11 @@ export default function FinancePage() {
                 <div className="space-y-1">
                   {/* Table Header */}
                   <div className="finance-table-grid text-xs font-medium text-muted-foreground border-b pb-1">
+                  <div>Ngày chi</div>
+                  <div>Mô tả</div>
                   <div>Danh mục</div>
                   <div>Dự báo</div>
                   <div>Thực tế</div>
-                  <div>Ngày chi</div>
-                  <div>Mô tả</div>
                   <div>Chênh lệch</div>
                   <div>Trạng thái</div>
                 </div>
@@ -1269,14 +1469,6 @@ export default function FinancePage() {
                         className="finance-table-grid py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
                         onClick={() => openExpenseModal('edit', expense)}
                       >
-                        <div className="flex items-center">
-                          <Icon className="h-3 w-3 mr-1" />
-                          <span>{expense.category}</span>
-                        </div>
-                        <div className="font-medium text-blue-600">{formatCurrency(expense.predicted)}</div>
-                        <div>
-                          <span className="font-medium text-green-600">{formatCurrency(expense.actual)}</span>
-                        </div>
                         <div>
                           <div className="flex items-center">
                             <Calendar className="h-3 w-3 text-muted-foreground mr-1" />
@@ -1286,14 +1478,28 @@ export default function FinancePage() {
                         <div className="text-muted-foreground">
                           <span className="truncate">{expense.description || '-'}</span>
                         </div>
+                        <div className="flex items-center">
+                          <Icon className="h-3 w-3 mr-1" />
+                          <span>{expense.category}</span>
+                        </div>
+                        <div className="font-medium text-blue-600">{formatCurrency(expense.predicted)}</div>
+                        <div>
+                          <span className="font-medium text-green-600">{formatCurrency(expense.actual)}</span>
+                        </div>
                         <div className={`${getVarianceColor(expense.predicted, expense.actual)}`}>
                           {expense.actual - expense.predicted > 0 ? '+' : ''}
                           {formatCurrency(expense.actual - expense.predicted)}
                         </div>
-                        <div>
-                          <span className={`px-1 py-0.5 rounded-full ${getStatusColor(expense.status)}`}>
-                            {expense.status}
-                          </span>
+                        <div className="flex items-center justify-center">
+                          <div className="flex items-center gap-2" onClick={(e) => handleToggleExpenseStatus(expense.id, expense.status, e)}>
+                            <Switch
+                              checked={expense.status === 'Đã chi'}
+                              className="data-[state=checked]:bg-green-600 scale-90"
+                            />
+                            <span className={`text-xs font-medium ${expense.status === 'Đã chi' ? 'text-green-600' : 'text-orange-600'}`}>
+                              {expense.status === 'Đã chi' ? 'Đã chi' : 'Chưa chi'}
+                            </span>
+                          </div>
                         </div>
                       </div>
 
@@ -1307,12 +1513,28 @@ export default function FinancePage() {
                             <Icon className="h-4 w-4 mr-2" />
                             <h3 className="font-medium text-sm">{expense.category}</h3>
                           </div>
-                          <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(expense.status)}`}>
-                            {expense.status}
-                          </span>
+                          <div className="flex items-center gap-2" onClick={(e) => handleToggleExpenseStatus(expense.id, expense.status, e)}>
+                            <Switch
+                              checked={expense.status === 'Đã chi'}
+                              className="data-[state=checked]:bg-green-600 scale-75"
+                            />
+                            <span className={`text-xs font-medium ${expense.status === 'Đã chi' ? 'text-green-600' : 'text-orange-600'}`}>
+                              {expense.status === 'Đã chi' ? 'Đã chi' : 'Chưa chi'}
+                            </span>
+                          </div>
                         </div>
                         
                         <div className="mobile-finance-details">
+                          <div>
+                            <span className="text-muted-foreground">Ngày chi:</span>
+                            <span>{expense.date ? new Date(expense.date).toLocaleDateString('vi-VN') : '-'}</span>
+                          </div>
+                          {expense.description && (
+                            <div>
+                              <span className="text-muted-foreground">Mô tả:</span>
+                              <span className="text-sm">{expense.description}</span>
+                            </div>
+                          )}
                           <div>
                             <span className="text-muted-foreground">Dự báo:</span>
                             <span className="font-medium text-blue-600">{formatCurrency(expense.predicted)}</span>
@@ -1328,16 +1550,6 @@ export default function FinancePage() {
                               {formatCurrency(expense.actual - expense.predicted)}
                             </span>
                           </div>
-                          <div>
-                            <span className="text-muted-foreground">Ngày chi:</span>
-                            <span>{expense.date ? new Date(expense.date).toLocaleDateString('vi-VN') : '-'}</span>
-                          </div>
-                          {expense.description && (
-                            <div>
-                              <span className="text-muted-foreground">Mô tả:</span>
-                              <span className="text-sm">{expense.description}</span>
-                            </div>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1352,43 +1564,7 @@ export default function FinancePage() {
 
       {activeTab === 'wishlist' && (
         <div className="space-y-3">
-          {/* Wishlist Budget Status */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Tình trạng Quỹ Wishlist</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground">Quỹ dự toán</p>
-                  <p className="text-sm font-bold">{formatCurrency(budgetOverview.wishlistBudget)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Đã sử dụng</p>
-                  <p className="text-sm font-bold text-orange-600">{formatCurrency(budgetOverview.wishlistUsed)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Thu ngoài</p>
-                  <p className="text-sm font-bold text-green-600">{formatCurrency(budgetOverview.externalIncome)}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Khả dụng</p>
-                  <p className="text-sm font-bold text-blue-600">{formatCurrency(availableWishlistFunds)}</p>
-                </div>
-              </div>
-              <div className="mt-2">
-                <div className="w-full bg-gray-200 rounded-full h-1">
-                  <div 
-                    className="bg-blue-600 h-1 rounded-full" 
-                    style={{ width: `${Math.min((budgetOverview.wishlistUsed / budgetOverview.wishlistBudget) * 100, 100)}%` }}
-                  ></div>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Đã sử dụng {Math.round((budgetOverview.wishlistUsed / budgetOverview.wishlistBudget) * 100)}% quỹ dự toán
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Wishlist Management */}
           <Card>
@@ -1412,7 +1588,7 @@ export default function FinancePage() {
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                     <Input
-                      placeholder="Tìm kiếm theo item, danh mục, ưu tiên, trạng thái..."
+                      placeholder="Tìm kiếm theo item, danh mục..."
                       value={wishlistSearchTerm}
                       onChange={(e) => setWishlistSearchTerm(e.target.value)}
                       className="h-8 text-sm pl-7"
@@ -1428,12 +1604,11 @@ export default function FinancePage() {
               <div className="admin-table-container">
                 <div className="space-y-1">
                   {/* Table Header */}
-                  <div className="wishlist-table-grid text-xs font-medium text-muted-foreground border-b pb-1">
-                  <div>Item</div>
+                  <div className="wishlist-table-grid-simple text-xs font-medium text-muted-foreground border-b pb-1">
+                  <div>Ngày Chi</div>
+                  <div>Mô tả</div>
                   <div>Danh mục</div>
-                  <div>Ưu tiên</div>
-                  <div>Chi phí ước tính</div>
-                  <div>Trạng thái</div>
+                  <div>Chi phí</div>
                 </div>
 
 
@@ -1444,27 +1619,23 @@ export default function FinancePage() {
                     <div key={item.id}>
                       {/* Desktop Table Layout */}
                       <div 
-                        className="wishlist-table-grid py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
+                        className="wishlist-table-grid-simple py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
                         onClick={() => openWishlistModal('edit', item)}
                       >
-                        <div className="font-medium">
-                          {item.item}
+                        <div>
+                          <div className="flex items-center">
+                            <Calendar className="h-3 w-3 text-muted-foreground mr-1" />
+                            <span>{item.date ? new Date(item.date).toLocaleDateString('vi-VN') : '-'}</span>
+                          </div>
+                        </div>
+                        <div className="text-muted-foreground">
+                          <span className="truncate">{item.item || '-'}</span>
                         </div>
                         <div>
                           {item.category}
                         </div>
                         <div>
-                          <span className={`px-1 py-0.5 rounded-full ${getPriorityColor(item.priority)}`}>
-                            {item.priority}
-                          </span>
-                        </div>
-                        <div>
                           {formatCurrency(item.estimatedCost)}
-                        </div>
-                        <div>
-                          <span className={`px-1 py-0.5 rounded-full ${getStatusColor(item.status)}`}>
-                            {item.status}
-                          </span>
                         </div>
                       </div>
 
@@ -1478,19 +1649,15 @@ export default function FinancePage() {
                             <h3 className="font-medium text-sm">{item.item}</h3>
                             <p className="text-xs text-muted-foreground">{item.category}</p>
                           </div>
-                          <div className="flex flex-col gap-1">
-                            <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(item.priority)}`}>
-                              {item.priority}
-                            </span>
-                            <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(item.status)}`}>
-                              {item.status}
-                            </span>
-                          </div>
                         </div>
                         
                         <div className="mobile-finance-details">
                           <div>
-                            <span className="text-muted-foreground">Chi phí ước tính:</span>
+                            <span className="text-muted-foreground">Ngày Chi:</span>
+                            <span className="font-medium">{item.date ? new Date(item.date).toLocaleDateString('vi-VN') : '-'}</span>
+                          </div>
+                          <div>
+                            <span className="text-muted-foreground">Chi phí:</span>
                             <span className="font-medium">{formatCurrency(item.estimatedCost)}</span>
                           </div>
                           {item.notes && (
@@ -1514,40 +1681,7 @@ export default function FinancePage() {
       {/* External Income Tab */}
       {activeTab === 'external-income' && (
         <div className="space-y-3">
-          {/* External Income Overview */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Tổng quan Thu ngoài</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground">Tổng thu năm</p>
-                  <p className="text-sm font-bold">{formatCurrency(budgetOverview.externalIncome)}</p>
-                  <p className="text-xs text-green-600">+15% so với năm trước</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Thu tháng này</p>
-                  <p className="text-sm font-bold">{formatCurrency(
-                    externalIncomes
-                      .filter(income => new Date(income.date).getMonth() === new Date().getMonth())
-                      .reduce((sum, income) => sum + income.amount, 0)
-                  )}</p>
-                  <p className="text-xs text-blue-600">3 giao dịch</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Nguồn chính</p>
-                  <p className="text-sm font-bold">Bán thiết bị</p>
-                  <p className="text-xs text-orange-600">42% tổng thu</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Bổ sung Wishlist</p>
-                  <p className="text-sm font-bold">{formatCurrency(budgetOverview.externalIncome)}</p>
-                  <p className="text-xs text-green-600">Tự động cộng vào quỹ</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* Monthly Income Breakdown */}
 
@@ -1590,12 +1724,11 @@ export default function FinancePage() {
               <div className="admin-table-container">
                 <div className="space-y-1">
                   {/* Table Header */}
-                  <div className="income-table-grid text-xs font-medium text-muted-foreground border-b pb-1">
-                    <div>Số tiền</div>
-                    <div>Ngày</div>
+                  <div className="income-table-grid-simple text-xs font-medium text-muted-foreground border-b pb-1">
+                    <div>Ngày Thu</div>
+                    <div>Mô tả</div>
                     <div>Danh mục</div>
-                    <div>Nguồn thu & Mô tả</div>
-                    <div>Người ghi</div>
+                    <div>Số tiền</div>
                   </div>
 
 
@@ -1608,20 +1741,12 @@ export default function FinancePage() {
                     <div key={income.id}>
                       {/* Desktop Table Layout */}
                       <div 
-                        className="income-table-grid py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
+                        className="income-table-grid-simple py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
                         onClick={() => openIncomeModal('edit', income)}
                       >
-                        <div className="font-bold text-green-600">
-                          {formatCurrency(income.amount)}
-                        </div>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3 text-muted-foreground" />
                           {new Date(income.date).toLocaleDateString('vi-VN')}
-                        </div>
-                        <div>
-                          <span className="px-1 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs">
-                            {income.category}
-                          </span>
                         </div>
                         <div className="text-muted-foreground">
                           <div>
@@ -1629,8 +1754,13 @@ export default function FinancePage() {
                             <div className="text-muted-foreground text-xs">{income.description}</div>
                           </div>
                         </div>
-                        <div className="text-muted-foreground">
-                          {income.recordedBy}
+                        <div>
+                          <span className="px-1 py-0.5 bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 rounded-full text-xs">
+                            {income.category}
+                          </span>
+                        </div>
+                        <div className="font-bold text-green-600">
+                          {formatCurrency(income.amount)}
                         </div>
                       </div>
 
@@ -1674,359 +1804,327 @@ export default function FinancePage() {
             </CardContent>
           </Card>
 
-          {/* Income by Category Analysis */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Phân tích Thu ngoài theo Danh mục</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
-                {['Bán thiết bị', 'Cho thuê', 'Đào tạo', 'Tư vấn', 'Khác'].map(category => {
-                  const categoryTotal = externalIncomes
-                    .filter(income => income.category === category)
-                    .reduce((sum, income) => sum + income.amount, 0);
-                  const percentage = budgetOverview.externalIncome > 0 
-                    ? Math.round((categoryTotal / budgetOverview.externalIncome) * 100) 
-                    : 0;
-                  
-                  return (
-                    <div key={category} className="text-center p-2 bg-muted/30 rounded">
-                      <p className="text-xs font-medium">{category}</p>
-                      <p className="text-sm font-bold text-green-600">{formatCurrency(categoryTotal)}</p>
-                      <p className="text-xs text-muted-foreground">{percentage}%</p>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+
         </div>
       )}
 
       {/* Salary Tab */}
       {activeTab === 'salary' && (
         <div className="space-y-3">
-          {/* Salary Overview */}
+
+
+
+
+          {/* Staff Salary Management */}
           <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Tổng quan Chi lương - {monthNames[selectedMonth - 1]} {currentYear}</CardTitle>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm">Chi Lương Nhân viên</CardTitle>
             </CardHeader>
             <CardContent className="p-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                <div>
-                  <p className="text-xs text-muted-foreground">Tổng lương tháng</p>
-                  <p className="text-sm font-bold text-primary">
-                    {formatCurrency(filteredStaff.reduce((sum, staff) => {
-                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
-                      return sum + salaryDetail.totalSalary;
-                    }, 0))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">{filteredStaff.length} nhân viên</p>
+              {/* Search and Filter Controls */}
+              <div className="flex items-center gap-2 mb-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
+                  <Input
+                    placeholder="Tìm kiếm nhân viên..."
+                    value={salarySearchTerm}
+                    onChange={(e) => setSalarySearchTerm(e.target.value)}
+                    className="h-8 text-sm pl-7"
+                  />
                 </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Thu nhập từ shows</p>
-                  <p className="text-sm font-bold text-blue-600">
-                    {formatCurrency(filteredStaff.reduce((sum, staff) => {
-                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
-                      return sum + salaryDetail.totalShowEarnings;
-                    }, 0))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Dựa trên hiệu suất</p>
-                </div>
-                <div>
-                  <p className="text-xs text-muted-foreground">Trừ Bớt</p>
-                  <p className="text-sm font-bold text-red-600">
-                    {formatCurrency(filteredStaff.reduce((sum, staff) => {
-                      const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
-                      return sum + salaryDetail.totalAdvances;
-                    }, 0))}
-                  </p>
-                  <p className="text-xs text-muted-foreground">Tạm ứng</p>
-                </div>
+                <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
+                  <Filter className="h-3 w-3" />
+                  Lọc
+                </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {/* Department Summary */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Tổng hợp theo Phòng ban</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                {['Đội ngũ quản lý', 'Photographer', 'Design'].map((dept) => {
-                  const deptStaff = filteredStaff.filter(s => s.department === dept);
-                  const deptTotal = deptStaff.reduce((sum, staff) => {
-                    const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
-                    return sum + salaryDetail.totalSalary;
-                  }, 0);
-                  
-                  return (
-                    <div key={dept} className="p-3 bg-muted/30 rounded-lg">
-                      <h3 className="font-medium text-sm mb-2">{dept}</h3>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span>Số người:</span>
-                          <span className="font-medium">{deptStaff.length}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>Tổng:</span>
-                          <span className="font-bold text-primary">{formatCurrency(deptTotal)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>TB:</span>
-                          <span className="font-medium">{formatCurrency(deptStaff.length > 0 ? deptTotal / deptStaff.length : 0)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
-
-
-
-          {/* Staff Salary List */}
-          <Card>
-            <CardHeader className="pb-1">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Danh sách Lương Nhân viên</CardTitle>
-                <div className="flex gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
-                    <Input
-                      placeholder="Tìm kiếm nhân viên..."
-                      value={salarySearchTerm}
-                      onChange={(e) => setSalarySearchTerm(e.target.value)}
-                      className="h-8 text-sm pl-7 w-48"
-                    />
+              <div className="admin-table-container">
+                <div className="space-y-1">
+                  {/* Table Header */}
+                  <div className="salary-table-grid text-xs font-medium text-muted-foreground border-b pb-1">
+                    <div>Ngày Chi</div>
+                    <div>Tên NV</div>
+                    <div>Chức trách</div>
+                    <div>Shows</div>
+                    <div>Cộng thêm</div>
+                    <div>Trừ bớt</div>
+                    <div>Tổng lương</div>
+                    <div>Trạng thái</div>
                   </div>
+
+                  {/* Staff Salary Rows */}
+                  {filteredStaff.map((staff) => {
+                    const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                    return (
+                      <div key={staff.id}>
+                        {/* Desktop Table Layout */}
+                        <div 
+                          className="salary-table-grid py-1 text-xs border-b cursor-pointer hover:bg-muted/30"
+                          onClick={() => openSalaryDetailModal(staff.id)}
+                        >
+                          <div className="text-xs text-muted-foreground">
+                            {staffPaymentDates[staff.id] ? new Date(staffPaymentDates[staff.id]).toLocaleDateString('vi-VN') : '-'}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-xs font-bold">
+                              {staff.avatar}
+                            </div>
+                            <span className="font-medium">{staff.name}</span>
+                          </div>
+                          <div className="text-muted-foreground">
+                            <div className="font-medium">{staff.role}</div>
+                            <div className="text-xs text-muted-foreground">{staff.department}</div>
+                          </div>
+                          <div className="font-medium text-blue-600">{formatCurrency(salaryDetail.totalShowEarnings)}</div>
+                          <div className="font-medium text-green-600">{formatCurrency(salaryDetail.totalAdditionalCosts)}</div>
+                          <div className="font-medium text-red-600">{formatCurrency(salaryDetail.totalAdvances)}</div>
+                          <div className="font-bold text-primary">{formatCurrency(salaryDetail.totalSalary)}</div>
+                          <div className="flex items-center justify-center">
+                            <div className="flex items-center gap-2" onClick={(e) => handleToggleSalaryStatus(staff.id, e)}>
+                              <Switch
+                                checked={staffPaymentStatus[staff.id] || false}
+                                className="data-[state=checked]:bg-green-600 scale-90"
+                              />
+                              <span className={`text-xs font-medium ${staffPaymentStatus[staff.id] ? 'text-green-600' : 'text-orange-600'}`}>
+                                {staffPaymentStatus[staff.id] ? 'Đã chi' : 'Chưa chi'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Mobile Card Layout */}
+                        <div 
+                          className="mobile-finance-card cursor-pointer"
+                          onClick={() => openSalaryDetailModal(staff.id)}
+                        >
+                          <div className="mobile-finance-header">
+                            <div className="flex items-center gap-2">
+                              <div className="w-8 h-8 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">
+                                {staff.avatar}
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-sm">{staff.name}</h3>
+                                <p className="text-xs text-muted-foreground">{staff.role} • {staff.department}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2" onClick={(e) => handleToggleSalaryStatus(staff.id, e)}>
+                              <Switch
+                                checked={staffPaymentStatus[staff.id] || false}
+                                className="data-[state=checked]:bg-green-600 scale-75"
+                              />
+                              <span className={`text-xs font-medium ${staffPaymentStatus[staff.id] ? 'text-green-600' : 'text-orange-600'}`}>
+                                {staffPaymentStatus[staff.id] ? 'Đã chi' : 'Chưa chi'}
+                              </span>
+                            </div>
+                          </div>
+                          
+                          <div className="mobile-finance-details">
+                            <div>
+                              <span className="text-muted-foreground">Ngày Chi:</span>
+                              <span className="font-medium">{staffPaymentDates[staff.id] ? new Date(staffPaymentDates[staff.id]).toLocaleDateString('vi-VN') : 'Chưa chi'}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Shows:</span>
+                              <span className="font-medium text-blue-600">{formatCurrency(salaryDetail.totalShowEarnings)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Cộng thêm:</span>
+                              <span className="font-medium text-green-600">{formatCurrency(salaryDetail.totalAdditionalCosts)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Trừ bớt:</span>
+                              <span className="font-medium text-red-600">{formatCurrency(salaryDetail.totalAdvances)}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Tổng lương:</span>
+                              <span className="font-bold text-primary">{formatCurrency(salaryDetail.totalSalary)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                {filteredStaff.map((staff) => {
-                  const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
-                  return (
-                    <div 
-                      key={staff.id}
-                      className="p-3 border border-border rounded-lg hover:bg-muted/30 cursor-pointer transition-colors"
-                      onClick={() => openSalaryDetailModal(staff.id)}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground text-sm font-bold">
-                          {staff.avatar}
-                        </div>
-                        <div className="flex-1">
-                          <div className="font-medium text-sm">{staff.name}</div>
-                          <div className="text-xs text-muted-foreground">{staff.role}</div>
-                          <div className="text-xs text-muted-foreground">{staff.department} • {staff.id}</div>
-                        </div>
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex justify-between text-xs">
-                          <span>Tổng lương:</span>
-                          <span className="font-bold text-primary">{formatCurrency(salaryDetail.totalSalary)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>Shows:</span>
-                          <span className="text-blue-600">{formatCurrency(salaryDetail.totalShowEarnings)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>Cộng thêm:</span>
-                          <span className="text-green-600">{formatCurrency(salaryDetail.totalAdditionalCosts)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs">
-                          <span>Trừ bớt:</span>
-                          <span className="text-red-600">{formatCurrency(salaryDetail.totalAdvances)}</span>
-                        </div>
-                        <div className="flex justify-between text-xs pt-1 border-t">
-                          <span>Trạng thái:</span>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${
-                            staffPaymentStatus[staff.id] 
-                              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300' 
-                              : 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-300'
-                          }`}>
-                            {staffPaymentStatus[staff.id] ? 'Đã chi' : 'Chưa chi'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
               </div>
             </CardContent>
           </Card>
         </div>
       )}
 
+
+
       {/* Closing Tab */}
       {activeTab === 'closing' && (
         <div className="space-y-3">
-          {/* Monthly Summary */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Chốt sổ Tháng 1/2025</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Revenue Section */}
-                <div className="space-y-3">
-                  <h3 className="font-medium text-sm text-green-600">📈 Thu nhập</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Doanh thu từ Shows</span>
-                      <span className="font-medium">{formatCurrency(120000000)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Thu ngoài</span>
-                      <span className="font-medium">{formatCurrency(budgetOverview.externalIncome)}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-medium">Tổng thu</span>
-                      <span className="font-bold text-green-600">{formatCurrency(120000000 + budgetOverview.externalIncome)}</span>
-                    </div>
-                  </div>
-                </div>
+          {(() => {
+            const monthKey = `${currentYear}-${selectedMonth.toString().padStart(2, '0')}`;
+            const isMonthClosed = monthClosingStatus[monthKey];
+            
+            // Calculate totals
+            const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
+              if (staffPaymentStatus[staff.id]) {
+                const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+                return total + salaryDetail.totalSalary;
+              }
+              return total;
+            }, 0);
+            
+            const plannedSalaries = filteredStaff.reduce((total, staff) => {
+              const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
+              return total + salaryDetail.totalSalary;
+            }, 0);
+            
+            const showsRevenue = 120000000; // From shows data
+            const collectedRevenue = 95000000; // Actually collected
+            
+            return (
+              <>
+                {/* Pre-Closing Checklist */}
+                {!isMonthClosed && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Checklist trước khi chốt sổ</CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-3">
+                      <div className="space-y-3">
+                        {(() => {
+                          // Calculate amounts for each category - sync with budget overview logic
+                          const collectedRevenue = 95000000;
+                          const actualCollectedIncome = filteredIncomes.reduce((total, income) => {
+                            if (income.status === 'Đã thu') {
+                              return total + income.amount;
+                            }
+                            return total;
+                          }, 0);
+                          const wishlistReserve = showsRevenue * 0.2; // 20% doanh thu
+                          
+                          const checkItems = [
+                            { 
+                              title: 'Đã thu trong tháng', 
+                              completed: true, // Always true as this is collected revenue
+                              amount: collectedRevenue + actualCollectedIncome,
+                              type: 'income',
+                              description: `Doanh thu shows: ${formatCurrency(collectedRevenue)} + Thu ngoài: ${formatCurrency(actualCollectedIncome)}`
+                            },
+                            { 
+                              title: 'Chi lương nhân viên', 
+                              completed: filteredStaff.every(staff => staffPaymentStatus[staff.id]),
+                              amount: actualPaidSalaries,
+                              type: 'expense',
+                              total: filteredStaff.length,
+                              paid: filteredStaff.filter(staff => staffPaymentStatus[staff.id]).length
+                            },
+                            { 
+                              title: 'Trích vào wishlist', 
+                              completed: true, // Always reserve this amount
+                              amount: wishlistReserve,
+                              type: 'reserve',
+                              description: `20% của ${formatCurrency(showsRevenue)}`
+                            }
+                          ];
 
-                {/* Expense Section */}
-                <div className="space-y-3">
-                  <h3 className="font-medium text-sm text-red-600">📉 Chi phí</h3>
-                  <div className="space-y-2">
-                    <div className="flex justify-between">
-                      <span className="text-sm">Chi phí cố định</span>
-                      <span className="font-medium">{formatCurrency(budgetOverview.fixedExpensesTotal)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Chi lương (dự kiến)</span>
-                      <span className="font-medium">{formatCurrency(45000000)}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm">Chi Wishlist</span>
-                      <span className="font-medium">{formatCurrency(budgetOverview.wishlistUsed)}</span>
-                    </div>
-                    <div className="flex justify-between border-t pt-2">
-                      <span className="font-medium">Tổng chi</span>
-                      <span className="font-bold text-red-600">{formatCurrency(budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed)}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
+                          return checkItems.map((check, index) => (
+                            <div key={index} className="p-3 rounded border bg-muted/20">
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                                    check.completed ? 'bg-green-600' : 'bg-orange-500'
+                                  }`}>
+                                    {check.completed ? 
+                                      <span className="text-white text-xs">✓</span> : 
+                                      <span className="text-white text-xs">!</span>
+                                    }
+                                  </div>
+                                  <span className="text-sm font-medium">{check.title}</span>
+                                </div>
+                                {check.total && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {check.paid}/{check.total} hoàn thành
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <div className="text-xs text-muted-foreground">
+                                  {check.description || ''}
+                                </div>
+                                <div className={`font-bold text-sm ${
+                                  check.type === 'income' ? 'text-green-600' : 
+                                  check.type === 'expense' ? 'text-red-600' : 'text-orange-600'
+                                }`}>
+                                  {check.type === 'income' ? '+' : '-'}{formatCurrency(check.amount)}
+                                </div>
+                              </div>
+                            </div>
+                          ));
+                        })()}
 
-              {/* Net Profit */}
-              <div className="mt-4 p-3 bg-muted/30 rounded">
-                <div className="flex justify-between items-center">
-                  <span className="font-medium">Lợi nhuận ròng</span>
-                  <span className={`font-bold text-lg ${
-                    (120000000 + budgetOverview.externalIncome) - (budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed) > 0
-                      ? 'text-green-600' : 'text-red-600'
-                  }`}>
-                    {formatCurrency((120000000 + budgetOverview.externalIncome) - (budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed))}
-                  </span>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Tỷ lệ lợi nhuận: {Math.round(((120000000 + budgetOverview.externalIncome) - (budgetOverview.fixedExpensesTotal + 45000000 + budgetOverview.wishlistUsed)) / (120000000 + budgetOverview.externalIncome) * 100)}%
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+                        {/* Final Profit Calculation */}
+                        <div className="mt-4 p-4 bg-primary/10 rounded-lg border-2 border-primary/20">
+                          <div className="flex items-center justify-between">
+                            <span className="font-medium text-base">Lợi nhuận cuối cùng:</span>
+                            <span className={`font-bold text-lg ${
+                              (() => {
+                                const actualCollectedIncomeForProfit = filteredIncomes.reduce((total, income) => {
+                                  if (income.status === 'Đã thu') {
+                                    return total + income.amount;
+                                  }
+                                  return total;
+                                }, 0);
+                                const totalIncome = collectedRevenue + actualCollectedIncomeForProfit;
+                                const totalExpenses = actualPaidSalaries + (showsRevenue * 0.2);
+                                return totalIncome - totalExpenses > 0 ? 'text-green-600' : 'text-red-600';
+                              })()
+                            }`}>
+                              {(() => {
+                                const actualCollectedIncomeForProfit = filteredIncomes.reduce((total, income) => {
+                                  if (income.status === 'Đã thu') {
+                                    return total + income.amount;
+                                  }
+                                  return total;
+                                }, 0);
+                                const totalIncome = collectedRevenue + actualCollectedIncomeForProfit;
+                                const totalExpenses = actualPaidSalaries + (showsRevenue * 0.2);
+                                return formatCurrency(totalIncome - totalExpenses);
+                              })()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
-          {/* Cash Flow */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Dòng tiền</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="space-y-3">
-                <div className="flex justify-between">
-                  <span className="text-sm">Tiền mặt đầu kỳ</span>
-                  <span className="font-medium">{formatCurrency(50000000)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Đã thu trong kỳ</span>
-                  <span className="font-medium text-green-600">+{formatCurrency(95000000)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Thu ngoài trong kỳ</span>
-                  <span className="font-medium text-green-600">+{formatCurrency(budgetOverview.externalIncome)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Chi lương (thực chi)</span>
-                  <span className="font-medium text-red-600">-{formatCurrency(35000000)}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm">Chi Wishlist (thực chi)</span>
-                  <span className="font-medium text-red-600">-{formatCurrency(budgetOverview.wishlistUsed)}</span>
-                </div>
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-medium">Tiền mặt hiện tại</span>
-                  <span className="font-bold text-blue-600">{formatCurrency((() => {
-                    // Calculate actual paid salaries based on payment status
-                    const actualPaidSalaries = filteredStaff.reduce((total, staff) => {
-                      if (staffPaymentStatus[staff.id]) {
-                        const salaryDetail = getStaffSalaryDetails(staff.id, currentYear, selectedMonth);
-                        return total + salaryDetail.totalSalary;
-                      }
-                      return total;
-                    }, 0);
-                    
-                    return 50000000 + 95000000 + budgetOverview.externalIncome - actualPaidSalaries - budgetOverview.wishlistUsed;
-                  })())}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Tiền mặt cuối kỳ (ước tính)</span>
-                  <span className="font-bold text-purple-600">{formatCurrency(50000000 + 95000000 + budgetOverview.externalIncome - 45000000 - budgetOverview.wishlistUsed)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Outstanding Payments */}
-          <Card>
-            <CardHeader className="pb-1">
-              <CardTitle className="text-sm">Công nợ phải thu</CardTitle>
-            </CardHeader>
-            <CardContent className="p-2">
-              <div className="space-y-2">
-                {[
-                  { customer: 'Công ty ABC', amount: 15000000, dueDate: '2025-02-15', overdue: false },
-                  { customer: 'Anh Minh - Wedding', amount: 8000000, dueDate: '2025-01-30', overdue: true },
-                  { customer: 'Chị Lan - Event', amount: 12000000, dueDate: '2025-02-10', overdue: false }
-                ].map((debt, index) => (
-                  <div key={index} className="flex items-center justify-between p-2 border rounded">
-                    <div>
-                      <div className="font-medium text-sm">{debt.customer}</div>
-                      <div className="text-xs text-muted-foreground">
-                        Hạn: {new Date(debt.dueDate).toLocaleDateString('vi-VN')}
-                        {debt.overdue && <span className="text-red-600 ml-1">(Quá hạn)</span>}
+                {/* Closing Status - Moved to bottom */}
+                <Card className={`${isMonthClosed ? 'bg-green-50 dark:bg-green-900/20 border-green-200' : ''}`}>
+                  <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-base">
+                          Chốt sổ Tháng {selectedMonth}/{currentYear}
+                        </CardTitle>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {isMonthClosed 
+                            ? `Đã chốt sổ ngày ${closingDate ? new Date(closingDate).toLocaleDateString('vi-VN') : ''}`
+                            : 'Tháng chưa được chốt sổ'
+                          }
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2" onClick={handleToggleMonthClosing}>
+                          <Switch
+                            checked={isMonthClosed}
+                            className={`data-[state=checked]:bg-green-600 ${isMonthClosed ? 'scale-110' : 'scale-100'}`}
+                          />
+                          <span className={`text-sm font-medium ${isMonthClosed ? 'text-green-600' : 'text-orange-600'}`}>
+                            {isMonthClosed ? 'Đã chốt sổ' : 'Chưa chốt sổ'}
+                          </span>
+                        </div>
                       </div>
                     </div>
-                    <div className={`font-bold ${debt.overdue ? 'text-red-600' : 'text-orange-600'}`}>
-                      {formatCurrency(debt.amount)}
-                    </div>
-                  </div>
-                ))}
-                <div className="flex justify-between border-t pt-2">
-                  <span className="font-medium">Tổng công nợ</span>
-                  <span className="font-bold text-orange-600">{formatCurrency(35000000)}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2">
-            <Button className="flex-1">
-              <BookOpen className="h-4 w-4 mr-2" />
-              Xuất báo cáo tháng
-            </Button>
-            <Button variant="outline" className="flex-1">
-              <Calendar className="h-4 w-4 mr-2" />
-              So sánh tháng trước
-            </Button>
-          </div>
+                  </CardHeader>
+                </Card>
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -2070,7 +2168,7 @@ export default function FinancePage() {
                     <option value="Nước">Nước</option>
                     <option value="Thuế">Thuế</option>
                     <option value="Bảo hiểm">Bảo hiểm</option>
-                    <option value="Internet">Internet</option>
+
                     <option value="Bảo trì">Bảo trì</option>
                     <option value="Khác">Khác</option>
                   </select>
@@ -2078,7 +2176,12 @@ export default function FinancePage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="predicted" className="text-sm font-medium text-foreground">Dự báo</Label>
+                    <Label htmlFor="predicted" className="text-sm font-medium text-foreground">
+                      Dự báo
+                      {modalMode === 'edit' && (
+                        <span className="text-xs text-muted-foreground ml-1">(từ tháng trước)</span>
+                      )}
+                    </Label>
                     <Input
                       id="predicted"
                       type="number"
@@ -2091,7 +2194,9 @@ export default function FinancePage() {
                           setNewExpense({...newExpense, predicted: Number(e.target.value)});
                         }
                       }}
-                      className="mt-1 bg-background border-input h-9"
+                      className={`mt-1 bg-background border-input h-9 ${modalMode === 'edit' ? 'opacity-60' : ''}`}
+                      readOnly={modalMode === 'edit'}
+                      disabled={modalMode === 'edit'}
                     />
                   </div>
                   <div>
@@ -2148,22 +2253,35 @@ export default function FinancePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="status" className="text-sm font-medium text-foreground">Trạng thái</Label>
-                  <select 
-                    id="status"
-                    value={modalMode === 'edit' ? selectedExpense?.status || 'Chưa chi' : newExpense.status}
-                    onChange={(e) => {
-                      if (modalMode === 'edit' && selectedExpense) {
-                        setSelectedExpense({...selectedExpense, status: e.target.value});
-                      } else {
-                        setNewExpense({...newExpense, status: e.target.value});
-                      }
-                    }}
-                    className="w-full mt-1 px-3 py-2 bg-background border-input border rounded-md text-foreground h-9"
-                  >
-                    <option value="Chưa chi">Chưa chi</option>
-                    <option value="Đã chi">Đã chi</option>
-                  </select>
+                  <Label htmlFor="status" className="text-sm font-medium text-foreground">Trạng thái thanh toán</Label>
+                  <div className="flex items-center justify-between mt-2 p-3 border rounded-md bg-muted/20">
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-medium ${
+                        (modalMode === 'edit' ? selectedExpense?.status === 'Đã chi' : newExpense.status === 'Đã chi') 
+                          ? 'text-green-600' : 'text-orange-600'
+                      }`}>
+                        {(modalMode === 'edit' ? selectedExpense?.status === 'Đã chi' : newExpense.status === 'Đã chi') 
+                          ? 'Đã chi' : 'Chưa chi'}
+                      </span>
+                      <Switch
+                        id="status"
+                        checked={modalMode === 'edit' ? selectedExpense?.status === 'Đã chi' : newExpense.status === 'Đã chi'}
+                        onCheckedChange={(checked) => {
+                          const newStatus = checked ? 'Đã chi' : 'Chưa chi';
+                          if (modalMode === 'edit' && selectedExpense) {
+                            setSelectedExpense({...selectedExpense, status: newStatus});
+                          } else {
+                            setNewExpense({...newExpense, status: newStatus});
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {(modalMode === 'edit' ? selectedExpense?.status === 'Đã chi' : newExpense.status === 'Đã chi') 
+                        ? '✅ Đã tác động vào dòng tiền' 
+                        : '⏳ Chưa tác động vào dòng tiền'}
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -2215,7 +2333,7 @@ export default function FinancePage() {
             <div className="space-y-4">
               <div className="space-y-3">
                 <div>
-                  <Label htmlFor="item" className="text-sm font-medium text-foreground">Tên Item</Label>
+                  <Label htmlFor="item" className="text-sm font-medium text-foreground">Mô tả</Label>
                   <Input
                     id="item"
                     placeholder="Tên thiết bị/dịch vụ"
@@ -2232,6 +2350,22 @@ export default function FinancePage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label htmlFor="wishlist-date" className="text-sm font-medium text-foreground">Ngày</Label>
+                    <Input
+                      id="wishlist-date"
+                      type="date"
+                      value={modalMode === 'edit' ? selectedWishlist?.date || new Date().toISOString().split('T')[0] : (newWishlistItem.date || new Date().toISOString().split('T')[0])}
+                      onChange={(e) => {
+                        if (modalMode === 'edit' && selectedWishlist) {
+                          setSelectedWishlist({...selectedWishlist, date: e.target.value});
+                        } else {
+                          setNewWishlistItem({...newWishlistItem, date: e.target.value});
+                        }
+                      }}
+                      className="mt-1 bg-background border-input h-9"
+                    />
+                  </div>
                   <div>
                     <Label htmlFor="wishlist-category" className="text-sm font-medium text-foreground">Danh mục</Label>
                     <select 
@@ -2253,29 +2387,10 @@ export default function FinancePage() {
                       <option value="Khác">Khác</option>
                     </select>
                   </div>
-                  <div>
-                    <Label htmlFor="priority" className="text-sm font-medium text-foreground">Ưu tiên</Label>
-                    <select 
-                      id="priority"
-                      value={modalMode === 'edit' ? selectedWishlist?.priority || 'Trung bình' : newWishlistItem.priority}
-                      onChange={(e) => {
-                        if (modalMode === 'edit' && selectedWishlist) {
-                          setSelectedWishlist({...selectedWishlist, priority: e.target.value});
-                        } else {
-                          setNewWishlistItem({...newWishlistItem, priority: e.target.value});
-                        }
-                      }}
-                      className="w-full mt-1 px-3 py-2 bg-background border-input border rounded-md text-foreground h-9"
-                    >
-                      <option value="Cao">Cao</option>
-                      <option value="Trung bình">Trung bình</option>
-                      <option value="Thấp">Thấp</option>
-                    </select>
-                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="estimatedCost" className="text-sm font-medium text-foreground">Chi phí ước tính</Label>
+                  <Label htmlFor="estimatedCost" className="text-sm font-medium text-foreground">Số tiền</Label>
                   <Input
                     id="estimatedCost"
                     type="number"
@@ -2286,44 +2401,6 @@ export default function FinancePage() {
                         setSelectedWishlist({...selectedWishlist, estimatedCost: Number(e.target.value)});
                       } else {
                         setNewWishlistItem({...newWishlistItem, estimatedCost: Number(e.target.value)});
-                      }
-                    }}
-                    className="mt-1 bg-background border-input h-9"
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="wishlist-status" className="text-sm font-medium text-foreground">Trạng thái</Label>
-                  <select 
-                    id="wishlist-status"
-                    value={modalMode === 'edit' ? selectedWishlist?.status || 'Chờ duyệt' : newWishlistItem.status}
-                    onChange={(e) => {
-                      if (modalMode === 'edit' && selectedWishlist) {
-                        setSelectedWishlist({...selectedWishlist, status: e.target.value});
-                      } else {
-                        setNewWishlistItem({...newWishlistItem, status: e.target.value});
-                      }
-                    }}
-                    className="w-full mt-1 px-3 py-2 bg-background border-input border rounded-md text-foreground h-9"
-                  >
-                    <option value="Chờ duyệt">Chờ duyệt</option>
-                    <option value="Đang xem xét">Đang xem xét</option>
-                    <option value="Đã duyệt">Đã duyệt</option>
-                    <option value="Từ chối">Từ chối</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="notes" className="text-sm font-medium text-foreground">Ghi chú</Label>
-                  <Input
-                    id="notes"
-                    placeholder="Ghi chú thêm"
-                    value={modalMode === 'edit' ? selectedWishlist?.notes || '' : newWishlistItem.notes}
-                    onChange={(e) => {
-                      if (modalMode === 'edit' && selectedWishlist) {
-                        setSelectedWishlist({...selectedWishlist, notes: e.target.value});
-                      } else {
-                        setNewWishlistItem({...newWishlistItem, notes: e.target.value});
                       }
                     }}
                     className="mt-1 bg-background border-input h-9"
@@ -2380,23 +2457,6 @@ export default function FinancePage() {
               <div className="space-y-3">
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label htmlFor="amount" className="text-sm font-medium text-foreground">Số tiền</Label>
-                    <Input
-                      id="amount"
-                      type="number"
-                      placeholder="0"
-                      value={modalMode === 'edit' ? selectedIncome?.amount || 0 : newIncome.amount}
-                      onChange={(e) => {
-                        if (modalMode === 'edit' && selectedIncome) {
-                          setSelectedIncome({...selectedIncome, amount: Number(e.target.value)});
-                        } else {
-                          setNewIncome({...newIncome, amount: Number(e.target.value)});
-                        }
-                      }}
-                      className="mt-1 bg-background border-input h-9"
-                    />
-                  </div>
-                  <div>
                     <Label htmlFor="income-date" className="text-sm font-medium text-foreground">Ngày</Label>
                     <Input
                       id="income-date"
@@ -2412,35 +2472,34 @@ export default function FinancePage() {
                       className="mt-1 bg-background border-input h-9"
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="income-category" className="text-sm font-medium text-foreground">Danh mục</Label>
+                    <select 
+                      id="income-category"
+                      value={modalMode === 'edit' ? selectedIncome?.category || 'Bán thiết bị' : newIncome.category}
+                      onChange={(e) => {
+                        if (modalMode === 'edit' && selectedIncome) {
+                          setSelectedIncome({...selectedIncome, category: e.target.value});
+                        } else {
+                          setNewIncome({...newIncome, category: e.target.value});
+                        }
+                      }}
+                      className="w-full mt-1 px-3 py-2 bg-background border-input border rounded-md text-foreground h-9"
+                    >
+                      <option value="Bán thiết bị">Bán thiết bị</option>
+                      <option value="Cho thuê">Cho thuê</option>
+                      <option value="Đào tạo">Đào tạo</option>
+                      <option value="Tư vấn">Tư vấn</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
-                  <Label htmlFor="income-category" className="text-sm font-medium text-foreground">Danh mục</Label>
-                  <select 
-                    id="income-category"
-                    value={modalMode === 'edit' ? selectedIncome?.category || 'Bán thiết bị' : newIncome.category}
-                    onChange={(e) => {
-                      if (modalMode === 'edit' && selectedIncome) {
-                        setSelectedIncome({...selectedIncome, category: e.target.value});
-                      } else {
-                        setNewIncome({...newIncome, category: e.target.value});
-                      }
-                    }}
-                    className="w-full mt-1 px-3 py-2 bg-background border-input border rounded-md text-foreground h-9"
-                  >
-                    <option value="Bán thiết bị">Bán thiết bị</option>
-                    <option value="Cho thuê">Cho thuê</option>
-                    <option value="Đào tạo">Đào tạo</option>
-                    <option value="Tư vấn">Tư vấn</option>
-                    <option value="Khác">Khác</option>
-                  </select>
-                </div>
-
-                <div>
-                  <Label htmlFor="source" className="text-sm font-medium text-foreground">Nguồn thu</Label>
+                  <Label htmlFor="source" className="text-sm font-medium text-foreground">Mô tả</Label>
                   <Input
                     id="source"
-                    placeholder="Nguồn thu"
+                    placeholder="Mô tả nguồn thu"
                     value={modalMode === 'edit' ? selectedIncome?.source || '' : newIncome.source}
                     onChange={(e) => {
                       if (modalMode === 'edit' && selectedIncome) {
@@ -2454,39 +2513,21 @@ export default function FinancePage() {
                 </div>
 
                 <div>
-                  <Label htmlFor="income-description" className="text-sm font-medium text-foreground">Mô tả</Label>
+                  <Label htmlFor="amount" className="text-sm font-medium text-foreground">Số tiền</Label>
                   <Input
-                    id="income-description"
-                    placeholder="Mô tả chi tiết"
-                    value={modalMode === 'edit' ? selectedIncome?.description || '' : newIncome.description}
+                    id="amount"
+                    type="number"
+                    placeholder="0"
+                    value={modalMode === 'edit' ? selectedIncome?.amount || 0 : newIncome.amount}
                     onChange={(e) => {
                       if (modalMode === 'edit' && selectedIncome) {
-                        setSelectedIncome({...selectedIncome, description: e.target.value});
+                        setSelectedIncome({...selectedIncome, amount: Number(e.target.value)});
                       } else {
-                        setNewIncome({...newIncome, description: e.target.value});
+                        setNewIncome({...newIncome, amount: Number(e.target.value)});
                       }
                     }}
                     className="mt-1 bg-background border-input h-9"
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="recordedBy" className="text-sm font-medium text-foreground">Người ghi</Label>
-                  <select 
-                    id="recordedBy"
-                    value={modalMode === 'edit' ? selectedIncome?.recordedBy || 'Admin' : newIncome.recordedBy}
-                    onChange={(e) => {
-                      if (modalMode === 'edit' && selectedIncome) {
-                        setSelectedIncome({...selectedIncome, recordedBy: e.target.value});
-                      } else {
-                        setNewIncome({...newIncome, recordedBy: e.target.value});
-                      }
-                    }}
-                    className="w-full mt-1 px-3 py-2 bg-background border-input border rounded-md text-foreground h-9"
-                  >
-                    <option value="Admin">Admin</option>
-                    <option value="Manager">Manager</option>
-                  </select>
                 </div>
               </div>
 

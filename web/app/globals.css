@@ -314,7 +314,8 @@
     .shows-table-grid,
     .finance-table-grid,
     .wishlist-table-grid,
-    .income-table-grid {
+    .income-table-grid,
+    .salary-table-grid {
       display: none !important;
     }
     
@@ -355,6 +356,19 @@
 
     .mobile-finance-details > div {
       @apply flex justify-between;
+    }
+
+    /* Mobile switch styling */
+    .mobile-finance-header .flex.items-center.gap-2 {
+      @apply flex-shrink-0;
+    }
+
+    .mobile-finance-header [data-state] {
+      @apply scale-75;
+    }
+
+    .mobile-finance-header .text-xs {
+      @apply whitespace-nowrap;
     }
   }
 
@@ -459,11 +473,11 @@
   .finance-table-grid {
     display: grid;
     grid-template-columns: 
+      120px                  /* Ngày chi - fixed */
+      minmax(200px, 1fr)     /* Mô tả - flexible, ưu tiên mở rộng */
       120px                  /* Danh mục - fixed */
       100px                  /* Dự báo - fixed */
       100px                  /* Thực tế - fixed */
-      120px                  /* Ngày chi - fixed */
-      minmax(200px, 1fr)     /* Mô tả - flexible, ưu tiên mở rộng */
       100px                  /* Chênh lệch - fixed */
       100px;                 /* Trạng thái - fixed */
     gap: 0;
@@ -483,7 +497,7 @@
   @media (max-width: 1200px) {
     .finance-table-grid {
       grid-template-columns: 
-        110px 90px 90px 110px minmax(180px, 1fr) 90px 90px;
+        110px minmax(180px, 1fr) 110px 90px 90px 90px 90px;
       min-width: 760px;
     }
   }
@@ -491,7 +505,7 @@
   @media (max-width: 768px) {
     .finance-table-grid {
       grid-template-columns: 
-        100px 80px 80px 100px minmax(160px, 1fr) 80px 80px;
+        100px minmax(160px, 1fr) 100px 80px 80px 80px 80px;
       min-width: 660px;
     }
   }
@@ -508,16 +522,29 @@
   .wishlist-table-grid {
     display: grid;
     grid-template-columns: 
-      minmax(200px, 1fr)     /* Item - flexible, ưu tiên mở rộng */
+      120px                  /* Ngày - fixed */
+      minmax(200px, 1fr)     /* Mô tả - flexible, ưu tiên mở rộng */
       120px                  /* Danh mục - fixed */
-      100px                  /* Ưu tiên - fixed */
       120px                  /* Chi phí - fixed */
       120px;                 /* Trạng thái - fixed */
     gap: 0;
-    min-width: 660px;        /* Tổng width tối thiểu */
+    min-width: 580px;        /* Tổng width tối thiểu (giảm do bớt 1 cột) */
   }
 
-  .wishlist-table-grid > div {
+  /* Simplified Wishlist table grid (4 columns, no status) */
+  .wishlist-table-grid-simple {
+    display: grid;
+    grid-template-columns: 
+      120px                  /* Ngày Chi - fixed */
+      minmax(200px, 1fr)     /* Mô tả - flexible, ưu tiên mở rộng */
+      120px                  /* Danh mục - fixed */
+      120px;                 /* Chi phí - fixed */
+    gap: 0;
+    min-width: 460px;        /* Tổng width tối thiểu (4 columns) */
+  }
+
+  .wishlist-table-grid > div,
+  .wishlist-table-grid-simple > div {
     @apply px-2 py-1 border-r border-border last:border-r-0 flex items-center;
     white-space: normal;
     word-wrap: break-word;
@@ -530,16 +557,26 @@
   @media (max-width: 1200px) {
     .wishlist-table-grid {
       grid-template-columns: 
-        minmax(180px, 1fr) 110px 90px 110px 110px;
-      min-width: 600px;
+        110px minmax(180px, 1fr) 110px 110px 110px;
+      min-width: 520px;
+    }
+    .wishlist-table-grid-simple {
+      grid-template-columns: 
+        110px minmax(180px, 1fr) 110px 110px;
+      min-width: 410px;
     }
   }
 
   @media (max-width: 768px) {
     .wishlist-table-grid {
       grid-template-columns: 
-        minmax(160px, 1fr) 100px 80px 100px 100px;
-      min-width: 540px;
+        100px minmax(160px, 1fr) 100px 100px 100px;
+      min-width: 460px;
+    }
+    .wishlist-table-grid-simple {
+      grid-template-columns: 
+        100px minmax(160px, 1fr) 100px 100px;
+      min-width: 360px;
     }
   }
 
@@ -547,16 +584,29 @@
   .income-table-grid {
     display: grid;
     grid-template-columns: 
-      120px                  /* Số tiền - fixed */
       120px                  /* Ngày - fixed */
+      minmax(300px, 1fr)     /* Mô tả - flexible, ưu tiên mở rộng */
       120px                  /* Danh mục - fixed */
-      minmax(300px, 1fr)     /* Nguồn thu & Mô tả - flexible, ưu tiên mở rộng */
-      120px;                 /* Người ghi - fixed */
+      120px                  /* Số tiền - fixed */
+      120px;                 /* Trạng thái - fixed */
     gap: 0;
-    min-width: 780px;        /* Tổng width tối thiểu (giảm do bớt 1 cột) */
+    min-width: 780px;        /* Tổng width tối thiểu */
   }
 
-  .income-table-grid > div {
+  /* Simplified Income table grid (4 columns, no status) */
+  .income-table-grid-simple {
+    display: grid;
+    grid-template-columns: 
+      120px                  /* Ngày Thu - fixed */
+      minmax(300px, 1fr)     /* Mô tả - flexible, ưu tiên mở rộng */
+      120px                  /* Danh mục - fixed */
+      120px;                 /* Số tiền - fixed */
+    gap: 0;
+    min-width: 660px;        /* Tổng width tối thiểu (4 columns) */
+  }
+
+  .income-table-grid > div,
+  .income-table-grid-simple > div {
     @apply px-2 py-1 border-r border-border last:border-r-0 flex items-center;
     white-space: normal;
     word-wrap: break-word;
@@ -569,64 +619,73 @@
   @media (max-width: 1200px) {
     .income-table-grid {
       grid-template-columns: 
-        110px 110px 110px minmax(280px, 1fr) 110px;
+        110px minmax(280px, 1fr) 110px 110px 110px;
       min-width: 730px;
+    }
+    .income-table-grid-simple {
+      grid-template-columns: 
+        110px minmax(280px, 1fr) 110px 110px;
+      min-width: 610px;
     }
   }
 
   @media (max-width: 768px) {
     .income-table-grid {
       grid-template-columns: 
-        100px 100px 100px minmax(250px, 1fr) 100px;
+        100px minmax(250px, 1fr) 100px 100px 100px;
       min-width: 650px;
+    }
+    .income-table-grid-simple {
+      grid-template-columns: 
+        100px minmax(250px, 1fr) 100px 100px;
+      min-width: 550px;
     }
   }
 
-  /* Salary Table Grid - Wide table for many staff columns */
+  /* Salary Management Table Grid */
   .salary-table-grid {
     display: grid;
     grid-template-columns: 
-      60px                   /* Tháng */
-      repeat(16, 90px)       /* 16 staff columns */
-      120px;                 /* Tổng */
+      100px                  /* Ngày Chi - fixed */
+      120px                  /* Tên NV - fixed */
+      1fr                    /* Chức trách - flexible */
+      100px                  /* Shows - fixed */
+      100px                  /* Cộng thêm - fixed */
+      100px                  /* Trừ bớt - fixed */
+      120px                  /* Tổng lương - fixed */
+      120px;                 /* Trạng thái - fixed */
     gap: 0;
-    min-width: 1620px;       /* Total minimum width */
+    min-width: 860px;        /* Total minimum width */
   }
 
   .salary-table-grid > div {
-    @apply px-1 py-1 border-r border-border last:border-r-0 flex items-center justify-center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    @apply px-2 py-1 border-r border-border last:border-r-0 flex items-center;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
     min-width: 0;
     line-height: 1.3;
     min-height: 32px;
-    font-size: 11px;         /* Smaller font for many columns */
   }
 
   /* Responsive adjustments for salary table */
-  @media (max-width: 1400px) {
-    .salary-table-grid {
-      grid-template-columns: 
-        50px repeat(16, 80px) 100px;
-      min-width: 1430px;
-    }
-  }
-
   @media (max-width: 1200px) {
     .salary-table-grid {
       grid-template-columns: 
-        45px repeat(16, 70px) 90px;
-      min-width: 1255px;
+        90px 110px 1fr 90px 90px 90px 110px 110px;
+      min-width: 780px;
     }
   }
 
-  @media (max-width: 1024px) {
-    /* Hide salary table on mobile, show mobile cards instead */
+  @media (max-width: 768px) {
     .salary-table-grid {
-      display: none !important;
+      grid-template-columns: 
+        80px 100px 1fr 80px 80px 80px 100px 100px;
+      min-width: 700px;
     }
   }
+
+
 }
 
 /* React DatePicker Styling */

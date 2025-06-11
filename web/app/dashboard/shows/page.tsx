@@ -64,8 +64,10 @@ interface Show {
   shootDate: string;
   deadline: string;
   shootTime: string;
-  customer: string;
-  phone: string;
+  orderName: string;
+  clientId: string;
+  clientName: string;
+  clientPhone: string;
   price: number;
   discount: number;
   finalPrice: number;
@@ -96,8 +98,10 @@ const getShowsData = (year: number): Show[] => [
     shootDate: `${year}-01-18`,
     deadline: `${year}-01-24`,
     shootTime: 'Cả ngày',
-    customer: '12A12 THPT Chu Văn An',
-    phone: '',
+    orderName: '12A12 THPT Chu Văn An',
+    clientId: 'CL001',
+    clientName: 'Nguyễn Văn A & Trần Thị B',
+    clientPhone: '+84 901 234 567',
     price: 6800000,
     discount: 0,
     finalPrice: 6800000,
@@ -126,8 +130,10 @@ const getShowsData = (year: number): Show[] => [
     shootDate: `${year}-01-12`,
     deadline: `${year}-01-21`,
     shootTime: 'Chiều',
-    customer: '12A5 Cao Nguyên (Chụp)',
-    phone: '',
+    orderName: '12A5 Cao Nguyên (Chụp)',
+    clientId: 'CL002',
+    clientName: 'Lê Thị C',
+    clientPhone: '+84 912 345 678',
     price: 4830000,
     discount: 300000,
     finalPrice: 4530000,
@@ -156,8 +162,10 @@ const getShowsData = (year: number): Show[] => [
     shootDate: `${year}-01-12`,
     deadline: `${year}-01-12`,
     shootTime: 'Sáng',
-    customer: '12A8 THPT Cao Ba Quát',
-    phone: '',
+    orderName: '12A8 THPT Cao Ba Quát',
+    clientId: 'CL003',
+    clientName: 'Công ty ABC',
+    clientPhone: '+84 923 456 789',
     price: 4720000,
     discount: 0,
     finalPrice: 4720000,
@@ -186,8 +194,10 @@ const getShowsData = (year: number): Show[] => [
     shootDate: `${year}-01-10`,
     deadline: `${year}-01-24`,
     shootTime: 'Chiều',
-    customer: 'YEP SG',
-    phone: '',
+    orderName: 'YEP SG',
+    clientId: 'CL001',
+    clientName: 'Nguyễn Văn A & Trần Thị B',
+    clientPhone: '+84 901 234 567',
     price: 4600000,
     discount: 200000,
     finalPrice: 4400000,
@@ -236,8 +246,10 @@ const getShowsData = (year: number): Show[] => [
     shootDate: `${year}-01-08`,
     deadline: `${year}-01-24`,
     shootTime: 'Cả ngày',
-    customer: 'YEP Thanh Mai',
-    phone: '',
+    orderName: 'YEP Thanh Mai',
+    clientId: 'CL002',
+    clientName: 'Lê Thị C',
+    clientPhone: '+84 912 345 678',
     price: 2560000,
     discount: 60000,
     finalPrice: 2500000,
@@ -266,8 +278,10 @@ const getShowsData = (year: number): Show[] => [
     shootDate: `${year}-01-05`,
     deadline: `${year}-01-20`,
     shootTime: 'Sáng',
-    customer: 'TT Gia Nghĩa',
-    phone: '',
+    orderName: 'TT Gia Nghĩa',
+    clientId: 'CL004',
+    clientName: 'Văn phòng Gia Nghĩa',
+    clientPhone: '+84 934 567 890',
     price: 1750000,
     discount: 0,
     finalPrice: 1750000,
@@ -475,9 +489,10 @@ function CalendarView({ shows, onShowClick }: { shows: Show[], onShowClick: (sho
                         key={show.id} 
                         className={`px-1 py-1 rounded text-xs border-l-2 cursor-pointer hover:opacity-80 transition-opacity ${getStatusColor(show.status)}`}
                         onClick={() => onShowClick(show.id)}
-                        title={`${show.customer} - ${show.type}\nGiờ: ${show.shootTime}\nGiá: ${formatCurrency(show.price)} VND\nKey: ${show.key || 'Chưa gán'}\nTrạng thái: ${show.status}`}
+                        title={`${show.orderName} - ${show.type}\nKhách: ${show.clientName}\nGiờ: ${show.shootTime}\nGiá: ${formatCurrency(show.price)} VND\nKey: ${show.key || 'Chưa gán'}\nTrạng thái: ${show.status}`}
                       >
-                        <div className="font-medium truncate">{show.customer}</div>
+                        <div className="font-medium truncate">{show.orderName}</div>
+                        <div className="text-xs text-muted-foreground truncate">{show.clientName}</div>
                         <div className="text-xs opacity-75 truncate flex items-center gap-1">
                           <Clock className="h-2.5 w-2.5" />
                           {show.shootTime || 'Chưa xác định'}
@@ -659,8 +674,9 @@ function DesignBoard({ shows, onUpdateShow, onShowClick }: { shows: Show[], onUp
                     {/* Card Header */}
                     <div className="flex items-start justify-between mb-2">
                       <h4 className="font-medium text-sm text-foreground truncate flex-1">
-                        #{show.stt} - {show.customer}
+                        #{show.stt} - {show.orderName}
                       </h4>
+                      <div className="text-xs text-muted-foreground truncate">{show.clientName}</div>
                       <span className={`text-xs px-2 py-1 rounded-full ml-2 ${getStatusColor(show.status)}`}>
                         {show.status}
                       </span>
@@ -738,6 +754,21 @@ function DesignBoard({ shows, onUpdateShow, onShowClick }: { shows: Show[], onUp
   );
 }
 
+// Client data interface for reference
+interface Client {
+  id: string;
+  name: string;
+  phone: string;
+}
+
+// Mock clients data (in real app, this would come from API or state management)
+const clientsData: Client[] = [
+  { id: 'CL001', name: 'Nguyễn Văn A & Trần Thị B', phone: '+84 901 234 567' },
+  { id: 'CL002', name: 'Lê Thị C', phone: '+84 912 345 678' },
+  { id: 'CL003', name: 'Công ty ABC', phone: '+84 923 456 789' },
+  { id: 'CL004', name: 'Văn phòng Gia Nghĩa', phone: '+84 934 567 890' },
+];
+
 export default function ShowsPage() {
   const { currentYear } = useYear();
   const [shows, setShows] = useState<Show[]>(getShowsData(currentYear));
@@ -754,8 +785,10 @@ export default function ShowsPage() {
     shootDate: new Date().toISOString().split('T')[0],
     deadline: calculateDeadline(new Date().toISOString().split('T')[0], 'Chụp TT'),
     shootTime: '',
-    customer: '',
-    phone: '',
+    orderName: '',
+    clientId: '',
+    clientName: '',
+    clientPhone: '',
     price: 0,
     discount: 0,
     finalPrice: 0,
@@ -846,7 +879,7 @@ export default function ShowsPage() {
   }, [isEditModalOpen]);
 
   const handleCreateShow = () => {
-    if (newShow.customer && newShow.price > 0) {
+    if (newShow.orderName && newShow.clientId && newShow.price > 0) {
       // Calculate next STT (highest STT + 1)
       const maxStt = shows.length > 0 ? Math.max(...shows.map(s => s.stt)) : 0;
       const nextStt = maxStt + 1;
@@ -879,8 +912,10 @@ export default function ShowsPage() {
         shootDate: new Date().toISOString().split('T')[0],
         deadline: calculateDeadline(new Date().toISOString().split('T')[0], 'Chụp TT'),
         shootTime: '',
-        customer: '',
-        phone: '',
+        orderName: '',
+        clientId: '',
+        clientName: '',
+        clientPhone: '',
         price: 0,
         discount: 0,
         finalPrice: 0,
@@ -926,8 +961,9 @@ export default function ShowsPage() {
         
         // Check for changes and create audit logs
         const fieldsToCheck = [
-          { key: 'customer', label: 'Tên khách hàng' },
-          { key: 'phone', label: 'Số điện thoại' },
+          { key: 'orderName', label: 'Tên đơn hàng' },
+          { key: 'clientName', label: 'Tên khách hàng' },
+          { key: 'clientPhone', label: 'Số điện thoại' },
           { key: 'price', label: 'Giá' },
           { key: 'type', label: 'Loại show' },
           { key: 'shootDate', label: 'Ngày chụp' },
@@ -1176,10 +1212,11 @@ export default function ShowsPage() {
   // Filter shows based on search term and filters
   const filteredShows = shows.filter(show => {
     const matchesSearch = searchTerm === '' || 
-      show.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      show.orderName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      show.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       show.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       show.stt.toString().includes(searchTerm) ||
-      show.phone.includes(searchTerm) ||
+      show.clientPhone.includes(searchTerm) ||
       show.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
       show.support1.toLowerCase().includes(searchTerm.toLowerCase()) ||
       show.support2.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1237,7 +1274,7 @@ export default function ShowsPage() {
                   <div className="relative">
                     <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                     <Input
-                      placeholder="Tìm kiếm theo STT, tên khách hàng, ID, SĐT, Key, SP, khu vực, số thợ..."
+                      placeholder="Tìm kiếm theo STT, đơn hàng, khách hàng, ID, SĐT, Key, SP, khu vực, số thợ..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                       className="h-8 text-sm pl-7"
@@ -1292,8 +1329,8 @@ export default function ShowsPage() {
                     Thời gian
                   </div>
                   <div className="flex items-center gap-1">
-                    <User className="h-3 w-3" />
-                    Khách hàng
+                    <Hash className="h-3 w-3" />
+                    Đơn hàng
                   </div>
                   <div>Giá</div>
                   <div>% Discount</div>
@@ -1341,8 +1378,9 @@ export default function ShowsPage() {
                         </div>
                         <div>
                           <div>
-                            <div className="font-medium truncate">{show.customer}</div>
-                            <div className={`${paymentStatus.color}`}>
+                            <div className="font-medium truncate">{show.orderName}</div>
+                            <div className="text-xs text-muted-foreground truncate">{show.clientName}</div>
+                            <div className={`text-xs ${paymentStatus.color}`}>
                               {paymentStatus.text} • Còn {formatCurrency(remaining)}
                             </div>
                           </div>
@@ -1412,7 +1450,8 @@ export default function ShowsPage() {
                       >
                         <div className="mobile-show-header">
                           <div>
-                            <h3 className="font-medium text-sm">#{show.stt} - {show.customer}</h3>
+                            <h3 className="font-medium text-sm">#{show.stt} - {show.orderName}</h3>
+                            <p className="text-xs text-muted-foreground">{show.clientName}</p>
                             <p className="text-xs text-muted-foreground">{show.type}</p>
                           </div>
                           <span className={`px-2 py-1 rounded-full text-xs flex items-center gap-1 ${getStatusColor(show.status)}`}>
@@ -1449,7 +1488,7 @@ export default function ShowsPage() {
                           </div>
                           <div>
                             <span className="text-xs text-muted-foreground">SĐT:</span>
-                            <p className="text-sm">{show.phone || '-'}</p>
+                            <p className="text-sm">{show.clientPhone || '-'}</p>
                           </div>
                           <div>
                             <span className="text-xs text-muted-foreground">Thanh toán:</span>
@@ -1520,28 +1559,28 @@ export default function ShowsPage() {
 
       {/* Create Show Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-2">
-          <div className="bg-background rounded-lg p-3 w-full max-w-lg max-h-[95vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-semibold flex items-center gap-2">
-                <Plus className="h-4 w-4" />
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+          <div className="bg-card border border-border shadow-2xl rounded-lg p-4 w-full max-w-2xl h-[95vh] flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                <Plus className="h-5 w-5 text-primary" />
                 Tạo Show mới
               </h3>
               <Button 
                 variant="outline" 
                 size="sm" 
                 onClick={() => setIsModalOpen(false)}
-                className="h-6 w-6 p-0"
+                className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
               >
-                <X className="h-3 w-3" />
+                <X className="h-4 w-4" />
               </Button>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4 flex-1 overflow-y-auto">
               {/* Basic Information */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-xs font-medium">Ngày chụp</Label>
+                  <Label className="text-sm font-medium text-foreground">Ngày chụp</Label>
                   <Input
                     type="date"
                     value={newShow.shootDate}
@@ -1550,35 +1589,35 @@ export default function ShowsPage() {
                       const newDeadline = calculateDeadline(newShootDate, newShow.type);
                       setNewShow({...newShow, shootDate: newShootDate, deadline: newDeadline});
                     }}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                     required
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Deadline</Label>
+                  <Label className="text-sm font-medium text-foreground">Deadline</Label>
                   <Input
                     type="date"
                     value={newShow.deadline}
                     onChange={(e) => setNewShow({...newShow, deadline: e.target.value})}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                     required
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Thời gian</Label>
+                  <Label className="text-sm font-medium text-foreground">Thời gian</Label>
                   <Input
                     type="text"
                     placeholder="VD: Sáng, Chiều, Tối"
                     value={newShow.shootTime}
                     onChange={(e) => setNewShow({...newShow, shootTime: e.target.value})}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <Label className="text-xs font-medium">Loại show</Label>
+                  <Label className="text-sm font-medium text-foreground">Loại show</Label>
                   <select 
                     value={newShow.type}
                     onChange={(e) => {
@@ -1586,7 +1625,7 @@ export default function ShowsPage() {
                       const newDeadline = calculateDeadline(newShow.shootDate, newType);
                       setNewShow({...newShow, type: newType, deadline: newDeadline});
                     }}
-                    className="w-full px-2 py-1 border rounded-md text-xs h-8"
+                    className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     required
                   >
                     {typeOptions.map(type => (
@@ -1595,7 +1634,7 @@ export default function ShowsPage() {
                   </select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Giá gốc (VND)</Label>
+                  <Label className="text-sm font-medium text-foreground">Giá gốc (VND)</Label>
                   <Input
                     type="number"
                     placeholder="Nhập giá gốc"
@@ -1605,12 +1644,12 @@ export default function ShowsPage() {
                       const finalPrice = newPrice - newShow.discount;
                       setNewShow({...newShow, price: newPrice, finalPrice: finalPrice});
                     }}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                     required
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Discount (%)</Label>
+                  <Label className="text-sm font-medium text-foreground">Discount (%)</Label>
                   <Input
                     type="number"
                     placeholder="Nhập % discount"
@@ -1621,53 +1660,53 @@ export default function ShowsPage() {
                       const finalPrice = newShow.price - newDiscount;
                       setNewShow({...newShow, discount: newDiscount, finalPrice: finalPrice});
                     }}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                     min="0"
                     max="100"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-medium">Giá sau discount (VND)</Label>
+                  <Label className="text-sm font-medium text-foreground">Giá sau discount (VND)</Label>
                   <Input
                     type="number"
                     value={newShow.finalPrice}
-                    className="h-8 text-xs bg-muted"
+                    className="h-10 text-sm bg-muted border-input"
                     disabled
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Bù lương thợ (VND)</Label>
+                  <Label className="text-sm font-medium text-foreground">Bù lương thợ (VND)</Label>
                   <Input
                     type="number"
                     value={newShow.discount}
-                    className="h-8 text-xs bg-muted"
+                    className="h-10 text-sm bg-muted border-input"
                     disabled
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-medium">Khu vực</Label>
+                  <Label className="text-sm font-medium text-foreground">Khu vực</Label>
                   <Input
                     placeholder="VD: Huyện Eakar"
                     value={newShow.khuVuc}
                     onChange={(e) => setNewShow({...newShow, khuVuc: e.target.value})}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                     required
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Số thợ</Label>
+                  <Label className="text-sm font-medium text-foreground">Số thợ</Label>
                   <Input
                     type="number"
                     placeholder="Nhập số thợ"
                     value={newShow.soTho}
                     onChange={(e) => setNewShow({...newShow, soTho: Number(e.target.value)})}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                     min="1"
                     required
                   />
@@ -1675,59 +1714,84 @@ export default function ShowsPage() {
               </div>
 
               <div>
-                <Label className="text-xs font-medium">Tên khách hàng</Label>
+                <Label className="text-sm font-medium text-foreground">Tên đơn hàng</Label>
                 <Input
-                  placeholder="Nhập tên khách hàng"
-                  value={newShow.customer}
-                  onChange={(e) => setNewShow({...newShow, customer: e.target.value})}
-                  className="h-8 text-xs"
+                  placeholder="Nhập tên đơn hàng"
+                  value={newShow.orderName}
+                  onChange={(e) => setNewShow({...newShow, orderName: e.target.value})}
+                  className="h-10 text-sm bg-background border-input"
                   required
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-xs font-medium">Số điện thoại</Label>
-                  <Input
-                    placeholder="Nhập số điện thoại"
-                    value={newShow.phone}
-                    onChange={(e) => setNewShow({...newShow, phone: e.target.value})}
-                    className="h-8 text-xs"
-                  />
+                  <Label className="text-sm font-medium text-foreground">Khách hàng</Label>
+                  <select
+                    value={newShow.clientId}
+                    onChange={(e) => {
+                      const selectedClient = clientsData.find(c => c.id === e.target.value);
+                      setNewShow({
+                        ...newShow, 
+                        clientId: e.target.value,
+                        clientName: selectedClient?.name || '',
+                        clientPhone: selectedClient?.phone || ''
+                      });
+                    }}
+                    className="w-full h-10 px-3 text-sm border border-input bg-background rounded-md"
+                    required
+                  >
+                    <option value="">Chọn khách hàng</option>
+                    {clientsData.map(client => (
+                      <option key={client.id} value={client.id}>{client.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Tiền cọc</Label>
+                  <Label className="text-sm font-medium text-foreground">Số điện thoại</Label>
+                  <Input
+                    placeholder="Tự động từ khách hàng"
+                    value={newShow.clientPhone}
+                    className="h-10 text-sm bg-muted border-input"
+                    disabled
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Tiền cọc</Label>
                   <Input
                     type="number"
                     placeholder="Nhập tiền cọc"
                     value={newShow.deposit}
                     onChange={(e) => setNewShow({...newShow, deposit: Number(e.target.value)})}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                   />
                 </div>
                 <div>
-                  <Label className="text-xs font-medium">Đã thu</Label>
+                  <Label className="text-sm font-medium text-foreground">Đã thu</Label>
                   <Input
                     type="number"
                     placeholder="Nhập số tiền đã thu"
                     value={newShow.paid}
                     onChange={(e) => setNewShow({...newShow, paid: Number(e.target.value)})}
-                    className="h-8 text-xs"
+                    className="h-10 text-sm bg-background border-input"
                   />
                 </div>
               </div>
 
               {/* Staff Assignment */}
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-muted-foreground">Phân công nhân viên</Label>
+              <div className="space-y-3">
+                <Label className="text-sm font-medium text-foreground">Phân công nhân viên</Label>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Key</Label>
+                    <Label className="text-sm text-foreground">Key</Label>
                     <select 
                       value={newShow.key}
                       onChange={(e) => setNewShow({...newShow, key: e.target.value})}
-                      className="w-full px-2 py-1 border rounded text-xs h-8"
+                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
                       <option value="">Chọn Key</option>
                       {staffOptions.map(staff => (
@@ -1736,11 +1800,11 @@ export default function ShowsPage() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs">SP1</Label>
+                    <Label className="text-sm text-foreground">SP1</Label>
                     <select 
                       value={newShow.support1}
                       onChange={(e) => setNewShow({...newShow, support1: e.target.value})}
-                      className="w-full px-2 py-1 border rounded text-xs h-8"
+                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
                       <option value="">Chọn SP1</option>
                       {staffOptions.map(staff => (
@@ -1750,13 +1814,13 @@ export default function ShowsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">SP2</Label>
+                    <Label className="text-sm text-foreground">SP2</Label>
                     <select 
                       value={newShow.support2}
                       onChange={(e) => setNewShow({...newShow, support2: e.target.value})}
-                      className="w-full px-2 py-1 border rounded text-xs h-8"
+                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
                       <option value="">Chọn SP2</option>
                       {staffOptions.map(staff => (
@@ -1765,11 +1829,11 @@ export default function ShowsPage() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs">Pick</Label>
+                    <Label className="text-sm text-foreground">Pick</Label>
                     <select 
                       value={newShow.selective}
                       onChange={(e) => setNewShow({...newShow, selective: e.target.value})}
-                      className="w-full px-2 py-1 border rounded text-xs h-8"
+                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
                       <option value="">Chọn Pick</option>
                       {staffOptions.map(staff => (
@@ -1779,13 +1843,13 @@ export default function ShowsPage() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Blend</Label>
+                    <Label className="text-sm text-foreground">Blend</Label>
                     <select 
                       value={newShow.blend}
                       onChange={(e) => setNewShow({...newShow, blend: e.target.value})}
-                      className="w-full px-2 py-1 border rounded text-xs h-8"
+                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
                       <option value="">Chọn Blend</option>
                       {staffOptions.map(staff => (
@@ -1794,11 +1858,11 @@ export default function ShowsPage() {
                     </select>
                   </div>
                   <div>
-                    <Label className="text-xs">Retouch</Label>
+                    <Label className="text-sm text-foreground">Retouch</Label>
                     <select 
                       value={newShow.retouch}
                       onChange={(e) => setNewShow({...newShow, retouch: e.target.value})}
-                      className="w-full px-2 py-1 border rounded text-xs h-8"
+                      className="w-full px-3 py-2 border border-input rounded-md text-sm h-10 bg-background text-foreground"
                     >
                       <option value="">Chọn Retouch</option>
                       {staffOptions.map(staff => (
@@ -1809,23 +1873,24 @@ export default function ShowsPage() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-2 pt-2">
-                <Button 
-                  onClick={handleCreateShow}
-                  className="flex-1 h-9 text-sm"
-                >
-                  <Save className="h-4 w-4 mr-2" />
-                  Tạo Show
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setIsModalOpen(false)}
-                  className="h-9 text-sm sm:w-auto"
-                >
-                  Hủy
-                </Button>
-              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-3 pt-4 border-t border-border flex-shrink-0">
+              <Button 
+                onClick={handleCreateShow}
+                className="flex-1 h-10 text-sm font-medium"
+              >
+                <Save className="h-4 w-4 mr-2" />
+                Tạo Show
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => setIsModalOpen(false)}
+                className="h-10 text-sm px-6"
+              >
+                Hủy
+              </Button>
             </div>
           </div>
         </div>
@@ -1838,7 +1903,7 @@ export default function ShowsPage() {
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
                 <Edit className="h-5 w-5 text-primary" />
-                Chỉnh sửa Show - {editingShow.customer}
+                Chỉnh sửa Show - {editingShow.orderName}
               </h3>
               <Button 
                 variant="outline" 
@@ -2013,24 +2078,48 @@ export default function ShowsPage() {
               </div>
 
               <div>
-                <Label className="text-sm font-medium text-foreground">Tên khách hàng</Label>
+                <Label className="text-sm font-medium text-foreground">Tên đơn hàng</Label>
                 <Input
-                  placeholder="Nhập tên khách hàng"
-                  value={editingShow.customer}
-                  onChange={(e) => setEditingShow({...editingShow, customer: e.target.value})}
+                  placeholder="Nhập tên đơn hàng"
+                  value={editingShow.orderName}
+                  onChange={(e) => setEditingShow({...editingShow, orderName: e.target.value})}
                   className="h-10 text-sm bg-background border-input"
                   required
                 />
               </div>
 
-              <div>
-                <Label className="text-sm font-medium text-foreground">Số điện thoại</Label>
-                <Input
-                  placeholder="Nhập số điện thoại"
-                  value={editingShow.phone}
-                  onChange={(e) => setEditingShow({...editingShow, phone: e.target.value})}
-                  className="h-10 text-sm bg-background border-input"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Khách hàng</Label>
+                  <select
+                    value={editingShow.clientId}
+                    onChange={(e) => {
+                      const selectedClient = clientsData.find(c => c.id === e.target.value);
+                      setEditingShow({
+                        ...editingShow, 
+                        clientId: e.target.value,
+                        clientName: selectedClient?.name || '',
+                        clientPhone: selectedClient?.phone || ''
+                      });
+                    }}
+                    className="w-full h-10 px-3 text-sm border border-input bg-background rounded-md"
+                    required
+                  >
+                    <option value="">Chọn khách hàng</option>
+                    {clientsData.map(client => (
+                      <option key={client.id} value={client.id}>{client.name}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium text-foreground">Số điện thoại</Label>
+                  <Input
+                    placeholder="Tự động từ khách hàng"
+                    value={editingShow.clientPhone}
+                    className="h-10 text-sm bg-muted border-input"
+                    disabled
+                  />
+                </div>
               </div>
 
               {/* Staff Assignment */}

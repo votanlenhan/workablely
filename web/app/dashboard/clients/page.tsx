@@ -25,7 +25,8 @@ import {
   UserPlus,
   Star,
   DollarSign,
-  History
+  History,
+  X
 } from 'lucide-react';
 
 interface Client {
@@ -34,12 +35,9 @@ interface Client {
   email: string;
   phone: string;
   address: string;
-  joinDate: string;
-  status: 'Hoạt động' | 'Không hoạt động' | 'VIP';
   totalShows: number;
   totalSpent: number;
   lastShowDate: string;
-  preferredServices: string[];
   notes: string;
 }
 
@@ -61,12 +59,9 @@ const clientsData: Client[] = [
     email: 'wedding.ab@gmail.com',
     phone: '+84 901 234 567',
     address: 'Quận 1, TP.HCM',
-    joinDate: '2023-06-15',
-    status: 'VIP',
     totalShows: 3,
     totalSpent: 45000000,
     lastShowDate: '2024-01-15',
-    preferredServices: ['Wedding', 'Pre-wedding'],
     notes: 'Khách hàng VIP, yêu cầu cao về chất lượng'
   },
   {
@@ -75,12 +70,9 @@ const clientsData: Client[] = [
     email: 'lethic@gmail.com',
     phone: '+84 912 345 678',
     address: 'Quận 3, TP.HCM',
-    joinDate: '2023-08-20',
-    status: 'Hoạt động',
     totalShows: 2,
     totalSpent: 15000000,
     lastShowDate: '2023-12-10',
-    preferredServices: ['Portrait', 'Family'],
     notes: 'Khách hàng thân thiện, dễ làm việc'
   },
   {
@@ -89,12 +81,9 @@ const clientsData: Client[] = [
     email: 'events@abc.com',
     phone: '+84 923 456 789',
     address: 'Quận 7, TP.HCM',
-    joinDate: '2023-03-10',
-    status: 'Hoạt động',
     totalShows: 8,
     totalSpent: 80000000,
     lastShowDate: '2024-01-20',
-    preferredServices: ['Corporate Event', 'Product Photography'],
     notes: 'Khách hàng doanh nghiệp, thường xuyên có sự kiện'
   }
 ];
@@ -135,80 +124,97 @@ const clientShowsData: ClientShow[] = [
 export default function ClientsPage() {
   const [activeTab, setActiveTab] = useState('list');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState<'add' | 'edit'>('add');
+  const [selectedClient, setSelectedClient] = useState<Client | null>(null);
+  const [clients, setClients] = useState<Client[]>(clientsData);
+  
+  const [newClient, setNewClient] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    address: '',
+    notes: ''
+  });
 
-  // Filter clients based on search term and status
-  const filteredClients = clientsData.filter(client => {
+  // Client operations
+  const openClientModal = (mode: 'add' | 'edit', client?: Client) => {
+    setModalMode(mode);
+    setSelectedClient(client || null);
+    if (mode === 'add') {
+      setNewClient({
+        name: '',
+        email: '',
+        phone: '',
+        address: '',
+        notes: ''
+      });
+    } else if (client) {
+      setNewClient({
+        name: client.name,
+        email: client.email,
+        phone: client.phone,
+        address: client.address,
+        notes: client.notes
+      });
+    }
+    setIsClientModalOpen(true);
+  };
+
+  const handleSaveClient = () => {
+    if (!newClient.name || !newClient.email || !newClient.phone) {
+      alert('Vui lòng điền đầy đủ thông tin bắt buộc!');
+      return;
+    }
+
+    const clientData = {
+      ...newClient,
+      totalShows: 0,
+      totalSpent: 0,
+      lastShowDate: ''
+    };
+
+    if (modalMode === 'add') {
+      const newId = `CL${String(clients.length + 1).padStart(3, '0')}`;
+      setClients([...clients, { id: newId, ...clientData }]);
+    } else if (selectedClient) {
+      setClients(clients.map(client => 
+        client.id === selectedClient.id 
+          ? { ...client, ...clientData }
+          : client
+      ));
+    }
+
+    setIsClientModalOpen(false);
+    setNewClient({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      notes: ''
+    });
+  };
+
+  // Filter clients based on search term
+  const filteredClients = clients.filter(client => {
     const matchesSearch = searchTerm === '' || 
       client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.phone.includes(searchTerm) ||
       client.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.preferredServices.some(service => service.toLowerCase().includes(searchTerm.toLowerCase()));
+      client.notes.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = selectedStatus === 'all' || client.status === selectedStatus;
-    
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   });
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('vi-VN').format(amount);
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'Hoạt động':
-      case 'VIP':
-      case 'Hoàn thành':
-        return <CheckCircle className="h-3 w-3" />;
-      case 'Đang xử lý':
-        return <Clock className="h-3 w-3" />;
-      case 'Không hoạt động':
-      case 'Đã hủy':
-        return <AlertTriangle className="h-3 w-3" />;
-      default:
-        return <Clock className="h-3 w-3" />;
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Hoạt động':
-      case 'Hoàn thành':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300';
-      case 'VIP':
-        return 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300';
-      case 'Đang xử lý':
-        return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300';
-      case 'Không hoạt động':
-      case 'Đã hủy':
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
-      default:
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300';
-    }
-  };
-
-  const getServiceIcon = (service: string) => {
-    switch (service) {
-      case 'Wedding':
-      case 'Pre-wedding':
-        return <Heart className="h-3 w-3" />;
-      case 'Portrait':
-      case 'Family':
-        return <User className="h-3 w-3" />;
-      case 'Corporate Event':
-      case 'Product Photography':
-        return <Camera className="h-3 w-3" />;
-      default:
-        return <Camera className="h-3 w-3" />;
-    }
-  };
-
   const tabs = [
     { id: 'list', label: 'Danh sách', icon: UserCheck },
     { id: 'shows', label: 'Lịch sử Shows', icon: History },
-    { id: 'add-client', label: 'Thêm khách hàng', icon: UserPlus },
   ];
 
   return (
@@ -224,7 +230,11 @@ export default function ClientsPage() {
             <Search className="h-3 w-3" />
             Tìm kiếm
           </Button>
-          <Button size="sm" className="h-8 text-xs gap-1">
+          <Button 
+            size="sm" 
+            className="h-8 text-xs gap-1"
+            onClick={() => openClientModal('add')}
+          >
             <UserPlus className="h-3 w-3" />
             Thêm khách hàng
           </Button>
@@ -258,29 +268,19 @@ export default function ClientsPage() {
       <div className="space-y-4">
         {activeTab === 'list' && (
           <div className="space-y-4">
-            {/* Filters */}
+            {/* Search Filter */}
             <div className="flex gap-2">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-muted-foreground" />
                   <Input
-                    placeholder="Tìm kiếm theo tên, email, SĐT, địa chỉ..."
+                    placeholder="Tìm kiếm theo tên, email, SĐT, địa chỉ, ghi chú..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="h-8 text-sm pl-7"
                   />
                 </div>
               </div>
-              <select
-                value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
-                className="h-8 px-2 text-xs border border-input bg-background rounded-md"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                <option value="VIP">VIP</option>
-                <option value="Hoạt động">Hoạt động</option>
-                <option value="Không hoạt động">Không hoạt động</option>
-              </select>
               <Button variant="outline" size="sm" className="h-8 text-xs gap-1">
                 <Filter className="h-3 w-3" />
                 Lọc
@@ -290,7 +290,11 @@ export default function ClientsPage() {
             {/* Clients Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
               {filteredClients.map((client) => (
-                <Card key={client.id} className="hover:shadow-sm transition-shadow">
+                <Card 
+                  key={client.id} 
+                  className="hover:shadow-sm transition-shadow cursor-pointer"
+                  onClick={() => openClientModal('edit', client)}
+                >
                   <CardHeader className="pb-1">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -303,16 +307,8 @@ export default function ClientsPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-1">
-                        {client.status === 'VIP' && (
-                          <div className="flex">
-                            {[...Array(3)].map((_, i) => (
-                              <Star key={i} className="h-3 w-3 fill-yellow-400 text-yellow-400" />
-                            ))}
-                          </div>
-                        )}
-                        <span className={`inline-flex items-center gap-1 text-xs px-1 py-0.5 rounded-full ${getStatusColor(client.status)}`}>
-                          {getStatusIcon(client.status)}
-                          {client.status}
+                        <span className="text-xs text-muted-foreground">
+                          {client.totalShows} shows
                         </span>
                       </div>
                     </div>
@@ -339,38 +335,17 @@ export default function ClientsPage() {
                           <span className="text-muted-foreground">Tổng chi: </span>
                           <span className="font-medium text-green-600">{formatCurrency(client.totalSpent)}</span>
                         </div>
-                        <div className="text-xs text-muted-foreground">
-                          {client.totalShows} shows
+                        <div className="text-xs">
+                          <span className="text-muted-foreground">Show cuối: </span>
+                          <span className="font-medium">{client.lastShowDate ? new Date(client.lastShowDate).toLocaleDateString('vi-VN') : 'Chưa có'}</span>
                         </div>
                       </div>
 
-                      <div className="flex flex-wrap gap-1">
-                        {client.preferredServices.slice(0, 2).map((service, index) => (
-                          <span key={index} className="inline-flex items-center gap-1 text-xs px-1 py-0.5 bg-muted rounded-full">
-                            {getServiceIcon(service)}
-                            {service}
-                          </span>
-                        ))}
-                        {client.preferredServices.length > 2 && (
-                          <span className="text-xs px-1 py-0.5 bg-muted rounded-full">
-                            +{client.preferredServices.length - 2}
-                          </span>
-                        )}
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">
-                          Tham gia: {new Date(client.joinDate).toLocaleDateString('vi-VN')}
-                        </span>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-5 w-5 p-0">
-                            <Edit className="h-3 w-3" />
-                          </Button>
+                      {client.notes && (
+                        <div className="pt-1 border-t border-border">
+                          <p className="text-xs text-muted-foreground italic truncate">{client.notes}</p>
                         </div>
-                      </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -381,145 +356,107 @@ export default function ClientsPage() {
 
         {activeTab === 'shows' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <div className="text-sm text-muted-foreground">
-                Tổng shows: {clientShowsData.length}
-              </div>
-              <select className="h-8 px-2 text-xs border border-input bg-background rounded-md">
-                <option value="all">Tất cả khách hàng</option>
-                <option value="CL001">Nguyễn Văn A & Trần Thị B</option>
-                <option value="CL002">Lê Thị C</option>
-                <option value="CL003">Công ty ABC</option>
-              </select>
-            </div>
-
-            <div className="space-y-3">
-              {clientShowsData.map((show) => (
-                <Card key={show.id} className="hover:shadow-sm transition-shadow">
-                  <CardContent className="p-3">
-                    <div className="space-y-3">
-                      {/* Header */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-mono text-muted-foreground">{show.id}</span>
-                          <span className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-full ${getStatusColor(show.status)}`}>
-                            {getStatusIcon(show.status)}
-                            {show.status}
-                          </span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <Eye className="h-3 w-3" />
-                          </Button>
-                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                            <Edit className="h-3 w-3" />
-                          </Button>
-                        </div>
-                      </div>
-
-                      {/* Show Details */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium">{show.clientName}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Camera className="h-3 w-3 text-muted-foreground" />
-                            <span>{show.showType}</span>
-                          </div>
-                        </div>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3 text-muted-foreground" />
-                            <span className="font-medium">
-                              {new Date(show.showDate).toLocaleDateString('vi-VN')}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <User className="h-3 w-3 text-muted-foreground" />
-                            <span>Photographer: {show.photographer}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Financial */}
-                      <div className="flex items-center justify-between pt-2 border-t border-border text-xs">
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3 text-muted-foreground" />
-                          <span className="text-muted-foreground">Giá trị: </span>
-                          <span className="font-medium text-green-600">{formatCurrency(show.totalValue)}</span>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            <div className="text-center py-8 text-muted-foreground">
+              <History className="h-8 w-8 mx-auto mb-2" />
+              <p className="text-sm">Lịch sử Shows sẽ được hiển thị ở đây</p>
             </div>
           </div>
         )}
-
-        {activeTab === 'add-client' && (
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <UserPlus className="h-4 w-4" />
-                Thêm khách hàng mới
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <form className="space-y-3">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Tên khách hàng *</Label>
-                    <Input placeholder="Nguyễn Văn A" className="h-8 text-sm" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Email *</Label>
-                    <Input type="email" placeholder="client@gmail.com" className="h-8 text-sm" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Số điện thoại *</Label>
-                    <Input placeholder="+84 901 234 567" className="h-8 text-sm" required />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Địa chỉ</Label>
-                    <Input placeholder="Quận 1, TP.HCM" className="h-8 text-sm" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Trạng thái *</Label>
-                    <select className="w-full h-8 px-2 text-sm border border-input bg-background rounded-md" required>
-                      <option value="">Chọn trạng thái</option>
-                      <option value="Hoạt động">Hoạt động</option>
-                      <option value="VIP">VIP</option>
-                      <option value="Không hoạt động">Không hoạt động</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-medium">Ngày gia nhập</Label>
-                    <Input type="date" className="h-8 text-sm" />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Dịch vụ quan tâm</Label>
-                  <Input placeholder="Wedding, Portrait, Event (phân cách bằng dấu phẩy)" className="h-8 text-sm" />
-                </div>
-                <div className="space-y-2">
-                  <Label className="text-xs font-medium">Ghi chú</Label>
-                  <textarea
-                    placeholder="Thông tin bổ sung về khách hàng..."
-                    className="w-full p-2 text-sm border border-input bg-background rounded-md resize-none h-16"
-                  />
-                </div>
-                <Button type="submit" className="w-full h-8 text-xs gap-1">
-                  <UserPlus className="h-3 w-3" />
-                  Thêm khách hàng
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-        )}
       </div>
+
+      {/* Client Modal */}
+      {isClientModalOpen && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-2">
+          <div className="bg-card border border-border shadow-2xl rounded-lg p-4 w-full max-w-md">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                {modalMode === 'add' ? <Plus className="h-5 w-5 text-primary" /> : <Edit className="h-5 w-5 text-primary" />}
+                {modalMode === 'add' ? 'Thêm Khách hàng mới' : 'Chỉnh sửa Khách hàng'}
+              </h3>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsClientModalOpen(false)}
+                className="h-8 w-8 p-0 hover:bg-destructive hover:text-destructive-foreground"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-foreground">Tên khách hàng *</Label>
+                <Input
+                  placeholder="Nhập tên khách hàng"
+                  value={newClient.name}
+                  onChange={(e) => setNewClient({...newClient, name: e.target.value})}
+                  className="h-10 text-sm bg-background border-input"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-foreground">Email *</Label>
+                <Input
+                  type="email"
+                  placeholder="example@email.com"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient({...newClient, email: e.target.value})}
+                  className="h-10 text-sm bg-background border-input"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-foreground">Số điện thoại *</Label>
+                <Input
+                  placeholder="+84 xxx xxx xxx"
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient({...newClient, phone: e.target.value})}
+                  className="h-10 text-sm bg-background border-input"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-foreground">Địa chỉ</Label>
+                <Input
+                  placeholder="Nhập địa chỉ"
+                  value={newClient.address}
+                  onChange={(e) => setNewClient({...newClient, address: e.target.value})}
+                  className="h-10 text-sm bg-background border-input"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-foreground">Ghi chú</Label>
+                <Input
+                  placeholder="Ghi chú thêm về khách hàng"
+                  value={newClient.notes}
+                  onChange={(e) => setNewClient({...newClient, notes: e.target.value})}
+                  className="h-10 text-sm bg-background border-input"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-border">
+                <Button 
+                  onClick={handleSaveClient}
+                  className="flex-1 h-10 text-sm font-medium"
+                >
+                  {modalMode === 'add' ? 'Thêm khách hàng' : 'Cập nhật'}
+                </Button>
+                <Button 
+                  variant="outline" 
+                  onClick={() => setIsClientModalOpen(false)}
+                  className="h-10 text-sm px-6"
+                >
+                  Hủy
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
